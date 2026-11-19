@@ -11,7 +11,7 @@ A calm family screen for a wall tablet, with a phone companion. Today drawn as a
 | --- | --- |
 | `index.html` | The whole app: tablet family screen, Focus and Planner views, phone layout |
 | Supabase (Sydney) | Sign-in, database with row level security, live sync, photo storage |
-| `supabase/functions/calendar` | Syncs Google Calendar every 5 minutes via the bridge |
+| `supabase/functions/calendar` | Syncs calendar links (iCal) and the optional two-way bridge every 5 minutes |
 | `apps-script/bridge.gs` | Runs in a parent's Google account; reads and writes their calendars |
 | `.github/workflows` | Daily keep-alive ping; optional weekly encrypted backup |
 
@@ -26,7 +26,8 @@ A calm family screen for a wall tablet, with a phone companion. Today drawn as a
 1. Open the app on a parent's phone, sign in with the emailed code, choose **Set up our household**.
 2. Settings → Family: add the other parent and the kids, pick colours, and set each adult's home view (Focus or Planner).
 3. Settings → Household: give the partner the join code.
-4. Settings → Calendar: **Copy script**, paste into a new project at script.google.com, deploy as a web app (execute as Me, access Anyone), paste the URL back. The other parent shares their Google calendar with that account ("Make changes to events").
+4. Settings → Calendar → **Add a calendar**: paste each Google calendar's *Secret address in iCal format* (calendar.google.com → Settings → the calendar → Integrate calendar). Read-only, refreshed every 5 minutes.
+   Optional, on a computer: **Two-way editing** (Copy script → script.new → deploy as web app → paste the URL) so the screen can add and move events later.
 5. Settings → Reminders: add bin days and countdowns. Settings → Babysitter: contacts, bedtimes, wifi.
 
 ## The tablet

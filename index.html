@@ -954,21 +954,34 @@ let BRIDGE_SRC = null;
 function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
 function calendarSettingsHTML() {
   if (!BRIDGE_SRC) prefetchBridge();
+  return calendarSettingsInner();
+}
+function calendarSettingsInner() {
   const cs = S.calStatus || {};
-  const status = cs.connected ? (cs.last_sync_error ? `<span class="status bad">Problem: ${esc(cs.last_sync_error)}</span>` : `<span class="status ok">Connected${cs.last_sync_at ? ' · synced ' + esc(ago((Date.now() - new Date(cs.last_sync_at)) / 60e3)) : ''}</span>`) : '<span class="status warn">Not connected</span>';
+  const hasBridge = S.calendars.some(c => !c.google_id.startsWith('ics:'));
+  const status = cs.connected ? (cs.last_sync_error ? `<span class="status bad">Problem: ${esc(cs.last_sync_error)}</span>` : `<span class="status ok">Connected${cs.last_sync_at ? ' · synced ' + esc(ago((Date.now() - new Date(cs.last_sync_at)) / 60e3)) : ''}</span>`) : '<span class="status warn">No calendars yet</span>';
   const key = LS.get('pendingKey:' + S.hid, null);
   return `<div class="panel"><h2>Google Calendar</h2><p class="help">${status}</p>
-    ${cs.connected ? `<div class="row" style="margin-bottom:6px"><button class="btn" data-act="cal-sync">${icon('refresh')}Sync now</button><button class="btn soft" data-act="cal-reconnect">Reconnect</button></div>` : ''}
-    ${!cs.connected || key ? `
-    <ol class="steps"><li>Tap <b>Copy script</b> below.</li><li>On a computer or phone browser, open <b>script.google.com</b> signed in as the parent whose calendar it is, choose <b>New project</b>, delete everything and paste.</li>
-      <li>Choose <b>Deploy → New deployment → Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>, then Deploy.</li><li>Approve access. Google warns the app is unverified because it's your own script: choose <b>Advanced → Go to project</b>.</li><li>Copy the <b>Web app URL</b> and paste it here.</li></ol>
+    ${cs.connected ? `<button class="btn" data-act="cal-sync">${icon('refresh')}Sync now</button>` : ''}</div>
+  <div class="panel"><h2>Add a calendar</h2><p class="help">Paste each person's private calendar link. Changes made in Google Calendar show here within 5 minutes.</p>
+    <ol class="steps"><li>Open <b>calendar.google.com</b> in a browser. On a phone, use the browser menu → <b>Desktop site</b>.</li>
+      <li>Tap the gear → <b>Settings</b>, then the calendar's name under <b>Settings for my calendars</b>.</li>
+      <li>Scroll to <b>Integrate calendar</b> and copy <b>Secret address in iCal format</b>.</li>
+      <li>Paste it below with a name, like "Josh" or "Kids".</li></ol>
+    <form data-form="add-feed"><div class="row"><input class="input" name="name" placeholder="Name" maxlength="40" style="width:160px" required><input class="input grow" name="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" required></div><button class="btn" style="margin-top:10px">${icon('plus')}Add calendar</button></form></div>
+  ${S.calendars.length ? `<div class="panel"><h2>Calendars</h2><p class="help">Choose which show, and whose colour each one uses.</p>
+    ${S.calendars.map(c => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><button class="toggle ${c.enabled ? 'on' : ''}" data-act="cal-toggle" data-id="${c.id}" aria-label="Show ${esc(c.name)}"></button><div class="grow"><b>${esc(c.name)}</b><div class="lbl">${c.google_id.startsWith('ics:') ? 'Calendar link' : 'Two-way'}</div></div>
+      <select class="input" style="width:auto" data-act="cal-member" data-id="${c.id}" aria-label="Whose calendar"><option value="">Whole family</option>${S.members.map(m => `<option value="${m.id}" ${c.member_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
+      ${c.google_id.startsWith('ics:') ? `<button class="icon-btn" data-act="del-feed" data-gid="${esc(c.google_id)}" aria-label="Remove ${esc(c.name)}">${icon('trash')}</button>` : ''}</div>`).join('')}
+    ${hasBridge ? '<button class="btn ghost" style="margin-top:10px" data-act="cal-refresh-list">Look for new calendars</button>' : ''}</div>` : ''}
+  <details class="panel"><summary style="font-weight:700;font-size:19px;cursor:pointer">Two-way editing (do this on a computer)</summary>
+    <p class="help" style="margin-top:12px">Lets this screen add and move events in Google Calendar later. It needs a short script set up once at script.google.com, which is much easier on a computer.</p>
+    ${hasBridge && !key ? `<p><span class="status ok">Two-way link connected</span></p><button class="btn soft" data-act="cal-reconnect">Reconnect</button>` : `
+    <ol class="steps"><li>On the computer, open Skylike and come to this page, then tap <b>Copy script</b>.</li><li>Open <b>script.new</b>, signed in as the calendar's owner. Select all, paste, and save.</li>
+      <li><b>Deploy → New deployment → Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>, then Deploy.</li><li>Approve access. Google warns the app is unverified because it's your own script: choose <b>Advanced → Go to project</b>.</li><li>Copy the <b>Web app URL</b> and paste it here, on the same computer.</li></ol>
     <div class="row" style="margin-bottom:12px"><button class="btn soft" data-act="copy-script">${icon('copy')}Copy script</button></div>
-    <form data-form="bridge" class="row"><input class="input grow" name="url" placeholder="https://script.google.com/macros/s/…/exec" required><button class="btn">Connect</button></form>` : ''}
-  </div>
-  ${S.calendars.length ? `<div class="panel"><h2>Calendars</h2><p class="help">Choose which calendars show, and whose colour each one uses.</p>
-    ${S.calendars.map(c => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><button class="toggle ${c.enabled ? 'on' : ''}" data-act="cal-toggle" data-id="${c.id}" aria-label="Show ${esc(c.name)}"></button><div class="grow"><b>${esc(c.name)}</b></div>
-      <select class="input" style="width:auto" data-act="cal-member" data-id="${c.id}" aria-label="Whose calendar"><option value="">Whole family</option>${S.members.map(m => `<option value="${m.id}" ${c.member_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></div>`).join('')}
-    <button class="btn ghost" style="margin-top:10px" data-act="cal-refresh-list">Look for new calendars</button></div>` : ''}`;
+    <form data-form="bridge" class="row"><input class="input grow" name="url" placeholder="https://script.google.com/macros/s/…/exec" required><button class="btn">Connect</button></form>`}
+  </details>`;
 }
 
 /* ----- shell ----- */
@@ -1116,6 +1129,7 @@ const A = {
   async 'cal-sync'() { toast('Syncing calendar…'); const r = await callFn({action: 'sync'}); toast(r.error ? 'Sync problem: ' + r.error : `Calendar synced · ${r.events ?? 0} events`, 3500); refreshCalStatus(); },
   async 'cal-refresh-list'() { const r = await callFn({action: 'calendars'}); toast(r.error ? r.error : 'Calendar list updated'); const {data} = await sb.from('calendars').select('*').eq('household_id', S.hid); if (data) S.calendars = data; render(); },
   async 'cal-toggle'(el) { const c = S.calendars.find(x => x.id === el.dataset.id); c.enabled = !c.enabled; render(); await db(sb.from('calendars').update({enabled: c.enabled}).eq('id', c.id)); callFn({action: 'sync'}); },
+  async 'del-feed'(el) { if (!confirm('Remove this calendar from the screen?')) return; const gid = el.dataset.gid; S.calendars = S.calendars.filter(c => c.google_id !== gid); S.events = S.events.filter(e => e.calendar_id !== gid); render(); await db(sb.rpc('remove_calendar_feed', {p_household: S.hid, p_google_id: gid})); refreshCalStatus(); },
   async cmd(el) { await db(sb.from('commands').insert({household_id: S.hid, command: el.dataset.cmd, device_id: el.dataset.id || null})); toast(el.dataset.id ? 'Sent' : 'Sent to every screen'); }
 };
 async function callFn(body) {
@@ -1180,6 +1194,22 @@ const F = {
     const s = await callFn({action: 'sync'});
     toast(s.error ? 'Connected, but sync failed: ' + s.error : `Connected · ${s.events ?? 0} events`, 4000);
     refreshCalStatus();
+  },
+  async 'add-feed'(f) {
+    const url = f.url.value.trim(), name = f.name.value.trim();
+    if (!/^(https|webcal):\/\//.test(url)) return toast('Paste the full link, starting with https://', 4000);
+    f.querySelector('button').disabled = true;
+    const {error} = await sb.rpc('add_calendar_feed', {p_household: S.hid, p_url: url, p_name: name});
+    f.querySelector('button').disabled = false;
+    if (error) return toast(error.message, 4000);
+    f.reset(); toast('Added. Fetching events…');
+    const {data} = await sb.from('calendars').select('*').eq('household_id', S.hid); if (data) S.calendars = data;
+    render();
+    const r = await callFn({action: 'sync'});
+    toast(r.error ? 'Added, but: ' + r.error : `Calendar added · ${r.events ?? 0} events`, 4500);
+    const ev = await sb.from('events_cache').select('*').eq('household_id', S.hid).gte('ends_at', new Date(Date.now() - 3 * 864e5).toISOString()).order('starts_at');
+    if (ev.data) S.events = ev.data;
+    refreshCalStatus(); render();
   },
   async 'add-reminder'(f) {
     const row = {household_id: S.hid, title: f.title.value.trim(), color: f.color.value, weekday: +f.weekday.value, every_weeks: +f.every.value, anchor_date: f.anchor.value || null, show_day_before: true};

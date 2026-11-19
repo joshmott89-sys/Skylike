@@ -2,6 +2,7 @@
 // - Cron (x-cron-secret header): syncs every household with a connected bridge.
 // - Signed-in member (Authorization: Bearer <jwt>): { household_id, action: 'sync' | 'calendars' | 'test' }
 import { createClient } from "npm:@supabase/supabase-js@2";
+import ICAL from "npm:ical.js@2.2.1";
 
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -31,6 +32,44 @@ async function callBridge(b: Bridge, params: Record<string, string>) {
   return data;
 }
 
+// ---- calendar links (secret iCal addresses), read-only ----
+function parseIcs(text: string, from: Date, to: Date, calId: string): any[] {
+  const comp = new ICAL.Component(ICAL.parse(text));
+  for (const tz of comp.getAllSubcomponents("vtimezone")) { try { ICAL.TimezoneService.register(tz); } catch (_) {} }
+  const groups = new Map();
+  for (const v of comp.getAllSubcomponents("vevent")) {
+    const uid = v.getFirstPropertyValue("uid") || Math.random().toString(36);
+    const g = groups.get(uid) || { master: null, ex: [] };
+    if (v.hasProperty("recurrence-id")) g.ex.push(v); else g.master = v;
+    groups.set(uid, g);
+  }
+  const out: any[] = [];
+  const add = (item: any, s: Date, e: Date, key: string) => {
+    if (!(s < to && e > from)) return;
+    if ((item.component.getFirstPropertyValue("status") || "").toUpperCase() === "CANCELLED") return;
+    const allDay = item.startDate.isDate;
+    out.push({ calendarId: calId, key, title: item.summary || "", allDay,
+      start: allDay ? item.startDate.toString().slice(0, 10) + "T00:00:00Z" : s.toISOString(),
+      end: allDay ? (item.endDate ? item.endDate.toString().slice(0, 10) : item.startDate.toString().slice(0, 10)) + "T00:00:00Z" : e.toISOString(),
+      location: item.location || null });
+  };
+  for (const [uid, g] of groups) {
+    if (!g.master) { for (const v of g.ex) { const ev = new ICAL.Event(v); add(ev, ev.startDate.toJSDate(), ev.endDate.toJSDate(), uid + "@" + ev.startDate.toJSDate().getTime()); } continue; }
+    const ev = new ICAL.Event(g.master, { exceptions: g.ex });
+    if (ev.isRecurring()) {
+      const it = ev.iterator(); let t: any, n = 0;
+      while ((t = it.next()) && n++ < 5000) {
+        if (t.toJSDate() > to) break;
+        const d = ev.getOccurrenceDetails(t);
+        const s = d.startDate.toJSDate(), e = d.endDate.toJSDate();
+        if (e < from) continue;
+        add(d.item, s, e, uid + "@" + t.toJSDate().getTime());
+      }
+    } else add(ev, ev.startDate.toJSDate(), ev.endDate ? ev.endDate.toJSDate() : ev.startDate.toJSDate(), uid + "@" + ev.startDate.toJSDate().getTime());
+  }
+  return out;
+}
+
 async function getBridge(hid: string): Promise<Bridge | null> {
   const { data } = await admin.from("household_private")
     .select("household_id, bridge_url, bridge_key").eq("household_id", hid).maybeSingle();
@@ -57,47 +96,69 @@ async function refreshCalendars(b: Bridge) {
 
 async function syncHousehold(hid: string) {
   const b = await getBridge(hid);
-  if (!b) return { household_id: hid, skipped: "not connected" };
+  const { data: feeds } = await admin.from("calendar_feeds_private").select("id, url").eq("household_id", hid);
+  if (!b && !(feeds && feeds.length)) return { household_id: hid, skipped: "not connected" };
+  const from = new Date(Date.now() - 2 * 864e5);
+  const to = new Date(Date.now() + 42 * 864e5);
+  const errors: string[] = [];
+  let rows: any[] = [];
+  const handled = new Set<string>();
   try {
-    let { data: cals } = await admin.from("calendars").select("google_id, enabled").eq("household_id", hid);
-    if (!cals || cals.length === 0) {
-      await refreshCalendars(b);
-      ({ data: cals } = await admin.from("calendars").select("google_id, enabled").eq("household_id", hid));
+    if (b) {
+      let { data: cals } = await admin.from("calendars").select("google_id, enabled").eq("household_id", hid).not("google_id", "like", "ics:%");
+      if (!cals || cals.length === 0) {
+        await refreshCalendars(b);
+        ({ data: cals } = await admin.from("calendars").select("google_id, enabled").eq("household_id", hid).not("google_id", "like", "ics:%"));
+      }
+      (cals || []).forEach((c: any) => handled.add(c.google_id));
+      const ids = (cals || []).filter((c: any) => c.enabled).map((c: any) => c.google_id);
+      if (ids.length) {
+        const data = await callBridge(b, { action: "events", ids: ids.join(","), from: from.toISOString(), to: to.toISOString() });
+        rows = rows.concat((data.events || []));
+      }
     }
-    const ids = (cals || []).filter((c: any) => c.enabled).map((c: any) => c.google_id);
-    const from = new Date(Date.now() - 2 * 864e5);
-    const to = new Date(Date.now() + 42 * 864e5);
-    const data = ids.length
-      ? await callBridge(b, { action: "events", ids: ids.join(","), from: from.toISOString(), to: to.toISOString() })
-      : { events: [] };
-    const rows = (data.events || []).map((e: any) => ({
-      household_id: hid,
-      calendar_id: e.calendarId,
-      event_id: e.key,
-      title: e.title || "",
-      starts_at: e.start,
-      ends_at: e.end,
-      all_day: !!e.allDay,
-      location: e.location,
-      updated_at: new Date().toISOString(),
+  } catch (err) { errors.push("Two-way link: " + String((err as Error).message || err)); }
+  if (feeds && feeds.length) {
+    const { data: cals } = await admin.from("calendars").select("google_id, enabled").eq("household_id", hid).like("google_id", "ics:%");
+    const on = new Set((cals || []).filter((c: any) => c.enabled).map((c: any) => c.google_id));
+    for (const f of feeds) {
+      const cid = "ics:" + f.id; handled.add(cid);
+      if (!on.has(cid)) continue;
+      try {
+        const res = await fetch(f.url, { redirect: "follow" });
+        if (!res.ok) throw new Error(res.status === 404 ? "link not found (it may have been reset)" : "link returned " + res.status);
+        const text = await res.text();
+        if (!text.includes("BEGIN:VCALENDAR")) throw new Error("that link isn't a calendar file");
+        rows = rows.concat(parseIcs(text, from, to, cid));
+      } catch (err) {
+        errors.push(String((err as Error).message || err));
+        handled.delete(cid); // keep old events rather than wiping them on a failed fetch
+      }
+    }
+  }
+  try {
+    const now = new Date().toISOString();
+    const out = rows.map((e: any) => ({
+      household_id: hid, calendar_id: e.calendarId, event_id: e.key, title: e.title || "",
+      starts_at: e.start, ends_at: e.end, all_day: !!e.allDay, location: e.location, updated_at: now,
     }));
-    if (rows.length) {
-      const { error } = await admin.from("events_cache").upsert(rows, { onConflict: "household_id,calendar_id,event_id" });
+    for (let i = 0; i < out.length; i += 500) {
+      const { error } = await admin.from("events_cache").upsert(out.slice(i, i + 500), { onConflict: "household_id,calendar_id,event_id" });
       if (error) throw error;
     }
-    // Remove events in the window that no longer exist (or belong to switched-off calendars).
-    const keep = new Set(rows.map((r: any) => r.calendar_id + "|" + r.event_id));
+    const keep = new Set(out.map((r: any) => r.calendar_id + "|" + r.event_id));
     const { data: current } = await admin.from("events_cache")
       .select("id, calendar_id, event_id").eq("household_id", hid)
       .gte("starts_at", from.toISOString()).lt("starts_at", to.toISOString());
-    const stale = (current || []).filter((r: any) => !keep.has(r.calendar_id + "|" + r.event_id)).map((r: any) => r.id);
-    if (stale.length) await admin.from("events_cache").delete().in("id", stale);
+    const stale = (current || []).filter((r: any) => handled.has(r.calendar_id) && !keep.has(r.calendar_id + "|" + r.event_id)).map((r: any) => r.id);
+    for (let i = 0; i < stale.length; i += 200) await admin.from("events_cache").delete().in("id", stale.slice(i, i + 200));
     await admin.from("events_cache").delete().eq("household_id", hid).lt("ends_at", from.toISOString());
-    await admin.from("household_private").update({ last_sync_at: new Date().toISOString(), last_sync_error: null }).eq("household_id", hid);
-    return { household_id: hid, events: rows.length, removed: stale.length };
+    const msg = errors.length ? errors.join("; ").slice(0, 300) : null;
+    await admin.from("household_private").upsert({ household_id: hid, last_sync_at: now, last_sync_error: msg }, { onConflict: "household_id" });
+    return { household_id: hid, events: out.length, removed: stale.length, error: msg || undefined };
   } catch (err) {
     const msg = String((err as Error).message || err).slice(0, 300);
-    await admin.from("household_private").update({ last_sync_error: msg }).eq("household_id", hid);
+    await admin.from("household_private").upsert({ household_id: hid, last_sync_error: msg }, { onConflict: "household_id" });
     return { household_id: hid, error: msg };
   }
 }
@@ -111,8 +172,10 @@ Deno.serve(async (req) => {
     const { data } = await admin.from("app_private").select("cron_secret").eq("id", 1).single();
     if (!data || data.cron_secret !== cronHeader) return json({ error: "unauthorised" }, 401);
     const { data: hp } = await admin.from("household_private").select("household_id").not("bridge_url", "is", null);
+    const { data: fp } = await admin.from("calendar_feeds_private").select("household_id");
+    const ids = new Set([...(hp || []), ...(fp || [])].map((h: any) => h.household_id));
     const results = [];
-    for (const h of hp || []) results.push(await syncHousehold(h.household_id));
+    for (const id of ids) results.push(await syncHousehold(id));
     return json({ ok: true, results });
   }
 
