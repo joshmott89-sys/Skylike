@@ -366,6 +366,8 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9 16.5a4 4 0 0 1 6 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/></symbol>
   <symbol id="i-bed" viewBox="0 0 24 24"><path d="M3 18V7M3 14h18v4M21 14v-2.5A2.5 2.5 0 0 0 18.5 9H11v5"/><circle cx="7" cy="11" r="1.8"/></symbol>
   <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="m20.5 16-5-5-8 8"/></symbol>
+  <symbol id="i-jumper" viewBox="0 0 24 24"><path d="M8.5 3.5 3.8 6.4l1.8 4.1 2.2-1.1V20.5h8.4V9.4l2.2 1.1 1.8-4.1-4.7-2.9c-.6 1.5-1.9 2.4-3.5 2.4s-2.9-.9-3.5-2.4z"/><path d="M7.8 17h8.4"/></symbol>
+  <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3 12.5a9 9 0 0 1 18 0z"/><path d="M12 12.5v6a2 2 0 0 1-4 0"/><path d="M12 3.5v-1"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
   <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 11V4M9.5 6.5 12 4l2.5 2.5M4.6 14.6l1.5 1M19.4 14.6l-1.5 1"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
@@ -597,8 +599,8 @@ async function heartbeat() {
 async function loadWeather() {
   const {lat, lon} = settings().location;
   try {
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum&hourly=precipitation_probability,precipitation&timezone=${encodeURIComponent(TZ)}&forecast_days=10`;
-    const r = await fetch(u); if (!r.ok) throw 0; S.weather = await r.json(); S.weather.at = Date.now(); LS.set('weather', S.weather); if (S.view === 'calendar') render(); else renderSkyOnly();
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum,uv_index_max&hourly=precipitation_probability,precipitation,apparent_temperature&timezone=${encodeURIComponent(TZ)}&forecast_days=10`;
+    const r = await fetch(u); if (!r.ok) throw 0; S.weather = await r.json(); S.weather.at = Date.now(); LS.set('weather', S.weather); const typing = document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName); if (!typing && !document.querySelector('.sheet-bg')) render(); else renderSkyOnly();
   } catch { S.weather = S.weather || LS.get('weather', null); }
 }
 // Rain, said the way people read it: when it's likely to start today and roughly how much.
@@ -611,6 +613,24 @@ function rainNote(wx) {
   if (start < 0) return '';
   const hr = +h.time[start].slice(11, 13), when = hr <= p.h ? 'now' : 'from ' + ((hr + 11) % 12 + 1) + (hr < 12 ? 'am' : 'pm');
   return `${mm < 2 ? 'Showers' : 'Rain'} ${when}${mm >= 1 && !isPhone() ? ` · ${Math.round(mm)}mm` : ''}`;
+}
+// What to wear / pack, from rain, feels-like temperature and UV over the waking day (7am to 6pm).
+function wearTips(k, fromHour = 7) {
+  const w = S.weather, h = w && w.hourly, d = w && w.daily; if (!h || !h.time || !h.apparent_temperature) return [];
+  const idx = h.time.map((t, i) => [t, i]).filter(([t]) => t.slice(0, 10) === k && +t.slice(11, 13) >= Math.max(7, fromHour) && +t.slice(11, 13) <= 18).map(([, i]) => i);
+  if (!idx.length) return [];
+  const out = [], hr = i => +h.time[i].slice(11, 13), at = x => ((x + 11) % 12 + 1) + (x < 12 ? 'am' : 'pm');
+  const wet = idx.filter(i => h.precipitation_probability[i] >= 60 && h.precipitation[i] >= .2), mm = wet.reduce((a, i) => a + h.precipitation[i], 0);
+  if (wet.length) out.push(mm >= 5 ? {icon: 'umbrella', c: '#2F7BB5', text: 'Raincoat + umbrella', sub: 'rain from ' + at(hr(wet[0]))} : {icon: 'umbrella', c: '#2F7BB5', text: 'Pack a jacket', sub: 'showers from ' + at(hr(wet[0]))});
+  const feel = idx.map(i => h.apparent_temperature[i]).filter(x => x != null), morning = idx.filter(i => hr(i) <= 9).map(i => h.apparent_temperature[i]);
+  const coldAm = morning.length ? Math.round(Math.min(...morning)) : null, top = Math.round(Math.max(...feel));
+  if (coldAm != null && coldAm <= 8) out.push({icon: 'jumper', c: '#5B6B8C', text: 'Warm coat', sub: `feels ${coldAm}° this morning`});
+  else if (coldAm != null && coldAm <= 14) out.push({icon: 'jumper', c: '#5B6B8C', text: 'Jumper on', sub: `chilly, feels ${coldAm}°`});
+  else if (top <= 18) out.push({icon: 'jumper', c: '#5B6B8C', text: 'Jumper', sub: `cool day, ${top}° at best`});
+  if (top >= 35) out.push({icon: 'sun', c: '#C9473A', text: 'Hot one: water bottles', sub: `feels ${top}°`});
+  const di = d && d.time ? d.time.indexOf(k) : -1, uv = di >= 0 && d.uv_index_max ? d.uv_index_max[di] : null;
+  if (uv != null && uv >= 6 && fromHour < 16) out.push({icon: 'sun', c: '#E0A21B', text: uv >= 8 ? 'Sunscreen + hat' : 'Sunscreen on', sub: `UV ${Math.round(uv)} ${uv >= 11 ? 'extreme' : uv >= 8 ? 'very high' : 'high'}`});
+  return out;
 }
 function dayWx(k) {
   const d = S.weather && S.weather.daily; if (!d || !d.time) return null;
@@ -673,6 +693,9 @@ function chipsFor(k, now) {
   // bins: evening before, and morning of
   const tomorrow = addDaysKey(k, 1);
   // One chip naming exactly which bins go out, e.g. "Red + Yellow bins · out tonight".
+  // Before 6pm: today's what-to-wear; after: tomorrow's, so bags can be packed tonight.
+  if (hr < 18) wearTips(k, Math.floor(hr)).forEach(t => out.push(t));
+  else wearTips(tomorrow).forEach(t => out.push(Object.assign(t, {sub: 'tomorrow · ' + t.sub})));
   const tonight = S.reminders.filter(r => r.show_day_before && reminderToday(r, tomorrow) && hr >= 15);
   const morning = hr < 12 ? S.reminders.filter(r => reminderToday(r, k)) : [];
   const binChip = (rs, sub) => rs.length && out.push({icon: 'bin', bins: rs.map(r => BIN_COLOURS[r.color]), text: binNames(rs), sub});
