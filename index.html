@@ -137,7 +137,7 @@ body.night .zone h2 .more{color:var(--ocean-ink)}
 .bw .lbl{margin-bottom:6px}
 .bw .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c)}
 .bw .b svg{width:18px;height:18px;stroke-width:2.2}
-.chip em{font-style:normal;color:var(--ink-2);font-weight:600}
+.chip em{font-style:normal;color:var(--ink-2);font-weight:600;white-space:nowrap}
 .ev{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .ev:last-child{border-bottom:0}
 .ev .when{font-weight:700;font-size:17px;min-width:76px;color:var(--ink-2)}
@@ -235,6 +235,10 @@ body.night .qa{color:#9CC3D3;border-color:rgba(156,195,211,.4)}
 .day.today{box-shadow:0 0 0 3px var(--apricot),var(--shadow)}
 .day .dh{font-weight:700;font-size:15px;color:var(--ink-2);display:flex;justify-content:space-between;align-items:baseline}
 .day .dh b{font-size:26px;color:var(--ink);letter-spacing:-.02em}
+.dwx{display:flex;align-items:center;gap:6px;margin:2px 0 8px;font-size:14px;font-weight:600;color:var(--ink-2)}
+.dwx svg{width:20px;height:20px;flex:none;color:var(--ink-2)}
+.dwx b{color:var(--ink);font-weight:700}
+.dwx .mm{margin-left:auto;color:var(--ocean-2);font-size:13px}
 .wev{border-radius:12px;padding:8px 10px;background:color-mix(in srgb,var(--c) 14%,var(--raise));font-size:15px;font-weight:650;line-height:1.25;overflow-wrap:anywhere}
 .wev .t{display:block;font-size:13px;font-weight:700;color:var(--ink-2)}
 .wev.ad{background:var(--c);color:#fff}
@@ -593,9 +597,25 @@ async function heartbeat() {
 async function loadWeather() {
   const {lat, lon} = settings().location;
   try {
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=${encodeURIComponent(TZ)}&forecast_days=7`;
-    const r = await fetch(u); if (!r.ok) throw 0; S.weather = await r.json(); S.weather.at = Date.now(); LS.set('weather', S.weather); renderSkyOnly();
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,precipitation_sum&hourly=precipitation_probability,precipitation&timezone=${encodeURIComponent(TZ)}&forecast_days=10`;
+    const r = await fetch(u); if (!r.ok) throw 0; S.weather = await r.json(); S.weather.at = Date.now(); LS.set('weather', S.weather); if (S.view === 'calendar') render(); else renderSkyOnly();
   } catch { S.weather = S.weather || LS.get('weather', null); }
+}
+// Rain, said the way people read it: when it's likely to start today and roughly how much.
+// (The daily "max chance" reads as 100% for a short afternoon shower, which looks wrong next to other apps.)
+function rainNote(wx) {
+  const h = wx && wx.hourly; if (!h || !h.time) return '';
+  const p = tzParts(new Date()), today = p.key, from = `${today}T${String(p.h).padStart(2, '0')}:00`;
+  let start = -1, mm = 0;
+  h.time.forEach((t, i) => { if (t.slice(0, 10) !== today || t < from) return; if ((h.precipitation[i] || 0) > 0) mm += h.precipitation[i]; if (start < 0 && h.precipitation_probability[i] >= 60 && h.precipitation[i] >= .2) start = i; });
+  if (start < 0) return '';
+  const hr = +h.time[start].slice(11, 13), when = hr <= p.h ? 'now' : 'from ' + ((hr + 11) % 12 + 1) + (hr < 12 ? 'am' : 'pm');
+  return `${mm < 2 ? 'Showers' : 'Rain'} ${when}${mm >= 1 && !isPhone() ? ` · ${Math.round(mm)}mm` : ''}`;
+}
+function dayWx(k) {
+  const d = S.weather && S.weather.daily; if (!d || !d.time) return null;
+  const i = d.time.indexOf(k); if (i < 0 || d.temperature_2m_max[i] == null) return null;
+  return {hi: Math.round(d.temperature_2m_max[i]), lo: Math.round(d.temperature_2m_min[i]), code: d.weather_code[i], mm: d.precipitation_sum ? d.precipitation_sum[i] : 0};
 }
 function wxIcon(code, day = 1) {
   if (code == null) return 'cloud';
@@ -798,7 +818,7 @@ function skyHTML(compact) {
   const ticks = [];
   for (let t = Math.ceil(ds / 3) * 3; t <= de; t += 3) ticks.push(`<span class="tick" style="left:${pct(t)}%">${t === 12 ? 'noon' : ((t + 11) % 12 + 1) + (t < 12 ? 'am' : 'pm')}</span>`);
   const wx = S.weather && S.weather.current ? S.weather : null;
-  const wxHTML = wx ? `<div class="wx"><div><div class="t num">${Math.round(wx.current.temperature_2m)}°</div><div class="r">${isPhone() ? '' : esc(wxWords(wx.current.weather_code)) + ' · '}${Math.round(wx.daily.temperature_2m_max[0])}° / ${Math.round(wx.daily.temperature_2m_min[0])}°${wx.daily.precipitation_probability_max[0] >= 30 ? ` · ${wx.daily.precipitation_probability_max[0]}% rain` : ''}</div></div>${icon(wxIcon(wx.current.weather_code, wx.current.is_day))}</div>` : '';
+  const wxHTML = wx ? `<div class="wx"><div><div class="t num">${Math.round(wx.current.temperature_2m)}°</div><div class="r">${isPhone() ? '' : esc(wxWords(wx.current.weather_code)) + ' · '}${Math.round(wx.daily.temperature_2m_max[0])}° / ${Math.round(wx.daily.temperature_2m_min[0])}°${(r => r ? ' · ' + esc(r) : '')(rainNote(wx))}</div></div>${icon(wxIcon(wx.current.weather_code, wx.current.is_day))}</div>` : '';
   return `<section class="sky ${dark ? 'dark' : ''} ${compact ? 'compact' : ''}" style="--sky-top:${top};--sky-bot:${bot}" aria-label="Today">
     <div class="sky-head"><div><div class="clock num" role="timer">${clockHTML(now)}</div>
       <div class="date">${esc(fmtDay(k, phone ? {weekday: 'short', day: 'numeric', month: 'short'} : {weekday: 'long', day: 'numeric', month: 'long'}))}</div>
@@ -942,6 +962,7 @@ V.calendar = () => {
       const timedHTML = timed.map(e => { const b = bandOf(e); const head = b[0] !== lastBand ? `<div class="wband">${b[1]}</div>` : ''; lastBand = b[0];
         return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');
       return `<div class="day ${k === today ? 'today' : ''}"><button class="dh" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}">${esc(fmtDay(k, {weekday: 'short'}))}<b class="num">${keyToDate(k).getUTCDate()}</b></button>
+        ${(w => w ? `<div class="dwx" title="${esc(wxWords(w.code))}">${icon(wxIcon(w.code, 1))}<span class="num"><b>${w.hi}°</b> ${w.lo}°</span>${w.mm >= 1 ? `<span class="mm num">${Math.round(w.mm)}mm</span>` : ''}</div>` : '')(k >= today ? dayWx(k) : null)}
         ${WA_HOLIDAYS[k] && settings().holidays ? `<div class="hol">${esc(WA_HOLIDAYS[k])}</div>` : term ? '<div class="hol" style="background:color-mix(in srgb,#3A9AA0 18%,transparent);color:#246B70">School holidays</div>' : ''}
         ${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}">${esc(e.title)}</button>`).join('')}${timedHTML}</div>`; }).join('');
     return `<div class="page" style="max-width:none">${head}${noCal}<div class="week">${cols}</div></div>`;
