@@ -326,6 +326,10 @@ body.night .hero .leave{color:var(--apricot)}
 .sheet h2{margin:0 0 14px;font-size:24px}
 @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}}
+.update-bar{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);z-index:61;display:flex;align-items:center;gap:12px;padding:12px 20px 12px 16px;border:0;border-radius:99px;background:var(--apricot);color:#3B2410;font:inherit;font-size:16px;box-shadow:0 8px 24px -8px rgba(0,0,0,.35);animation:up .3s ease-out;max-width:92vw}
+.update-bar svg{width:20px;height:20px;flex:none}
+.update-bar b{font-weight:800;margin-right:8px}
+.update-bar span{white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:12px 18px;border-radius:14px;font-weight:650;z-index:60;box-shadow:var(--shadow);max-width:90vw}
 
 /* auth / onboarding */
@@ -415,7 +419,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0700'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0705'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -534,16 +538,26 @@ function freshReload() {
   location.replace(location.pathname + '?' + q.toString() + location.hash);
 }
 if (new URLSearchParams(location.search).has('r')) { const q = new URLSearchParams(location.search); q.delete('r'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }
-async function checkForUpdate() {
+// New build available: the family screen updates itself quietly; phones get a tap-to-update banner
+// (or update straight away when the app is reopened), so nobody loses what they're typing.
+function showUpdateBanner() {
+  if (document.querySelector('.update-bar')) return;
+  const b = document.createElement('button'); b.className = 'update-bar'; b.type = 'button';
+  b.innerHTML = `${icon('refresh')}<span><b>Update ready</b>Tap to refresh</span>`;
+  b.onclick = freshReload; document.body.appendChild(b);
+}
+async function checkForUpdate(reopened) {
   if (DEMO_PAGE) return;
   try {
     const t = await (await fetch(location.pathname + '?check=' + Date.now(), {cache: 'no-store'})).text();
     const m = t.match(/const APP_VERSION = '([^']+)'/);
-    if (m && m[1] !== APP_VERSION && !document.querySelector('.sheet-bg') && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))) freshReload();
+    if (!m || m[1] === APP_VERSION) return;
+    const busy = document.querySelector('.sheet-bg') || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+    if (!busy && (deviceKind() === 'tablet' || reopened)) freshReload(); else showUpdateBanner();
   } catch {}
 }
-setTimeout(checkForUpdate, 8000); setInterval(checkForUpdate, 10 * 60e3);
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+setTimeout(() => checkForUpdate(true), 8000); setInterval(() => checkForUpdate(false), 10 * 60e3);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(true); });
 setInterval(() => { // quiet nightly refresh on the family screen
   const p = tzParts(new Date());
   if (deviceKind() === 'tablet' && p.h === 3 && p.min < 6 && Date.now() - bootAt > 3600e3) freshReload();
