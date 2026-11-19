@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "menlo",
+        "createdAt": "2026-11-19T12:53:20.951Z",
+        "reason": "Claude: monospace only for literal codes (join code, wifi password, Apps Script source) where each character must be unambiguous; data, not costume"
+      }
+    ]
+  }
+}
