@@ -306,6 +306,20 @@ body.night .hero .leave{color:var(--apricot)}
 #night.on{display:flex}
 #night .clock{color:#55627A;text-shadow:none;font-size:clamp(80px,14vw,170px)}
 #night .date{color:#3F4A5E}
+#glance{background:linear-gradient(180deg,rgba(6,30,48,.08),rgba(6,30,48,.42)),linear-gradient(180deg,var(--g-top),var(--g-bot));color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:40px}
+#glance.on{display:flex}
+#glance .clock{font-size:clamp(110px,19vw,230px);text-shadow:0 2px 30px rgba(0,0,0,.18)}
+#glance .date{font-size:clamp(24px,3vw,34px);font-weight:650;opacity:.92}
+#glance .gwx{font-size:22px;font-weight:600;opacity:.85}
+#glance .key{margin-top:22px;display:flex;align-items:center;gap:16px;padding:16px 26px;border-radius:24px;background:rgba(6,30,48,.26);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:26px;font-weight:700;max-width:90vw}
+#glance .key .t{font-weight:800}
+#glance .key .lbl2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.8}
+#glance .key i{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px rgba(255,255,255,.5);flex:none}
+#glance .cds{margin-top:16px}
+#glance .cd{font-size:22px;background:rgba(6,30,48,.24);display:inline-flex;align-items:center;gap:8px}
+#glance .cd .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c);box-shadow:0 0 0 2px rgba(255,255,255,.5)}
+#glance .cd .b svg{width:18px;height:18px}
+#glance .cd .b + .b{margin-left:-9px}
 #saver{background:#000}
 #saver .slide{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;opacity:0;transition:opacity 2.4s ease}
 #saver .slide.on{opacity:1}
@@ -412,6 +426,7 @@ body.night .hero .leave{color:var(--apricot)}
 </svg>
 <div id="app"></div>
 <div id="night" class="overlay" data-act="wake"></div>
+<div id="glance" class="overlay" data-act="wake"></div>
 <div id="saver" class="overlay" data-act="wake"></div>
 <div id="sheet-root"></div>
 
@@ -419,7 +434,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0712'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0720'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -501,7 +516,7 @@ if (!S.deviceId) { S.deviceId = uid(); LS.set('device', S.deviceId); }
 const deviceKind = () => LS.get('deviceKind', isPhone() ? 'phone' : 'tablet');
 const settings = () => Object.assign({
   location: {lat: -31.9523, lon: 115.8613, name: 'Perth'}, night: {start: '20:30', end: '06:00'},
-  saver: {on: true, after: 5}, idleReturn: 3, leaveBuffer: 15, school: true, holidays: true,
+  saver: {on: true, after: 5, clockMins: 10, photoMins: 5}, idleReturn: 3, leaveBuffer: 15, school: true, holidays: true,
   dayStart: 6, dayEnd: 21, sitter: {contacts: [], wifi: {name: '', password: ''}, bedtimes: [], notes: ''}
 }, (S.household && S.household.settings) || {});
 
@@ -807,8 +822,22 @@ function inWindow(startStr, endStr, h) {
 function touch() {
   S.lastTouch = Date.now();
   if ($('#saver').classList.contains('on')) stopSaver();
+  $('#glance').classList.remove('on');
 }
 ['pointerdown','keydown','wheel'].forEach(ev => document.addEventListener(ev, touch, {passive: true}));
+function glanceHTML(now) {
+  const k = dayKey(now);
+  const live = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now);
+  const allDay = eventsOnKey(k).filter(e => e.all_day);
+  const e = live[0], wx = S.weather && S.weather.current ? S.weather : null;
+  const key = e ? `<div class="key" style="--c:${eventColour(e)}"><i></i><div style="text-align:left"><div class="lbl2">${new Date(e.starts_at) <= now ? 'Now' : 'Next'}</div><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span> ${esc(e.title || 'Busy')}</div></div>`
+    : allDay.length ? `<div class="key" style="--c:${eventColour(allDay[0])}"><i></i><div style="text-align:left"><div class="lbl2">Today</div>${esc(allDay[0].title)}</div></div>`
+    : `<div class="key" style="--c:rgba(255,255,255,.7)"><i></i><div style="text-align:left"><div class="lbl2">Today</div>Nothing else on</div></div>`;
+  return `<div class="clock num">${clockHTML(now)}</div>
+    <div class="date">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}</div>
+    ${wx ? `<div class="gwx">${Math.round(wx.current.temperature_2m)}° · ${esc(wxWords(wx.current.weather_code))}${(r => r ? ' · ' + esc(r) : '')(rainNote(wx))}</div>` : ''}
+    ${key}${(bins => bins.length ? `<div class="cds">${bins.map(x => `<span class="cd"><span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span> ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.bins))}${countdownsHTML(k)}`;
+}
 function idleTick() {
   if (!S.household) return;
   const st = settings(), now = new Date(), h = hoursFloat(now), idle = (Date.now() - S.lastTouch) / 60e3;
@@ -819,7 +848,19 @@ function idleTick() {
     if (!nightEl.classList.contains('on')) nightEl.classList.add('on');
     nightEl.innerHTML = `<div class="clock num">${clockHTML(now)}</div><div class="date">${esc(fmtDay(dayKey(now), {weekday:'long', day:'numeric', month:'long'}))}</div>${countdownsHTML(dayKey(now))}`;
   } else nightEl.classList.remove('on');
-  if (!night && deviceKind() === 'tablet' && st.saver.on && S.photos.length && idle >= st.saver.after) startSaver();
+  // Daytime idle: clock (with today's key event and countdowns) for clockMins, then photos for photoMins, repeat.
+  const glanceEl = $('#glance');
+  if (!night && deviceKind() === 'tablet' && idle >= st.saver.after) {
+    const clockM = st.saver.clockMins || 10, photoM = st.saver.photoMins || 5;
+    const canPhotos = st.saver.on && S.photos.length && photoM > 0;
+    const pos = (idle - st.saver.after) % (clockM + (canPhotos ? photoM : 0));
+    if (canPhotos && pos >= clockM) { glanceEl.classList.remove('on'); startSaver(); }
+    else {
+      if ($('#saver').classList.contains('on')) stopSaver(true);
+      const [t, b] = skyAt(h); glanceEl.style.setProperty('--g-top', t); glanceEl.style.setProperty('--g-bot', b);
+      glanceEl.innerHTML = glanceHTML(now); glanceEl.classList.add('on');
+    }
+  } else glanceEl.classList.remove('on');
   if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= st.idleReturn && !document.querySelector('.sheet-bg') && !['settings'].includes(S.view)) {
     S.view = 'family'; S.activeMember = null; render();
   }
@@ -854,7 +895,7 @@ function showSlide() {
   let cap = el.querySelector('.cap'); if (!cap) { cap = document.createElement('div'); cap.className = 'cap'; el.appendChild(cap); }
   cap.innerHTML = `<div class="clock num">${clockHTML(now)}</div>${countdownsHTML(dayKey(now))}`;
 }
-function stopSaver() { clearInterval(saverT); const el = $('#saver'); el.classList.remove('on'); el.innerHTML = ''; S.lastTouch = Date.now(); }
+function stopSaver(quiet) { clearInterval(saverT); const el = $('#saver'); el.classList.remove('on'); el.innerHTML = ''; if (!quiet) S.lastTouch = Date.now(); }
 
 /* keep the screen awake on the family tablet */
 let wakeLock = null;
@@ -1153,9 +1194,11 @@ V.settings = () => {
     <div class="panel"><h2>Night</h2><p class="help">The whole screen dims to dusk tones, then fades to a dim clock after 2 minutes untouched.</p>
       <form data-form="night" class="row"><label class="lbl">From <input class="input" type="time" name="start" value="${esc(st.night.start)}"></label><label class="lbl">Until <input class="input" type="time" name="end" value="${esc(st.night.end)}"></label><button class="btn">Save</button></form></div>
     <div class="panel"><h2>Daytime</h2><form data-form="daytime">
-      <div class="row"><label class="lbl">Photos after <input class="input" type="number" min="1" max="60" name="after" value="${st.saver.after}" style="width:90px"> min idle</label>
+      <div class="row"><label class="lbl">Idle screen after <input class="input" type="number" min="1" max="60" name="after" value="${st.saver.after}" style="width:90px"> min</label>
       <label class="lbl">Back to Family view after <input class="input" type="number" min="1" max="30" name="idle" value="${st.idleReturn}" style="width:90px"> min</label>
       <label class="lbl">Leave buffer <input class="input" type="number" min="0" max="90" name="buffer" value="${st.leaveBuffer}" style="width:90px"> min</label></div>
+      <div class="row" style="margin-top:12px"><label class="lbl">Clock for <input class="input" type="number" min="1" max="120" name="clockMins" value="${st.saver.clockMins || 10}" style="width:90px"> min</label>
+      <label class="lbl">then photos for <input class="input" type="number" min="1" max="120" name="photoMins" value="${st.saver.photoMins || 5}" style="width:90px"> min, and repeat</label></div>
       <div class="row" style="margin-top:12px;justify-content:space-between"><span>Photo slideshow when idle</span><button type="button" class="toggle ${st.saver.on ? 'on' : ''}" data-act="toggle-saver" aria-label="Photo slideshow"></button></div>
       <button class="btn" style="margin-top:12px">Save</button></form>
       <p class="help" style="margin-top:12px">Keep the tablet plugged in. On iPad, use Guided Access to lock it to Skylike; on Android, use screen pinning.</p></div>`;
@@ -1314,7 +1357,7 @@ const A = {
     if (el.dataset.mode) { S.calMode = el.dataset.mode; S.calOffset = 0; S.dayKey = el.dataset.k || dayKey(new Date()); } if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') { S.activeMember = null; if (isPhone()) { const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } } } closeSheet(); render(); },
   me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.home_view === 'family' ? 'family' : m.home_view; } render(); },
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
-  wake() { $('#night').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
+  wake() { $('#night').classList.remove('on'); $('#glance').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
   'close-sheet'(el, e) { if (e.target === el || el.tagName === 'BUTTON') closeSheet(); },
   async 'toggle-item'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.done = !it.done; it.done_at = it.done ? new Date().toISOString() : null; render(); await db(sb.from('list_items').update({done: it.done, done_at: it.done_at}).eq('id', it.id)); },
   async 'quick-add'(el) {
@@ -1480,7 +1523,7 @@ const F = {
   },
   async device(f) { LS.set('deviceName', f.name.value.trim() || 'Screen'); LS.set('deviceKind', f.kind.value); heartbeat(); keepAwake(); toast('Saved'); render(); },
   async night(f) { await saveSettings({night: {start: f.start.value || '20:30', end: f.end.value || '06:00'}}); },
-  async daytime(f) { const s = settings(); await saveSettings({saver: Object.assign({}, s.saver, {after: +f.after.value || 5}), idleReturn: +f.idle.value || 3, leaveBuffer: +f.buffer.value || 0}); }
+  async daytime(f) { const s = settings(); await saveSettings({saver: Object.assign({}, s.saver, {after: +f.after.value || 5, clockMins: +f.clockMins.value || 10, photoMins: +f.photoMins.value || 5}), idleReturn: +f.idle.value || 3, leaveBuffer: +f.buffer.value || 0}); }
 };
 
 document.addEventListener('click', e => {
