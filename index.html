@@ -136,6 +136,45 @@ body.night .mark{border-color:#8A9BB4}
 body.night .seg.sm{border-color:rgba(156,195,211,.35);background:rgba(255,255,255,.04)}
 .zone h2 .more{margin-left:auto;font-size:15px;font-weight:600;color:var(--ocean-2);background:none;border:0;padding:6px 4px}
 body.night .zone h2 .more{color:var(--ocean-ink)}
+.quick-go{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.quick-go .btn{justify-content:center}
+.mweek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.mday{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:178px;padding:14px;border:0;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);text-align:left;color:var(--ink);font:inherit}
+.mday.today{outline:3px solid var(--apricot);outline-offset:-3px}
+.mday.cooked{opacity:.6}
+.mday.past:not(.cooked){opacity:.55}
+.mday .dn{font-size:14px;font-weight:700;color:var(--ink-2);display:flex;gap:6px;width:100%}
+.mday .dn b{margin-left:auto;font-size:20px;color:var(--ink)}
+.mday .me{font-size:40px;line-height:1.1}
+.mday .me.add{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:color-mix(in srgb,var(--ocean-2) 10%,transparent);color:var(--ocean-2)}
+.mday .me.add svg{width:20px;height:20px}
+.mday .mt{font-size:17px;font-weight:750;line-height:1.2}
+.mday .mt.muted{color:var(--ink-3);font-weight:650}
+.mday .mm{margin-top:auto;font-size:13.5px;font-weight:650;color:var(--ink-2)}
+.mtotal{margin:14px 0 18px;font-weight:600;color:var(--ink-2)}
+.pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.pchips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{display:inline-flex;align-items:center;border-radius:99px;background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:15px;font-weight:650}
+.pchip button{border:0;background:none;font:inherit;color:inherit;padding:7px 4px 7px 12px}
+.pchip small{color:var(--ink-3);font-weight:600}
+.pchip .x{padding:7px 10px 7px 4px;color:var(--ink-3)}.pchip .x svg{width:14px;height:14px}
+.pchip.low{background:color-mix(in srgb,var(--apricot) 26%,transparent)}
+.pchip.low button:first-child::after{content:' · low';color:var(--apricot-ink);font-size:13px}
+.filebtn{cursor:pointer;margin-left:auto}
+.pantry-p h2{display:flex;align-items:center;gap:10px}
+.linkbtn{border:0;background:none;padding:0;font:inherit;color:var(--ocean-2);font-weight:700;text-decoration:underline}
+.gtools{margin:-4px 0 12px;flex-wrap:wrap}
+.ing{list-style:none;margin:8px 0 0;padding:0}
+.ing li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.ing li span:first-child{flex:1;font-weight:650}
+.ing .tag{font-size:12.5px;font-weight:800;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--apricot) 28%,transparent);color:var(--apricot-ink)}
+.ing li.have .tag{background:color-mix(in srgb,#4E9A3F 18%,transparent);color:#2E6B24}
+.ing li.have span:first-child{color:var(--ink-2)}
+.steps{margin:6px 0 14px 20px;padding:0;line-height:1.7}
+.bd{max-height:46vh;overflow:auto;margin-top:12px}
+.bdrow{padding:6px 0;gap:10px;font-weight:650}
+@media (max-width:1100px){.mweek{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:760px){.mweek{grid-template-columns:repeat(2,minmax(0,1fr))}.pgrid{grid-template-columns:1fr}}
 .kids-page h1{margin-bottom:14px}
 .kbring{display:flex;flex-wrap:wrap;gap:8px}
 .kbring span{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:99px;background:color-mix(in srgb,var(--c) 10%,var(--surface));border:1.5px solid color-mix(in srgb,var(--c) 30%,transparent);font-weight:700;font-size:16px}
@@ -449,6 +488,9 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 4l8.5 6.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><path d="m3.8 6.4 1.3 1.3 2.4-2.6M3.8 11.9l1.3 1.3 2.4-2.6M4.2 17.5h2.6"/></symbol>
+  <symbol id="i-meal" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16.5 21V3c-2.2 1.2-3.5 3.6-3.5 6.5V13h3.5"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9zM18.5 15.5l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></symbol>
   <symbol id="i-sitter" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
@@ -493,10 +535,19 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0805'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0840'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
+const AI_URL = SUPABASE_URL + '/functions/v1/ai';
+async function callAI(body) {
+  if (DEMO) return {error: 'AI is off in the sample. Sign in to use it.'};
+  const {data: {session}} = await sb.auth.getSession();
+  try {
+    const r = await fetch(AI_URL, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token, apikey: SUPABASE_KEY}, body: JSON.stringify(Object.assign({household_id: S.hid}, body))});
+    return await r.json();
+  } catch { return {error: 'No connection'}; }
+}
 
 const FAMILY_COLOURS = [
   ['Ocean','#2F7BB5'],['Jacaranda','#7B5EA7'],['Wattle','#D49A12'],['Eucalypt','#3F8A68'],
@@ -567,7 +618,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {pers
 const S = {
   session: null, hid: LS.get('hid', null), household: null, members: [], lists: [], items: [], notes: [], events: [],
   calendars: [], countdowns: [], reminders: [], photos: [], devices: [],
-  routines: [], chores: [], ticks: [], ledger: [], rewards: [], bringRules: [], balances: {},
+  routines: [], chores: [], ticks: [], ledger: [], rewards: [], bringRules: [], balances: {}, meals: [], pantry: [], aiOn: false,
   view: 'family', activeMember: null, listId: null, calMode: LS.get('calMode', 'week'), calOffset: 0,
   weather: null, realtime: 'connecting', lastData: null, calStatus: null, online: navigator.onLine,
   deviceId: LS.get('device', null), lastTouch: Date.now(), nightWake: 0, settingsTab: 'household'
@@ -639,8 +690,8 @@ setInterval(() => { // quiet nightly refresh on the family screen
 }, 60e3);
 
 /* ============ data ============ */
-const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules'];
-const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules'};
+const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules','meals','pantry'];
+const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules', meals:'meals', pantry:'pantry'};
 
 async function loadAll() {
   const hid = S.hid;
@@ -650,7 +701,8 @@ async function loadAll() {
     sb.from('households').select('*').eq('id', hid).maybeSingle(),
     q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}),
     q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}), q('devices'),
-    q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules')
+    q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules'),
+    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name')
   ]);
   if (hh.error) throw hh.error;
   if (!hh.data) { S.hid = null; LS.set('hid', null); return false; }
@@ -658,6 +710,7 @@ async function loadAll() {
   TABLES.forEach((t, i) => { if (!rest[i].error) S[KEY_OF[t]] = rest[i].data || []; });
   S.lastData = Date.now(); saveSnap();
   refreshCalStatus(); loadHistory(); loadBalances();
+  sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; });
   return true;
 }
 let balT = 0;
@@ -1213,6 +1266,7 @@ V.lists = () => {
     <div class="tabs">${tabs}</div>
     <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
       ${(sug => sug.length ? `<div class="quick" aria-label="Quick add">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : '')(suggestionsFor(l))}
+      ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Dump it all</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">About <b>$${Math.round(b.total)}</b> for ${b.count} items · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
       <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
       ${l.kind === 'custom' ? `<div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button></div>` : ''}
@@ -1275,6 +1329,41 @@ V.kids = () => {
     <div class="kidsgrid" style="--n:${Math.min(ks.length, 3)}">${ks.map(kid => kidColumn(kid, k, now)).join('')}</div></div>`;
 };
 
+/* ----- kitchen: meals, pantry, groceries ----- */
+const STAPLES = /^(salt|pepper|black pepper|water|oil|olive oil|vegetable oil|cooking oil|sugar|flour|plain flour)$/i;
+const normFood = t => String(t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z ]/g, ' ').replace(/\b(fresh|large|small|medium|chopped|diced|sliced|minced|finely|to serve|optional|of|a|tin|can|cans|tins)\b/g, ' ').replace(/\s+/g, ' ').trim();
+function haveIt(name) {
+  const n = normFood(name); if (!n || STAPLES.test(n)) return true;
+  return S.pantry.some(p => { const q = normFood(p.name); return q && (q === n || n.includes(q) || q.includes(n) || q.split(' ').pop() === n.split(' ').pop()); });
+}
+const placeGuess = n => /frozen|ice cream|ice block|peas|chips|nuggets/i.test(n) ? 'freezer' : /milk|cheese|yog|butter|cream|egg|chicken|mince|beef|pork|lamb|fish|salmon|ham|bacon|sausage|tofu|lettuce|spinach|berries|juice|dip/i.test(n) ? 'fridge' : 'pantry';
+const recipeLink = t => 'https://www.recipetineats.com/?s=' + encodeURIComponent(t);
+const kset = () => Object.assign({prefs: '', servings: 4, budget: 0}, settings().kitchen || {});
+function weekStart(off = 0) { const t = dayKey(new Date()); return addDaysKey(t, -((weekdayOfKey(t) + 6) % 7) + off * 7); }
+const mealOn = k => S.meals.find(m => m.day === k);
+V.meals = () => {
+  const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date());
+  const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));
+  const total = days.reduce((a, k) => a + (+(mealOn(k) || {}).est_cost || 0), 0), budget = +kset().budget || 0;
+  const cards = days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const m = mealOn(k), need = m ? (m.ingredients || []).filter(x => !haveIt(x.name)).length : 0;
+    return `<button class="mday ${k === today ? 'today' : ''} ${k < today ? 'past' : ''} ${m && m.cooked ? 'cooked' : ''}" data-act="meal-open" data-k="${k}"><span class="dn">${esc(fmtDay(k, {weekday: 'short'}))} <b class="num">${keyToDate(k).getUTCDate()}</b></span>
+      ${m ? `<span class="me">${esc(m.emoji || '🍽️')}</span><span class="mt">${esc(m.title)}</span><span class="mm">${m.cooked ? 'Cooked' : need ? `${need} to buy` : 'All in'}${m.est_cost ? ` · <span class="num">$${Math.round(m.est_cost)}</span>` : ''}</span>` : `<span class="me add">${icon('plus')}</span><span class="mt muted">Add dinner</span>`}</button>`; }).join('');
+  const places = [['fridge', 'Fridge', '🧊'], ['freezer', 'Freezer', '❄️'], ['pantry', 'Pantry', '🥫']];
+  const low = S.pantry.filter(p => p.low);
+  return `<div class="page" style="max-width:none"><h1>Meals<span class="sp"></span>
+      <button class="icon-btn" data-act="meal-week" data-n="-1" aria-label="Previous week">${icon('left')}</button><button class="btn soft" data-act="meal-week" data-n="0">This week</button><button class="icon-btn" data-act="meal-week" data-n="1" aria-label="Next week">${icon('right')}</button>
+      <button class="btn" data-act="meal-plan">${icon('sparkle')}Plan this week</button></h1>
+    ${!S.aiOn && !DEMO ? `<p class="help" style="color:var(--ink-2)">Planning, pantry photos and the grocery brain-dump need a free Gemini key. <button class="linkbtn" data-act="go" data-view="settings" data-tab="kitchen">Set it up</button></p>` : ''}
+    <div class="mweek">${cards}</div>
+    <div class="row mtotal"><span>Dinners this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
+    <div class="panel pantry-p"><h2>What's in<span class="sp"></span><label class="btn soft filebtn">${icon('camera')}Scan a photo<input type="file" accept="image/*" capture="environment" data-change="pantry-photo" hidden></label></h2>
+      <p class="help">Updated when groceries are ticked off, when you cook, or from a photo of the fridge or pantry. Tap an item to mark it running low.</p>
+      <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl);
+        return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span></div><div class="pchips">${items.map(p => `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
+      <form data-form="pantry-add" class="row" style="margin-top:14px"><input class="input grow" name="name" placeholder="Add what's in, e.g. eggs, rice, frozen peas" maxlength="200"><select class="input" name="place" style="width:auto"><option value="">Auto</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option><option value="pantry">Pantry</option></select><button class="btn">Add</button></form>
+      ${low.length ? `<div class="row" style="margin-top:12px"><span class="lbl">Running low: ${low.map(p => esc(p.name)).join(', ')}</span><span class="grow"></span><button class="btn soft" data-act="pantry-shop">Add to groceries</button></div>` : ''}</div></div>`;
+};
+
 V.sitter = () => {
   const s = settings().sitter || {};
   const contacts = (s.contacts || []).map(c => `<div class="contact ${c.emergency ? 'emerg' : ''}"><span class="nm">${esc(c.name)}</span>${c.role ? `<span class="rl">${esc(c.role)}</span>` : ''}<a href="tel:${esc(String(c.phone).replace(/\s/g, ''))}" class="num">${esc(c.phone)}</a></div>`).join('');
@@ -1290,7 +1379,7 @@ V.sitter = () => {
 };
 
 /* ----- settings ----- */
-const STABS = [['household','Household'],['family','Family'],['kids','Kids'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['photos','Photos'],['admin','Devices']];
+const STABS = [['household','Household'],['family','Family'],['kids','Kids'],['kitchen','Kitchen'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['photos','Photos'],['admin','Devices']];
 V.settings = () => {
   const t = S.settingsTab, st = settings(), hh = S.household || {};
   let body = '';
@@ -1315,6 +1404,15 @@ V.settings = () => {
     <div class="panel"><h2>Rewards</h2><p class="help">What stars can be saved for. Tap a kid's star jar on the Kids screen to spend.</p>
       ${S.rewards.map(w => `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:26px">${esc(w.emoji || '🎁')}</span><div class="grow"><b>${esc(w.title)}</b><div class="lbl num">${w.cost} stars</div></div><button class="icon-btn" data-act="del-row" data-table="rewards" data-id="${w.id}" aria-label="Delete">${icon('trash')}</button></div>`).join('')}
       <form data-form="add-reward" class="row" style="margin-top:12px"><input class="input" name="emoji" placeholder="🛝" maxlength="4" style="width:70px;text-align:center;font-size:22px"><input class="input grow" name="title" placeholder="e.g. Trip to the park" required maxlength="40"><label class="lbl">Stars <input class="input num" type="number" min="1" max="500" name="cost" value="10" style="width:80px"></label><button class="btn">Add</button></form></div>`; }
+  if (t === 'kitchen') { const ks = kset();
+    body = `<div class="panel"><h2>AI helper</h2><p class="help">Meal plans, pantry photos, the grocery brain-dump and cost estimates use Google's Gemini. A key is free, needs no card, and is saved once for the whole household on the server (never on the tablet).</p>
+      <p><b>${S.aiOn ? '✓ Connected' : 'Not set up yet'}</b>${S.aiModel ? ` <span class="lbl">(${esc(S.aiModel)})</span>` : ''}</p>
+      <ol class="steps"><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with any Google account.</li><li>Tap <b>Create API key</b> (accept the terms if asked).</li><li>Copy the key, paste it below and tap Save. It's easiest on a phone or computer.</li></ol>
+      <form data-form="ai-key" class="row"><input class="input grow" name="key" type="password" placeholder="${S.aiOn ? 'Paste a new key to replace it' : 'Paste your key (starts with AIza…)'}" autocomplete="off" required><button class="btn">Save and test</button></form>
+      ${S.aiOn ? `<button class="btn ghost" style="margin-top:8px" data-act="ai-test">Test the connection</button>` : ''}</div>
+    <div class="panel"><h2>Meal planning</h2><form data-form="kitchen">
+      <div class="lbl">What the family likes, and anything to avoid</div><textarea class="input" name="prefs" rows="3" placeholder="e.g. Kid-friendly, mild spice, no mushrooms, fish once a week, vegetarian Mondays">${esc(ks.prefs)}</textarea>
+      <div class="row" style="margin-top:10px"><label class="lbl">People <input class="input num" type="number" min="1" max="12" name="servings" value="${ks.servings}" style="width:80px"></label><label class="lbl">Weekly dinner budget $ <input class="input num" type="number" min="0" max="2000" name="budget" value="${ks.budget || ''}" style="width:100px"></label><button class="btn">Save</button></div></form></div>`; }
   if (t === 'household') body = `
     <div class="panel"><h2>Household</h2><p class="help">Shared by everyone who joins with the code below.</p>
       <form data-form="hh-name" class="row"><input class="input grow" name="name" value="${esc(hh.name)}" maxlength="80" aria-label="Household name"><button class="btn">Save</button></form></div>
@@ -1382,7 +1480,7 @@ V.settings = () => {
       <p class="help" style="margin-top:10px">Each browser or home-screen app counts as its own device, so the same phone can show twice. Forget old ones here; anything unseen for 14 days is removed automatically.</p>
       <button class="btn" style="margin-top:14px" data-act="cmd" data-cmd="reload">${icon('refresh')}Refresh every screen</button></div>
     <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(ago((Date.now() - S.lastData) / 60e3)) : 'never'}.</p></div>`;
-  return `<div class="page"><h1>Settings</h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  return `<div class="page">${isPhone() ? `<div class="quick-go">${[['kids','Kids','star'],['notes','Notes','note'],['sitter','Sitter','sitter']].map(([v, l, ic]) => `<button class="btn soft" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}</div>` : ''}<h1>Settings</h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 };
 let BRIDGE_SRC = null;
 function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
@@ -1419,7 +1517,7 @@ function calendarSettingsInner() {
 }
 
 /* ----- shell ----- */
-const NAV = [['family','Home','home'],['kids','Kids','star'],['calendar','Calendar','cal'],['lists','Lists','list'],['notes','Notes','note'],['sitter','Sitter','sitter'],['settings','Settings','gear']];
+const NAV = [['family','Home','home'],['kids','Kids','star'],['calendar','Calendar','cal'],['meals','Meals','meal'],['lists','Lists','list'],['notes','Notes','note'],['sitter','Sitter','sitter'],['settings','Settings','gear']];
 function railHTML() {
   const adults = S.members.filter(m => m.kind !== 'kid');
   const sync = DEMO ? ['warn', 'Sample'] : !S.online ? ['bad', 'Offline'] : S.realtime === 'live' ? ['', 'Live'] : ['warn', S.realtime === 'lost' ? 'Retrying' : 'Linking'];
@@ -1428,8 +1526,8 @@ function railHTML() {
     <span class="grow"></span><button class="syncdot ${sync[0]}" data-act="go" data-view="settings" data-tab="admin" title="${S.lastData ? 'Updated ' + ago((Date.now() - S.lastData) / 60e3) : ''}"><i></i>${sync[1]}</button>`;
 }
 function tabbarHTML() {
-  const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['notes','Notes','note'],['settings','More','gear']];
-  return T.map(([v, l, ic]) => `<button class="${S.view === v || (v === 'family' && ['focus','planner'].includes(S.view)) || (v === 'settings' && S.view === 'sitter') ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('');
+  const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['meals','Meals','meal'],['settings','More','gear']];
+  return T.map(([v, l, ic]) => `<button class="${S.view === v || (v === 'family' && ['focus','planner'].includes(S.view)) || (v === 'settings' && ['sitter', 'notes', 'kids'].includes(S.view)) ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('');
 }
 function renderRail() { const r = $('.rail'); if (r) r.innerHTML = railHTML(); }
 function renderSkyOnly() { const s = $('.sky'); if (s) { const compact = s.classList.contains('compact'); s.outerHTML = skyHTML(compact); } }
@@ -1572,6 +1670,55 @@ const A = {
   'timer-open-again'() { S.timer = null; timerUI(); },
   'timer-start'(el) { const m = +el.dataset.m; S.timer = {end: Date.now() + m * 60e3, total: m * 60e3, label: el.dataset.l || '', emoji: el.dataset.e || '⏳'}; timerUI(); },
   'timer-stop'() { S.timer = null; clearInterval(timerT); $('#timer').classList.remove('on'); },
+  'meal-week'(el) { const n = +el.dataset.n; S.mealOffset = n === 0 ? 0 : (S.mealOffset || 0) + n; render(); },
+  'meal-open'(el) { mealSheet(el.dataset.k); },
+  async 'meal-plan'(el) {
+    const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date());
+    const days = [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today && !mealOn(k));
+    if (!days.length) return toast('Every night this week already has a dinner. Tap one to change it.', 3500);
+    const ks = kset(); el.disabled = true; el.innerHTML = `${icon('sparkle')}Planning…`;
+    const r = await callAI({action: 'plan', days, servings: ks.servings, prefs: ks.prefs, budget: ks.budget, pantry: S.pantry.map(p => p.name), recent: S.meals.slice(-14).map(m => m.title)});
+    el.disabled = false; el.innerHTML = `${icon('sparkle')}Plan this week`;
+    if (r.error) return toast(r.error, 4500);
+    const rows = (r.meals || []).filter(m => days.includes(m.day) && m.title).map(m => ({household_id: S.hid, day: m.day, title: String(m.title).slice(0, 80), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 25), est_cost: +m.est_cost || null, url: recipeLink(m.title)}));
+    if (!rows.length) return toast("The AI didn't come back with dinners. Try again.");
+    const {data, error} = await sb.from('meals').upsert(rows, {onConflict: 'household_id,day'}).select(); if (error) return toast("Couldn't save the plan.");
+    data.forEach(m => { const i = S.meals.findIndex(x => x.id === m.id || x.day === m.day); if (i >= 0) S.meals[i] = m; else S.meals.push(m); }); render(); toast(`Planned ${data.length} dinners`);
+  },
+  async 'meal-shop'() {
+    const mon = weekStart(S.mealOffset || 0), today = dayKey(new Date());
+    const need = []; [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today).forEach(k => { const m = mealOn(k); if (m && !m.cooked) (m.ingredients || []).forEach(x => { if (!haveIt(x.name)) need.push(x); }); });
+    const n = await groceryAdd(need.map(x => x.name)); toast(n ? `Added ${n} to Groceries` : 'Nothing missing. You have it all.', 3000);
+  },
+  async 'meal-need'(el) { const m = mealOn(el.dataset.k); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
+  async 'meal-cooked'(el) {
+    const m = mealOn(el.dataset.k); if (!m) return; m.cooked = !m.cooked;
+    if (m.cooked) { // fresh things used up come off; dry goods stay but may run low
+      const used = S.pantry.filter(p => (m.ingredients || []).some(x => { const a = normFood(x.name), b = normFood(p.name); return a && b && (a.includes(b) || b.includes(a)); }));
+      const gone = used.filter(p => p.place !== 'pantry'), lowNow = used.filter(p => p.place === 'pantry');
+      S.pantry = S.pantry.filter(p => !gone.includes(p)); lowNow.forEach(p => p.low = true);
+      if (gone.length) db(sb.from('pantry').delete().in('id', gone.map(p => p.id))); if (lowNow.length) db(sb.from('pantry').update({low: true}).in('id', lowNow.map(p => p.id)));
+    }
+    closeSheet(); render(); await db(sb.from('meals').update({cooked: m.cooked}).eq('id', m.id));
+  },
+  async 'meal-del'(el) { const m = mealOn(el.dataset.k); if (!m) return; S.meals = S.meals.filter(x => x.id !== m.id); closeSheet(); render(); await db(sb.from('meals').delete().eq('id', m.id)); },
+  async 'pantry-low'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; p.low = !p.low; render(); await db(sb.from('pantry').update({low: p.low}).eq('id', p.id)); },
+  async 'pantry-shop'() { const low = S.pantry.filter(p => p.low); const n = await groceryAdd(low.map(p => p.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
+  'brain-dump'(el) {
+    sheet(`<h2>Dump it all</h2><p class="help">Type or use your keyboard's mic and say everything at once: "milk, two loaves of bread, something for school lunches, nappies size five, bananas". It becomes a tidy list.</p>
+      <form data-form="brain-dump" data-list="${el.dataset.list}"><textarea class="input" name="text" rows="5" required placeholder="milk bread eggs, mince for spag bol, apples for lunches…"></textarea><button class="btn" style="margin-top:12px">${icon('sparkle')}Sort it</button></form><div id="bd-out"></div>`);
+  },
+  async 'bd-add'(el) {
+    const picks = [...document.querySelectorAll('#bd-out input:checked')].map(i => i.value);
+    const n = await groceryAdd(picks, el.dataset.list); closeSheet(); toast(`Added ${n} to Groceries`);
+  },
+  async 'grocery-budget'(el) {
+    const items = listItems(el.dataset.list, false).map(i => i.text); if (!items.length) return toast('The list is empty.');
+    el.disabled = true; const r = await callAI({action: 'budget', items}); el.disabled = false;
+    if (r.error) return toast(r.error, 4500);
+    LS.set('gbudget:' + el.dataset.list, {total: +r.total || 0, count: items.length, at: Date.now()}); render();
+  },
+  async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast('Connected ✓'); render(); },
   'home-list'(el) { LS.set('homeList', el.dataset.kind); render(); },
   go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view;
     if (el.dataset.list) S.listId = el.dataset.list;
@@ -1580,7 +1727,7 @@ const A = {
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
   wake() { $('#night').classList.remove('on'); $('#glance').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
   'close-sheet'(el, e) { if (e.target === el || el.tagName === 'BUTTON') closeSheet(); },
-  async 'toggle-item'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.done = !it.done; it.done_at = it.done ? new Date().toISOString() : null; render(); await db(sb.from('list_items').update({done: it.done, done_at: it.done_at}).eq('id', it.id)); },
+  async 'toggle-item'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.done = !it.done; it.done_at = it.done ? new Date().toISOString() : null; render(); await db(sb.from('list_items').update({done: it.done, done_at: it.done_at}).eq('id', it.id)); const l = S.lists.find(x => x.id === it.list_id); if (it.done && l && l.kind === 'grocery') pantryAdd([{name: it.text.replace(/\s*[·x×]\s*\d.*$/, '')}]); },
   async 'quick-add'(el) {
     const listId = el.dataset.list, text = el.dataset.text, k = text.toLowerCase();
     const done = S.items.find(i => i.list_id === listId && i.done && i.text.trim().toLowerCase() === k);
@@ -1657,6 +1804,35 @@ async function callFn(body) {
   } catch { return {error: 'No connection'}; }
 }
 
+function mealSheet(k) {
+  const m = mealOn(k);
+  if (!m) {
+    sheet(`<h2>Dinner on ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}</h2>
+      <form data-form="meal-set" data-k="${k}"><input class="input" name="title" placeholder="e.g. Spaghetti bolognese" required maxlength="80"><p class="help">${S.aiOn ? 'The ingredients are filled in for you.' : 'Add a Gemini key in Settings → Kitchen to fill in ingredients automatically.'}</p><button class="btn">Save dinner</button></form>`); return;
+  }
+  const ing = m.ingredients || [], need = ing.filter(x => !haveIt(x.name));
+  sheet(`<h2>${esc(m.emoji || '🍽️')} ${esc(m.title)}</h2><p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}${m.est_cost ? ` · about <span class="num">$${Math.round(m.est_cost)}</span> to buy` : ''} · <a href="${esc(m.url || recipeLink(m.title))}" target="_blank" rel="noopener">Find it on RecipeTin Eats</a></p>
+    <ul class="ing">${ing.map(x => `<li class="${haveIt(x.name) ? 'have' : ''}"><span>${esc(x.name)}</span><span class="lbl">${esc(x.qty || '')}</span><span class="tag">${haveIt(x.name) ? 'Have' : 'Buy'}</span></li>`).join('') || '<li class="help">No ingredients listed.</li>'}</ul>
+    <div class="row" style="margin-top:14px;flex-wrap:wrap">${need.length ? `<button class="btn" data-act="meal-need" data-k="${k}">Add ${need.length} to groceries</button>` : ''}<button class="btn soft" data-act="meal-cooked" data-k="${k}">${m.cooked ? 'Not cooked yet' : 'We cooked it'}</button><button class="btn ghost" data-act="meal-del" data-k="${k}">Remove</button></div>`);
+}
+async function groceryAdd(names, listId) {
+  const g = listId ? S.lists.find(l => l.id === listId) : listByKind('grocery'); if (!g) return 0;
+  const have = new Set(listItems(g.id, false).map(i => normFood(i.text)));
+  const rows = []; names.forEach(n => { const t = String(n || '').trim(); const k = normFood(t); if (!t || have.has(k)) return; have.add(k); rows.push({id: uid(), household_id: S.hid, list_id: g.id, text: t.slice(0, 200), added_by: (meMember() || {}).id || null, sort: Date.now() / 1000 + rows.length / 1000, done: false, created_at: new Date().toISOString()}); });
+  if (!rows.length) return 0; rows.forEach(r => S.items.push(r)); render(); await db(sb.from('list_items').insert(rows)); return rows.length;
+}
+async function pantryAdd(items) {
+  const rows = [];
+  items.forEach(x => { const name = String(x.name || '').trim().slice(0, 60); if (!name) return; const ex = S.pantry.find(p => normFood(p.name) === normFood(name));
+    if (ex) { ex.low = !!x.low; if (x.qty) ex.qty = x.qty; db(sb.from('pantry').update({low: ex.low, qty: ex.qty, updated_at: new Date().toISOString()}).eq('id', ex.id)); }
+    else rows.push({id: uid(), household_id: S.hid, name, qty: x.qty || null, place: ['fridge', 'freezer', 'pantry'].includes(x.place) ? x.place : placeGuess(name), low: !!x.low}); });
+  if (rows.length) { rows.forEach(r => S.pantry.push(r)); S.pantry.sort((a, b) => a.name.localeCompare(b.name)); await db(sb.from('pantry').insert(rows)); }
+  render(); return rows.length;
+}
+// shrink a camera photo before sending it (keeps it fast on mobile data and under the AI's size limit)
+function photoToBase64(file, max = 1400) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const sc = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = img.width * sc; c.height = img.height * sc; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .82).split(',')[1]); URL.revokeObjectURL(img.src); }; img.onerror = rej; img.src = URL.createObjectURL(file); });
+}
 async function toggleTick(kid, kind, ref, k, stars, existing) {
   if (existing) { S.ticks = S.ticks.filter(t => t.id !== existing.id); S.balances[kid.id] = starsOf(kid) - (existing.stars || 0); render(); await db(sb.from('ticks').delete().eq('id', existing.id)); }
   else { const row = {id: uid(), household_id: S.hid, member_id: kid.id, kind, ref, day: k, stars}; S.ticks.push(row); S.balances[kid.id] = starsOf(kid) + stars; render(); await db(sb.from('ticks').insert(row)); }
@@ -1693,6 +1869,32 @@ const F = {
     const row = {household_id: S.hid, title: f.title.value.trim(), emoji: f.emoji.value.trim() || null, cost: Math.max(1, +f.cost.value || 10), sort: S.rewards.length};
     const {data, error} = await sb.from('rewards').insert(row).select().single(); if (error) return toast("Couldn't save that reward.");
     if (!S.rewards.find(x => x.id === data.id)) S.rewards.push(data); S.rewards.sort((a, b) => a.cost - b.cost); render();
+  },
+  async 'ai-key'(f) {
+    const {error} = await sb.rpc('set_ai_key', {p_household: S.hid, p_key: f.key.value.trim()}); if (error) return toast("Couldn't save the key.");
+    S.aiOn = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
+    if (r.error) { toast(r.error, 6000); } else { S.aiModel = r.model; toast('Connected ✓ Meals, pantry photos and the brain-dump are ready.', 4000); } render();
+  },
+  async kitchen(f) { await saveSettings({kitchen: {prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
+  async 'meal-set'(f) {
+    const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
+    let row = {household_id: S.hid, day: k, title, url: recipeLink(title), ingredients: []};
+    if (S.aiOn) { const r = await callAI({action: 'recipe', title, servings: kset().servings}); if (!r.error) row = Object.assign(row, {emoji: r.emoji || null, ingredients: (r.ingredients || []).slice(0, 25), est_cost: +r.est_cost || null}); }
+    const {data, error} = await sb.from('meals').upsert(row, {onConflict: 'household_id,day'}).select().single(); if (error) return toast("Couldn't save that dinner.");
+    S.meals = S.meals.filter(m => m.day !== k).concat(data); closeSheet(); render(); mealSheet(k);
+  },
+  async 'pantry-add'(f) {
+    const names = f.name.value.split(/,|\n| and /).map(x => x.trim()).filter(Boolean); if (!names.length) return;
+    f.name.value = ''; await pantryAdd(names.map(n => ({name: n, place: f.place.value || undefined})));
+  },
+  async 'brain-dump'(f) {
+    const out = $('#bd-out'), btn = f.querySelector('button'); btn.disabled = true; btn.innerHTML = `${icon('sparkle')}Sorting…`;
+    const r = await callAI({action: 'groceries', text: f.text.value, existing: listItems(f.dataset.list, false).map(i => i.text)});
+    btn.disabled = false; btn.innerHTML = `${icon('sparkle')}Sort it`;
+    if (r.error) return toast(r.error, 4500);
+    const byAisle = {}; (r.items || []).forEach(x => (byAisle[x.aisle || 'Other'] = byAisle[x.aisle || 'Other'] || []).push(x));
+    out.innerHTML = `<div class="bd">${Object.entries(byAisle).map(([a, xs]) => `<div class="kt">${esc(a)}</div>${xs.map(x => { const t = x.qty ? `${x.name} · ${x.qty}` : x.name; return `<label class="row bdrow"><input type="checkbox" value="${esc(t)}" checked> ${esc(x.name)}${x.qty ? ` <span class="lbl">${esc(x.qty)}</span>` : ''}</label>`; }).join('')}`).join('')}</div>
+      <button class="btn" style="margin-top:12px" data-act="bd-add" data-list="${f.dataset.list}">Add to Groceries</button>`;
   },
   async 'add-bring'(f) {
     const days = [0,1,2,3,4,5,6].filter(i => f['d' + i].checked), match = f.match.value.trim() || null;
@@ -1800,6 +2002,16 @@ document.addEventListener('change', async e => {
   const el = e.target;
   if (el.dataset.act === 'cal-member') { const c = S.calendars.find(x => x.id === el.dataset.id); c.member_id = el.value || null; render(); await db(sb.from('calendars').update({member_id: c.member_id}).eq('id', c.id)); }
   if (el.dataset.act === 'upload') uploadPhotos(el.files);
+  if (el.dataset.change === 'pantry-photo' && el.files && el.files[0]) {
+    if (!S.aiOn) { el.value = ''; return toast('Add a free Gemini key in Settings → Kitchen first.', 4000); }
+    toast('Looking at your photo…', 6000);
+    try {
+      const image = await photoToBase64(el.files[0]); el.value = '';
+      const r = await callAI({action: 'pantry_photo', image, mime: 'image/jpeg'});
+      if (r.error) return toast(r.error, 4500);
+      const added = await pantryAdd(r.items || []); toast(`Found ${(r.items || []).length} things${added ? `, ${added} new` : ''}`, 3500);
+    } catch { toast("Couldn't read that photo."); }
+  }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
     else S.uploadAlbum = el.value;
@@ -1892,6 +2104,12 @@ function startDemo() {
   S.rewards = [{id: 'w1', title: 'Ice cream treat', emoji: '🍦', cost: 10}, {id: 'w2', title: 'Trip to the park', emoji: '🛝', cost: 15}, {id: 'w3', title: 'Movie night pick', emoji: '🎬', cost: 25}];
   S.ticks = [['m3','r1:a'],['m3','r1:b'],['m3','r1:c'],['m4','r1:a']].map(([m, ref], i) => ({id: 't' + i, member_id: m, kind: 'step', ref, day: k, stars: 0}));
   S.balances = {m3: 12, m4: 7};
+  const ing = (...xs) => xs.map(([n, q]) => ({name: n, qty: q}));
+  S.meals = [{id: 'ml1', day: k, title: 'Chicken Chow Mein', emoji: '🍜', est_cost: 18, ingredients: ing(['Chicken thigh', '500 g'], ['Egg noodles', '400 g'], ['Cabbage', '1/4'], ['Carrot', '1'], ['Soy sauce', '3 tbsp'], ['Oyster sauce', '2 tbsp'])},
+    {id: 'ml2', day: addDaysKey(k, 1), title: 'Spaghetti Bolognese', emoji: '🍝', est_cost: 16, ingredients: ing(['Beef mince', '500 g'], ['Spaghetti', '500 g'], ['Crushed tomatoes', '2 tins'], ['Onion', '1'], ['Parmesan', 'to serve'])},
+    {id: 'ml3', day: addDaysKey(k, 2), title: 'Crispy Baked Fish', emoji: '🐟', est_cost: 22, ingredients: ing(['White fish fillets', '600 g'], ['Panko', '1 cup'], ['Potatoes', '800 g'], ['Lemon', '1'])}];
+  S.pantry = [['Milk', 'fridge', 'half', false], ['Eggs', 'fridge', '6', false], ['Cheese', 'fridge', '', true], ['Carrot', 'fridge', '3', false], ['Frozen peas', 'freezer', '', false], ['Spaghetti', 'pantry', '', false], ['Rice', 'pantry', '', false], ['Soy sauce', 'pantry', '', false], ['Weet-Bix', 'pantry', '', true]].map(([n, pl, q, lo], i) => ({id: 'p' + i, name: n, place: pl, qty: q || null, low: lo}));
+  S.aiOn = true;
   S.bringRules = [{id: 'b1', emoji: '🧢', title: 'Hat', days: [1,2,3,4,5], member_id: null}, {id: 'b2', emoji: '🩱', title: 'Swimmers + towel', days: [], match: 'swim', member_id: null}, {id: 'b3', emoji: '📚', title: 'Library bag', days: [5], member_id: 'm3'}];
   const v = new URLSearchParams(location.search).get('view'); if (v) { S.view = v; if (v === 'focus') S.activeMember = 'm1'; if (v === 'planner') S.activeMember = 'm2'; }
   const st = new URLSearchParams(location.search).get('tab'); if (st) S.settingsTab = st;
