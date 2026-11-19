@@ -1,0 +1,15 @@
+name: Keep Supabase awake
+on:
+  schedule:
+    - cron: '17 1 * * *'   # daily, 9:17am Perth
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the database once
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://sroxxxuurhdugvfmwwyw.supabase.co/rest/v1/households?select=id&limit=1" \
+            -H "apikey: sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5")
+          echo "status $code"; test "$code" = "200"
