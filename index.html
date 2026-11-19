@@ -307,8 +307,12 @@ body.night .hero .leave{color:var(--apricot)}
 #night .clock{color:#55627A;text-shadow:none;font-size:clamp(80px,14vw,170px)}
 #night .date{color:#3F4A5E}
 #saver{background:#000}
-#saver img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 2.4s ease}
-#saver img.on{opacity:1}
+#saver .slide{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;opacity:0;transition:opacity 2.4s ease}
+#saver .slide.on{opacity:1}
+#saver .slide img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+/* photo shaped differently from the screen (e.g. portrait on a landscape tablet): show it whole, over a soft blurred copy */
+#saver .slide.fit img.fg{object-fit:contain}
+#saver .slide.fit img.bg{filter:blur(28px) brightness(.55);transform:scale(1.15)}
 #saver .cap{position:absolute;left:32px;bottom:28px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.6)}
 #saver .cap .clock{font-size:72px}
 .cds{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
@@ -411,7 +415,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0648'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0655'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -807,8 +811,15 @@ async function startSaver() {
 }
 function showSlide() {
   const el = $('#saver'), now = new Date();
-  const img = new Image(); img.alt = ''; img.src = saverUrls[saverIdx++ % saverUrls.length];
-  img.onload = () => { el.appendChild(img); requestAnimationFrame(() => img.classList.add('on')); const imgs = el.querySelectorAll('img'); if (imgs.length > 2) imgs[0].remove(); };
+  const src = saverUrls[saverIdx++ % saverUrls.length], img = new Image(); img.alt = ''; img.className = 'fg'; img.src = src;
+  img.onload = () => {
+    const slide = document.createElement('div'); slide.className = 'slide';
+    const photoR = img.naturalWidth / img.naturalHeight, screenR = innerWidth / innerHeight;
+    if (Math.max(photoR, screenR) / Math.min(photoR, screenR) > 1.3) { slide.classList.add('fit'); const bg = new Image(); bg.alt = ''; bg.className = 'bg'; bg.src = src; slide.appendChild(bg); }
+    slide.appendChild(img);
+    el.insertBefore(slide, el.querySelector('.cap')); requestAnimationFrame(() => requestAnimationFrame(() => slide.classList.add('on')));
+    const slides = el.querySelectorAll('.slide'); if (slides.length > 2) slides[0].remove();
+  };
   let cap = el.querySelector('.cap'); if (!cap) { cap = document.createElement('div'); cap.className = 'cap'; el.appendChild(cap); }
   cap.innerHTML = `<div class="clock num">${clockHTML(now)}</div>${countdownsHTML(dayKey(now))}`;
 }
