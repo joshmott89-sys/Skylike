@@ -415,7 +415,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0655'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0700'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -526,10 +526,27 @@ function onAppError(e) {
 }
 window.addEventListener('error', e => onAppError(e.error || e.message));
 window.addEventListener('unhandledrejection', e => onAppError(e.reason));
+const DEMO_PAGE = new URLSearchParams(location.search).has('demo');
 const bootAt = Date.now();
+// Load the newest build, skipping the browser's cached copy (GitHub Pages lets phones keep one for ~10 min).
+function freshReload() {
+  const q = new URLSearchParams(location.search); q.set('r', Date.now().toString(36));
+  location.replace(location.pathname + '?' + q.toString() + location.hash);
+}
+if (new URLSearchParams(location.search).has('r')) { const q = new URLSearchParams(location.search); q.delete('r'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }
+async function checkForUpdate() {
+  if (DEMO_PAGE) return;
+  try {
+    const t = await (await fetch(location.pathname + '?check=' + Date.now(), {cache: 'no-store'})).text();
+    const m = t.match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION && !document.querySelector('.sheet-bg') && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))) freshReload();
+  } catch {}
+}
+setTimeout(checkForUpdate, 8000); setInterval(checkForUpdate, 10 * 60e3);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
 setInterval(() => { // quiet nightly refresh on the family screen
   const p = tzParts(new Date());
-  if (deviceKind() === 'tablet' && p.h === 3 && p.min < 6 && Date.now() - bootAt > 3600e3) location.reload();
+  if (deviceKind() === 'tablet' && p.h === 3 && p.min < 6 && Date.now() - bootAt > 3600e3) freshReload();
 }, 60e3);
 
 /* ============ data ============ */
@@ -612,7 +629,7 @@ async function runCommand(c) {
   if (c.done_at || (c.device_id && c.device_id !== S.deviceId)) return;
   if (Date.now() - new Date(c.created_at).getTime() > 10 * 60e3) return;
   if (c.device_id) await sb.from('commands').update({done_at: new Date().toISOString()}).eq('id', c.id);
-  if (c.command === 'reload') { toast('Refreshing this screen…'); setTimeout(() => location.reload(true), 1200); }
+  if (c.command === 'reload') { toast('Refreshing this screen…'); setTimeout(freshReload, 1200); }
   if (c.command === 'set' && c.payload) { Object.entries(c.payload).forEach(([k, v]) => LS.set(k, v)); render(); }
   if (c.command === 'ping') heartbeat();
 }
