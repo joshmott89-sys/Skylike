@@ -97,7 +97,8 @@ body.night .horizon::before{background:linear-gradient(180deg,rgba(20,35,61,.6),
 body.night .stem{background:rgba(175,192,210,.5)}
 .more-ev{position:absolute;right:0;top:-34px;font-size:14px;font-weight:700;background:rgba(255,255,255,.25);padding:3px 10px;border-radius:99px}
 body.night .pill{background:#1C2944;color:#C3CFDF;box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
-body.night .sky{color:#C9D3E6}
+body.night .sky{color:#E3E9F2}
+body.night .sun{opacity:.8}
 body.night .wx svg{stroke:#AFC0D2}
 body.night .face{filter:saturate(.55) brightness(.72)}
 body.night .mark{border-color:#8A9BB4}
@@ -168,7 +169,8 @@ body.night .note{filter:brightness(.55) saturate(.8)}
 .seg{display:inline-flex;background:var(--surface);border-radius:14px;padding:4px;box-shadow:var(--shadow)}
 .seg button{border:0;background:none;padding:9px 16px;border-radius:10px;font-weight:650;font-size:16px;color:var(--ink-2)}
 .seg button.on{background:var(--ocean);color:#fff}
-body.night .seg button.on{color:var(--ocean-ink);background:var(--ocean-2)}
+body.night .seg button.on{color:#E7ECF6;background:#2A3E63}
+body.night .tab.on{background:#2A3E63;color:#E7ECF6}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:12px 18px;font-weight:700;font-size:17px;background:var(--ocean);color:#fff;min-height:48px;transition:filter .15s,transform .1s}
 .btn:active{transform:scale(.98)}
 .btn:hover{filter:brightness(1.08)}
@@ -176,7 +178,8 @@ body.night .seg button.on{color:var(--ocean-ink);background:var(--ocean-2)}
 .btn.ghost{background:transparent;color:var(--ocean-2);padding:10px 12px}
 .btn.warn{background:var(--bad)}
 .btn[disabled]{opacity:.5;pointer-events:none}
-body.night .btn{background:var(--ocean-2);color:var(--ocean-ink)}
+body.night .btn{background:#2A3E63;color:#E2E9F3}
+body.night .btn.soft{background:var(--raise);color:var(--ink)}
 .icon-btn{border:0;background:var(--surface);box-shadow:var(--shadow);width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:var(--ink)}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .field label,.lbl{font-size:15px;font-weight:700;color:var(--ink-2)}
@@ -653,8 +656,8 @@ function touch() {
 function idleTick() {
   if (!S.household) return;
   const st = settings(), now = new Date(), h = hoursFloat(now), idle = (Date.now() - S.lastTouch) / 60e3;
-  const night = inWindow(st.night.start, st.night.end, h);
-  document.body.classList.toggle('night', night);
+  const night = inWindow(st.night.start, st.night.end, h), theme = LS.get('theme', 'auto');
+  document.body.classList.toggle('night', theme === 'dark' || (theme === 'auto' && night));
   const nightEl = $('#night');
   if (night && deviceKind() === 'tablet' && idle >= 2) {
     if (!nightEl.classList.contains('on')) nightEl.classList.add('on');
@@ -713,7 +716,8 @@ function avatar(m, size = '') {
 
 function skyHTML(compact) {
   const st = settings(), now = new Date(), h = hoursFloat(now), k = dayKey(now);
-  const [top, bot] = skyAt(h), dark = h < 6.2 || h > 19.2;
+  let [top, bot] = skyAt(h); const dark = h < 6.2 || h > 19.2;
+  if (document.body.classList.contains('night')) { top = mix(top, '#0B1226', .72); bot = mix(bot, '#141D38', .68); }
   const ds = st.dayStart, de = st.dayEnd, span = de - ds;
   const pct = x => Math.max(0, Math.min(100, (x - ds) / span * 100));
   const nowPct = pct(h), sunUp = !dark && h >= ds && h < de;
@@ -973,7 +977,9 @@ V.settings = () => {
         <div class="row" style="margin-top:12px"><div class="grow"><div class="lbl">Wifi name</div><input class="input" name="wifiName" value="${esc(s.wifi && s.wifi.name)}"></div><div class="grow"><div class="lbl">Wifi password</div><input class="input" name="wifiPass" value="${esc(s.wifi && s.wifi.password)}"></div></div>
         <div class="lbl" style="margin-top:12px">House notes</div><textarea class="input" name="notes" placeholder="Allergies, screen rules, where the spare key is…">${esc(s.notes)}</textarea>
         <button class="btn" style="margin-top:14px">Save babysitter page</button></form></div>`; }
-  if (t === 'screen') body = `<div class="panel"><h2>This screen</h2>
+  if (t === 'screen') body = `<div class="panel"><h2>Appearance</h2><p class="help">Auto is light by day and switches to dusk colours during the night hours below. Applies to this device only.</p>
+      <span class="seg" role="radiogroup" aria-label="Appearance">${[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button class="${LS.get('theme', 'auto') === k ? 'on' : ''}" data-act="theme" data-theme="${k}" role="radio" aria-checked="${LS.get('theme', 'auto') === k}">${l}</button>`).join('')}</span></div>
+    <div class="panel"><h2>This screen</h2>
       <form data-form="device"><div class="row"><div class="grow"><div class="lbl">Name</div><input class="input" name="name" value="${esc(LS.get('deviceName', deviceKind() === 'tablet' ? 'Family screen' : 'Phone'))}"></div>
       <div><div class="lbl">Acts as</div><select class="input" name="kind"><option value="tablet" ${deviceKind() === 'tablet' ? 'selected' : ''}>Family screen (stays on)</option><option value="phone" ${deviceKind() === 'phone' ? 'selected' : ''}>Phone</option></select></div></div><button class="btn" style="margin-top:12px">Save</button></form></div>
     <div class="panel"><h2>Night</h2><p class="help">The whole screen dims to dusk tones, then fades to a dim clock after 2 minutes untouched.</p>
@@ -1132,7 +1138,7 @@ async function saveSettings(patch) {
 async function db(op, msg) { const {error} = await op; if (error) { console.error(error); toast(msg || "Couldn't save that. Check the connection."); return false; } return true; }
 
 const A = {
-  go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view; if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') S.activeMember = null; closeSheet(); render(); },
+  go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view; if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') { S.activeMember = null; if (isPhone()) { const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } } } closeSheet(); render(); },
   me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.home_view === 'family' ? 'family' : m.home_view; } render(); },
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
   wake() { $('#night').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
@@ -1183,6 +1189,7 @@ const A = {
   async 'cal-refresh-list'() { const r = await callFn({action: 'calendars'}); toast(r.error ? r.error : 'Calendar list updated'); const {data} = await sb.from('calendars').select('*').eq('household_id', S.hid); if (data) S.calendars = data; render(); },
   async 'cal-toggle'(el) { const c = S.calendars.find(x => x.id === el.dataset.id); c.enabled = !c.enabled; render(); await db(sb.from('calendars').update({enabled: c.enabled}).eq('id', c.id)); callFn({action: 'sync'}); },
   async 'del-feed'(el) { if (!confirm('Remove this calendar from the screen?')) return; const gid = el.dataset.gid; S.calendars = S.calendars.filter(c => c.google_id !== gid); S.events = S.events.filter(e => e.calendar_id !== gid); render(); await db(sb.rpc('remove_calendar_feed', {p_household: S.hid, p_google_id: gid})); refreshCalStatus(); },
+  theme(el) { LS.set('theme', el.dataset.theme); idleTick(); render(); },
   async cmd(el) { await db(sb.from('commands').insert({household_id: S.hid, command: el.dataset.cmd, device_id: el.dataset.id || null})); toast(el.dataset.id ? 'Sent' : 'Sent to every screen'); }
 };
 let lastCalRefresh = 0;
@@ -1354,6 +1361,7 @@ async function start() {
   if (!S.hid) { S.household = null; return render(); }
   restoreSnap(); render();
   try { const ok = await loadAll(); if (!ok) { S.household = null; return start(); } } catch (err) { console.error(err); }
+  if (deviceKind() === 'phone' && !S._phoneHomeSet) { S._phoneHomeSet = true; const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } }
   subscribe(); heartbeat(); loadWeather(); keepAwake(); render(); idleTick();
 }
 let lastMinute = -1;
