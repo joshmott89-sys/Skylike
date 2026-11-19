@@ -223,6 +223,19 @@ textarea.input{min-height:96px;resize:vertical}
 .wev.ad .t{color:rgba(255,255,255,.85)}
 .hol{font-size:13px;font-weight:700;color:var(--apricot-ink);background:color-mix(in srgb,var(--apricot) 25%,transparent);border-radius:10px;padding:5px 8px}
 body.night .hol{color:var(--apricot)}
+.band{display:grid;grid-template-columns:150px 1fr;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.band.live{box-shadow:0 0 0 3px var(--apricot),var(--shadow)}
+.band-sky{color:#fff;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:18px}
+.band-sky svg{width:30px;height:30px;stroke-width:1.8}
+body.night .band-sky{filter:brightness(.7) saturate(.8)}
+.band-evs{padding:4px 20px;min-height:74px;display:flex;flex-direction:column;justify-content:center}
+.free{color:var(--ink-3);font-weight:600;font-size:17px}
+.evbtn{width:100%;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.wev{border:0;text-align:left;font-family:inherit;color:inherit;width:100%;cursor:pointer}
+.wband{font-size:12.5px;font-weight:700;color:var(--ink-3);margin-top:4px}
+.day .dh{border:0;background:none;font:inherit;font-weight:700;font-size:15px;color:var(--ink-2);cursor:pointer;padding:0;width:100%}
+.mc{border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+@media (max-width:760px){.band{grid-template-columns:96px 1fr}.band-sky{padding:12px;font-size:15px}.band-evs{padding:4px 12px}}
 .month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .mh{font-size:14px;font-weight:700;color:var(--ink-3);text-align:center;padding:4px 0}
 .mc{background:var(--surface);border-radius:12px;min-height:96px;padding:6px 8px;font-size:13px;display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -332,6 +345,7 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-bed" viewBox="0 0 24 24"><path d="M3 18V7M3 14h18v4M21 14v-2.5A2.5 2.5 0 0 0 18.5 9H11v5"/><circle cx="7" cy="11" r="1.8"/></symbol>
   <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><circle cx="9" cy="10" r="1.7"/><path d="m20.5 16-5-5-8 8"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M3 19h18M7 19a5 5 0 0 1 10 0M12 11V4M9.5 6.5 12 4l2.5 2.5M4.6 14.6l1.5 1M19.4 14.6l-1.5 1"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
   <symbol id="i-cloudsun" viewBox="0 0 24 24"><path d="M8 4.5v1.3M3.8 8.6H2.5M4.6 5.2l.9.9M11.4 5.2l-.9.9"/><path d="M5.6 11.2A3.4 3.4 0 0 1 11.2 7.8"/><path d="M8.5 20h9a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6 1.2A3 3 0 0 0 8.5 20z"/></symbol>
   <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 .5-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 19z"/></symbol>
@@ -656,7 +670,10 @@ async function startSaver() {
   const el = $('#saver'); if (el.classList.contains('on')) return;
   el.classList.add('on');
   try {
-    const paths = S.photos.slice(0, 40).map(p => p.path);
+    const off = settings().saverOff || [];
+    const pool = S.photos.filter(p => !off.includes(p.album || 'Family'));
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const paths = pool.slice(0, 60).map(p => p.path);
     const {data} = await sb.storage.from('photos').createSignedUrls(paths, 3600);
     saverUrls = (data || []).map(d => d.signedUrl).filter(Boolean);
   } catch { saverUrls = []; }
@@ -830,32 +847,57 @@ function i18nDay(dk, today) {
   return d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : esc(fmtDay(dk, {weekday: 'long', day: 'numeric', month: 'short'}));
 }
 
+const BANDS = [['morning', 'Morning', 0, 11.5, 'sunrise', 8.5], ['lunch', 'Lunch', 11.5, 13.5, 'sun', 12.5], ['afternoon', 'Afternoon', 13.5, 17.5, 'cloudsun', 15.5], ['night', 'Night', 17.5, 24, 'moon', 19.6]];
+const bandOf = e => { const h = hoursFloat(new Date(e.starts_at)); return BANDS.find(b => h >= b[2] && h < b[3]) || BANDS[0]; };
+function evRow(e, big) {
+  const m = eventMember(e), st = new Date(e.starts_at);
+  return `<button class="ev evbtn" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${e.all_day ? 'All day' : esc(fmtTime(st))}</div>
+    <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
+}
 V.calendar = () => {
-  const today = dayKey(new Date());
-  const head = `<h1>${S.calMode === 'week' ? 'Week' : 'Month'}<span class="sp"></span>
+  const today = dayKey(new Date()), mode = S.calMode;
+  if (!S.dayKey) S.dayKey = today;
+  const title = mode === 'day' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
+  const head = `<h1>${title}<span class="sp"></span>
     <button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button>
     <button class="icon-btn" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button>
     <button class="btn soft" data-act="cal-shift" data-n="0">Today</button>
     <button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button>
-    <span class="seg"><button class="${S.calMode === 'week' ? 'on' : ''}" data-act="cal-mode" data-mode="week">Week</button><button class="${S.calMode === 'month' ? 'on' : ''}" data-act="cal-mode" data-mode="month">Month</button></span></h1>`;
-  if (S.calMode === 'week') {
+    <span class="seg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span></h1>`;
+  const noCal = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Add a calendar in Settings to fill this in.</p>`;
+  if (mode === 'day') {
+    const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+    const nowH = hoursFloat(new Date());
+    const notes = [WA_HOLIDAYS[k] && settings().holidays ? WA_HOLIDAYS[k] : '', settings().school && !WA_TERMS.some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0 ? 'School holidays' : ''].filter(Boolean);
+    const bands = BANDS.map(([id, label, h1, h2, ic, mid]) => {
+      const list = timed.filter(e => bandOf(e)[0] === id), [t, bt] = skyAt(mid), live = k === today && nowH >= h1 && nowH < h2;
+      return `<section class="band ${live ? 'live' : ''}"><div class="band-sky" style="background:linear-gradient(180deg,${t},${bt})">${icon(ic)}<b>${label}</b></div>
+        <div class="band-evs">${list.map(e => evRow(e, true)).join('') || '<div class="free">Free</div>'}</div></section>`;
+    }).join('');
+    return `<div class="page">${head}${noCal}
+      ${notes.length || allDay.length ? `<div class="row" style="margin-bottom:14px">${notes.map(n => `<span class="hol">${esc(n)}</span>`).join('')}${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)};border:0;color:#fff" data-act="open-event" data-id="${e.id}">${esc(e.title)}</button>`).join('')}</div>` : ''}
+      ${bands}</div>`;
+  }
+  if (mode === 'week') {
     const mon = addDaysKey(today, -((weekdayOfKey(today) + 6) % 7) + S.calOffset * 7);
     const cols = [...Array(7)].map((_, i) => { const k = addDaysKey(mon, i);
-      const evs = eventsOnKey(k).sort((a, b) => (b.all_day - a.all_day) || a.starts_at.localeCompare(b.starts_at));
+      const evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
       const term = settings().school && !WA_TERMS.some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0;
-      return `<div class="day ${k === today ? 'today' : ''}"><div class="dh">${esc(fmtDay(k, {weekday: 'short'}))}<b class="num">${keyToDate(k).getUTCDate()}</b></div>
+      let lastBand = '';
+      const timedHTML = timed.map(e => { const b = bandOf(e); const head = b[0] !== lastBand ? `<div class="wband">${b[1]}</div>` : ''; lastBand = b[0];
+        return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');
+      return `<div class="day ${k === today ? 'today' : ''}"><button class="dh" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}">${esc(fmtDay(k, {weekday: 'short'}))}<b class="num">${keyToDate(k).getUTCDate()}</b></button>
         ${WA_HOLIDAYS[k] && settings().holidays ? `<div class="hol">${esc(WA_HOLIDAYS[k])}</div>` : term ? '<div class="hol" style="background:color-mix(in srgb,#3A9AA0 18%,transparent);color:#246B70">School holidays</div>' : ''}
-        ${evs.map(e => `<div class="wev ${e.all_day ? 'ad' : ''}" style="--c:${eventColour(e)}">${e.all_day ? '' : `<span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>`}${esc(e.title)}</div>`).join('')}</div>`; }).join('');
-    const rangeNote = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Connect Google Calendar in Settings to fill this in.</p>`;
-    return `<div class="page" style="max-width:none">${head}${rangeNote}<div class="week">${cols}</div></div>`;
+        ${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}">${esc(e.title)}</button>`).join('')}${timedHTML}</div>`; }).join('');
+    return `<div class="page" style="max-width:none">${head}${noCal}<div class="week">${cols}</div></div>`;
   }
   const p = tzParts(new Date()); let y = p.y, m = p.m - 1 + S.calOffset; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
   const first = `${y}-${String(m + 1).padStart(2, '0')}-01`, start = addDaysKey(first, -((weekdayOfKey(first) + 6) % 7));
   const cells = [...Array(42)].map((_, i) => { const k = addDaysKey(start, i), evs = eventsOnKey(k);
-    return `<div class="mc ${k.slice(5, 7) !== first.slice(5, 7) ? 'out' : ''} ${k === today ? 'today' : ''}"><span class="n num">${keyToDate(k).getUTCDate()}</span>
+    return `<button class="mc ${k.slice(5, 7) !== first.slice(5, 7) ? 'out' : ''} ${k === today ? 'today' : ''}" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}"><span class="n num">${keyToDate(k).getUTCDate()}</span>
       ${WA_HOLIDAYS[k] && settings().holidays ? `<span class="e" style="--c:#D9773B"><i></i><span>${esc(WA_HOLIDAYS[k])}</span></span>` : ''}
-      ${evs.slice(0, 3).map(e => `<span class="e" style="--c:${eventColour(e)}"><i></i><span>${esc(e.title)}</span></span>`).join('')}${evs.length > 3 ? `<span class="e" style="color:var(--ink-3)">+${evs.length - 3}</span>` : ''}</div>`; }).join('');
-  return `<div class="page" style="max-width:none">${head.replace('Month<', esc(fmtDay(first, {month: 'long', year: 'numeric'})) + '<')}
+      ${evs.slice(0, 3).map(e => `<span class="e" style="--c:${eventColour(e)}"><i></i><span>${esc(e.title)}</span></span>`).join('')}${evs.length > 3 ? `<span class="e" style="color:var(--ink-3)">+${evs.length - 3}</span>` : ''}</button>`; }).join('');
+  return `<div class="page" style="max-width:none">${head.replace('<h1>Month<', '<h1>' + esc(fmtDay(first, {month: 'long', year: 'numeric'})) + '<')}${noCal}
     <div class="month">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="mh">${d}</div>`).join('')}${cells}</div></div>`;
 };
 
@@ -943,9 +985,15 @@ V.settings = () => {
       <div class="row" style="margin-top:12px;justify-content:space-between"><span>Photo slideshow when idle</span><button type="button" class="toggle ${st.saver.on ? 'on' : ''}" data-act="toggle-saver" aria-label="Photo slideshow"></button></div>
       <button class="btn" style="margin-top:12px">Save</button></form>
       <p class="help" style="margin-top:12px">Keep the tablet plugged in. On iPad, use Guided Access to lock it to Skylike; on Android, use screen pinning.</p></div>`;
-  if (t === 'photos') body = `<div class="panel"><h2>Photos</h2><p class="help">Shown on the family screen when nobody's using it in the daytime.</p>
-      <label class="btn">${icon('photo')}Add photos<input type="file" accept="image/*" multiple data-act="upload" hidden></label>
-      <div class="notes" style="margin-top:16px;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))" id="thumbs">${S.photos.length ? '' : '<div class="empty">No photos yet.</div>'}</div></div>`;
+  if (t === 'photos') {
+    const albums = photoAlbums(), off = st.saverOff || [], cur = S.uploadAlbum || albums[0] || 'Family';
+    body = `<div class="panel"><h2>Photos</h2><p class="help">Shown on the family screen when nobody's using it in the daytime. Photos are resized to save space; the free plan holds roughly 2,000.</p>
+      <div class="row"><div><div class="lbl">Album</div><select class="input" id="album-pick" data-act="album-pick" style="width:auto">${[...new Set([...(albums.length ? albums : ['Family']), cur])].map(a => `<option ${a === cur ? 'selected' : ''}>${esc(a)}</option>`).join('')}<option value="__new">New album…</option></select></div>
+      <label class="btn" style="align-self:flex-end">${icon('photo')}Add photos to ${esc(cur)}<input type="file" accept="image/*" multiple data-act="upload" hidden></label></div></div>
+    ${albums.map(a => { const n = S.photos.filter(p => (p.album || 'Family') === a).length;
+      return `<div class="panel"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(a)} <span class="lbl num">${n}</span></h2><div class="row"><span class="lbl">In slideshow</span><button class="toggle ${off.includes(a) ? '' : 'on'}" data-act="album-toggle" data-album="${esc(a)}" aria-label="Show ${esc(a)} in slideshow"></button></div></div>
+        <div class="notes thumbs" data-album="${esc(a)}" style="margin-top:14px;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))"></div></div>`; }).join('') || '<div class="panel"><div class="empty">No photos yet.</div></div>'}`;
+  }
   if (t === 'admin') body = `<div class="panel"><h2>Screens and phones</h2><p class="help">Everything signed in to this household. Refresh fixes most problems without a visit.</p>
       ${S.devices.sort((a, b) => b.last_seen.localeCompare(a.last_seen)).map(d => { const ago = (Date.now() - new Date(d.last_seen)) / 60e3;
         return `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>${esc(d.name)}</b>${d.id === S.deviceId ? ' <span class="lbl">(this one)</span>' : ''}<div class="lbl">${d.kind === 'tablet' ? 'Family screen' : 'Phone'} · v${esc(d.app_version)} · seen ${ago < 2 ? 'just now' : esc(relMins(ago)) + ' ago'}</div></div><button class="btn soft" data-act="cmd" data-cmd="reload" data-id="${esc(d.id)}">Refresh</button></div>`; }).join('')}
@@ -1101,8 +1149,9 @@ const A = {
   'note-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; },
   'pick-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; },
   async 'del-note'(el) { S.notes = S.notes.filter(n => n.id !== el.dataset.id); render(); await db(sb.from('notes').delete().eq('id', el.dataset.id)); },
-  'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; LS.set('calMode', S.calMode); render(); },
-  'cal-shift'(el) { const n = +el.dataset.n; S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
+  'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; if (S.calMode === 'day') S.dayKey = dayKey(new Date()); LS.set('calMode', S.calMode); render(); },
+  'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
+  'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
   'open-event'(el) { const e = S.events.find(x => x.id === el.dataset.id); if (!e) return; const m = eventMember(e);
     sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}<p class="help" style="color:var(--ink-3)">To change it, edit it in Google Calendar for now. Editing here is coming.</p><button class="btn" data-act="close-sheet">Close</button>`); },
   'edit-member'(el) { memberSheet(el.dataset.id); },
@@ -1254,11 +1303,16 @@ document.addEventListener('change', async e => {
   const el = e.target;
   if (el.dataset.act === 'cal-member') { const c = S.calendars.find(x => x.id === el.dataset.id); c.member_id = el.value || null; render(); await db(sb.from('calendars').update({member_id: c.member_id}).eq('id', c.id)); }
   if (el.dataset.act === 'upload') uploadPhotos(el.files);
+  if (el.dataset.act === 'album-pick') {
+    if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
+    else S.uploadAlbum = el.value;
+    render();
+  }
 });
 
 /* photos */
 async function uploadPhotos(files) {
-  const me = meMember(); let n = 0;
+  const me = meMember(); let n = 0; const album = (S.uploadAlbum || photoAlbums()[0] || 'Family').slice(0, 40);
   toast(`Uploading ${files.length} photo${files.length > 1 ? 's' : ''}…`);
   for (const file of files) {
     try {
@@ -1266,7 +1320,7 @@ async function uploadPhotos(files) {
       const path = `${S.hid}/${uid()}.jpg`;
       const up = await sb.storage.from('photos').upload(path, blob, {contentType: 'image/jpeg'});
       if (up.error) throw up.error;
-      const {data} = await sb.from('photos').insert({household_id: S.hid, path, uploaded_by: me ? me.id : null}).select().single();
+      const {data} = await sb.from('photos').insert({household_id: S.hid, path, album, uploaded_by: me ? me.id : null}).select().single();
       if (data && !S.photos.find(p => p.id === data.id)) S.photos.unshift(data); n++;
     } catch (err) { console.error(err); }
   }
@@ -1281,11 +1335,14 @@ function shrink(file, max) {
     }; img.onerror = rej; img.src = URL.createObjectURL(file);
   });
 }
+function photoAlbums() { return [...new Set(S.photos.map(p => p.album || 'Family'))].sort(); }
 async function loadThumbs() {
-  const el = $('#thumbs'); if (!el || !S.photos.length) return;
+  const els = document.querySelectorAll('.thumbs'); if (!els.length || !S.photos.length) return;
   const {data} = await sb.storage.from('photos').createSignedUrls(S.photos.map(p => p.path), 600);
-  el.innerHTML = (data || []).map((d, i) => d.signedUrl ? `<div style="position:relative"><img src="${esc(d.signedUrl)}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block"><button class="icon-btn" style="position:absolute;right:6px;top:6px;width:38px;height:38px" data-act="del-photo" data-id="${S.photos[i].id}" aria-label="Delete photo">${icon('trash')}</button></div>` : '').join('');
+  const url = {}; (data || []).forEach((d, i) => { if (d.signedUrl) url[S.photos[i].id] = d.signedUrl; });
+  els.forEach(el => { el.innerHTML = S.photos.filter(p => (p.album || 'Family') === el.dataset.album && url[p.id]).map(p => `<div style="position:relative"><img src="${esc(url[p.id])}" alt="" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block"><button class="icon-btn" style="position:absolute;right:6px;top:6px;width:38px;height:38px" data-act="del-photo" data-id="${p.id}" aria-label="Delete photo">${icon('trash')}</button></div>`).join(''); });
 }
+A['album-toggle'] = async el => { const a = el.dataset.album, off = (settings().saverOff || []).slice(); const i = off.indexOf(a); if (i >= 0) off.splice(i, 1); else off.push(a); await saveSettings({saverOff: off}); };
 A['del-photo'] = async el => { const p = S.photos.find(x => x.id === el.dataset.id); if (!p || !confirm('Delete this photo?')) return; S.photos = S.photos.filter(x => x.id !== p.id); render(); await sb.storage.from('photos').remove([p.path]); await db(sb.from('photos').delete().eq('id', p.id)); };
 
 /* ============ boot ============ */
