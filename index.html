@@ -419,7 +419,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0705'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0712'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1170,7 +1170,8 @@ V.settings = () => {
   }
   if (t === 'admin') body = `<div class="panel"><h2>Screens and phones</h2><p class="help">Everything signed in to this household. Refresh fixes most problems without a visit.</p>
       ${S.devices.sort((a, b) => b.last_seen.localeCompare(a.last_seen)).map(d => { const ago = (Date.now() - new Date(d.last_seen)) / 60e3;
-        return `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>${esc(d.name)}</b>${d.id === S.deviceId ? ' <span class="lbl">(this one)</span>' : ''}<div class="lbl">${d.kind === 'tablet' ? 'Family screen' : 'Phone'} · v${esc(d.app_version)} · seen ${ago < 2 ? 'just now' : esc(relMins(ago)) + ' ago'}</div></div><button class="btn soft" data-act="cmd" data-cmd="reload" data-id="${esc(d.id)}">Refresh</button></div>`; }).join('')}
+        return `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>${esc(d.name)}</b>${d.id === S.deviceId ? ' <span class="lbl">(this one)</span>' : ''}<div class="lbl">${d.kind === 'tablet' ? 'Family screen' : 'Phone'} · v${esc(d.app_version)} · seen ${ago < 2 ? 'just now' : esc(relMins(ago)) + ' ago'}</div></div>${d.id !== S.deviceId && ago > 30 ? `<button class="btn ghost" data-act="forget-device" data-id="${esc(d.id)}">Forget</button>` : `<button class="btn soft" data-act="cmd" data-cmd="reload" data-id="${esc(d.id)}">Refresh</button>`}</div>`; }).join('')}
+      <p class="help" style="margin-top:10px">Each browser or home-screen app counts as its own device, so the same phone can show twice. Forget old ones here; anything unseen for 14 days is removed automatically.</p>
       <button class="btn" style="margin-top:14px" data-act="cmd" data-cmd="reload">${icon('refresh')}Refresh every screen</button></div>
     <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(ago((Date.now() - S.lastData) / 60e3)) : 'never'}.</p></div>`;
   return `<div class="page"><h1>Settings</h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
@@ -1306,6 +1307,7 @@ async function saveSettings(patch) {
 async function db(op, msg) { const {error} = await op; if (error) { console.error(error); toast(msg || "Couldn't save that. Check the connection."); return false; } return true; }
 
 const A = {
+  async 'forget-device'(el) { S.devices = S.devices.filter(d => d.id !== el.dataset.id); render(); await db(sb.from('devices').delete().eq('id', el.dataset.id)); },
   'home-list'(el) { LS.set('homeList', el.dataset.kind); render(); },
   go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view;
     if (el.dataset.list) S.listId = el.dataset.list;
