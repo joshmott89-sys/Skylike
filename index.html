@@ -138,8 +138,12 @@ body.night .seg.sm{border-color:rgba(156,195,211,.35);background:rgba(255,255,25
 body.night .zone h2 .more{color:var(--ocean-ink)}
 .quick-go{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .quick-go .btn{justify-content:center}
+.invite-msg{padding:14px 16px;border-radius:14px;background:color-mix(in srgb,var(--ocean-2) 7%,transparent);font-size:15.5px;line-height:1.5;user-select:text;-webkit-user-select:text}
+.invite-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.invite-btns a.btn{text-decoration:none}
 .setupcard{display:flex;align-items:center;gap:14px;margin:16px var(--pad) 0;padding:14px 18px;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);border-left:5px solid var(--apricot)}
 .setupcard>.grow,.sstep>.grow{flex:1;min-width:0}
+@media (max-width:760px){.setupcard{flex-wrap:wrap}.setupcard>.grow{flex:1 1 calc(100% - 70px)}.setupcard .btn{flex:1;justify-content:center}}
 .sc-ring{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--apricot) var(--p),color-mix(in srgb,var(--ink) 9%,transparent) 0);display:grid;place-items:center;flex:none}
 .sc-ring b{width:40px;height:40px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:13px}
 .sstep{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -553,7 +557,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0900'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0930'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1299,7 +1303,7 @@ function setupSteps() {
   const adultsSignedIn = S.members.filter(m => m.kind !== 'kid' && m.user_id).length;
   return [
     ['family', 'Add your family', 'Each parent and kid, with a colour and an emoji', S.members.length >= 2, {act: 'go', view: 'settings', tab: 'family'}],
-    ['partner', 'Invite your partner', 'They sign in on their phone and enter your code', adultsSignedIn >= 2, {act: 'go', view: 'settings', tab: 'household'}],
+    ['partner', 'Invite your partner', 'They sign in on their phone and enter your code', adultsSignedIn >= 2, {act: 'invite'}],
     ['calendar', 'Connect your calendars', 'Paste each Google calendar\'s secret link', !!(S.calStatus && S.calStatus.connected), {act: 'go', view: 'settings', tab: 'calendar'}],
     ['screen', 'Set up the wall screen', 'Keep it awake and locked to Skylike', S.devices.some(d => d.kind === 'tablet'), {act: 'device-setup'}],
     ['bins', 'Add bin days', 'So the screen says which bins go out', S.reminders.length > 0, {act: 'go', view: 'settings', tab: 'reminders'}],
@@ -1473,7 +1477,8 @@ V.settings = () => {
   if (t === 'kitchen') { const ks = kset();
     body = `<div class="panel"><h2>AI helper</h2><p class="help">Meal plans, pantry photos, the grocery brain-dump and cost estimates use Google's Gemini. A key is free, needs no card, and is saved once for the whole household on the server (never on the tablet).</p>
       <p><b>${S.aiOn ? '✓ Connected' : 'Not set up yet'}</b>${S.aiModel ? ` <span class="lbl">(${esc(S.aiModel)})</span>` : ''}</p>
-      <ol class="steps"><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with any Google account.</li><li>Tap <b>Create API key</b> (accept the terms if asked).</li><li>Copy the key, paste it below and tap Save. It's easiest on a phone or computer.</li></ol>
+      <ol class="steps"><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with any Google account.</li><li>Tap <b>Create API key</b> (accept the terms if asked).</li><li>Copy the key, paste it below and tap Save.</li></ol>
+      <p class="help">If Google says the request is <b>“suspicious”</b>, open the link in Chrome itself (not from inside Skylike), make sure you're signed in to Google, turn off any VPN, or do it on a computer.</p>
       <form data-form="ai-key" class="row"><input class="input grow" name="key" type="password" placeholder="${S.aiOn ? 'Paste a new key to replace it' : 'Paste your key (starts with AIza…)'}" autocomplete="off" required><button class="btn">Save and test</button></form>
       ${S.aiOn ? `<button class="btn ghost" style="margin-top:8px" data-act="ai-test">Test the connection</button>` : ''}</div>
     <div class="panel"><h2>Meal planning</h2><form data-form="kitchen">
@@ -1483,7 +1488,7 @@ V.settings = () => {
     <div class="panel"><h2>Household</h2><p class="help">Shared by everyone who joins with the code below.</p>
       <form data-form="hh-name" class="row"><input class="input grow" name="name" value="${esc(hh.name)}" maxlength="80" aria-label="Household name"><button class="btn">Save</button></form></div>
     <div class="panel"><h2>Setup checklist</h2>${setupListHTML()}<div class="row" style="margin-top:12px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><button class="btn ghost" data-act="device-setup">Set up this device</button>${st.setupHidden ? `<button class="btn ghost" data-act="setup-show">Show on home screen</button>` : ''}</div></div>
-    <div class="panel"><h2>Invite your partner</h2><p class="help">On their phone: open Skylike, sign in with their email, choose “Join a household” and enter this code.</p><span class="code">${esc(hh.join_code)}</span></div>
+    <div class="panel"><h2>Invite your partner</h2><p class="help">On their phone: open Skylike, sign in with their email, choose “Join a household” and enter this code.</p><span class="code">${esc(hh.join_code)}</span><div class="row" style="margin-top:12px"><button class="btn" data-act="invite">Send an invite</button></div></div>
     <div class="panel"><h2>Weather location</h2><p class="help">Currently ${esc(st.location.name || 'set')} (${st.location.lat.toFixed(2)}, ${st.location.lon.toFixed(2)}).</p>
       <button class="btn soft" data-act="use-location">Use this device's location</button></div>
     <div class="panel"><h2>School and holidays</h2>
@@ -1629,6 +1634,7 @@ function renderGate() {
     <p class="err" id="gate-err" role="alert"></p></div></div>`;
 }
 function renderOnboard() {
+  const joinCode = new URLSearchParams(location.search).get('join'); if (joinCode && !S._onboard) S._onboard = 'join';
   const mode = S._onboard || 'choose';
   $('#app').innerHTML = `<div class="gate" style="grid-column:1/-1"><div class="card"><div class="logo" aria-hidden="true"></div>
     ${mode === 'choose' ? `<h1>Welcome</h1><p>Set up your family, or join one your partner already made.</p>
@@ -1636,7 +1642,7 @@ function renderOnboard() {
       <button class="btn soft" style="width:100%" data-act="onboard" data-mode="join">Join with a code</button>`
     : mode === 'create' ? `<h1>Your household</h1><p>Name it and add yourself. A short checklist then walks you through the rest (about 10 minutes).</p><form data-form="create-hh"><div class="field"><label for="hn">Household name</label><input class="input" id="hn" name="name" placeholder="The Smiths" required maxlength="80"></div>
       <div class="field"><label for="yn">Your first name</label><input class="input" id="yn" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Create</button></form>`
-    : `<h1>Join a household</h1><form data-form="join-hh"><div class="field"><label for="jc">Code</label><input class="input" id="jc" name="code" required maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;font-size:24px"></div>
+    : `<h1>Join a household</h1><form data-form="join-hh"><div class="field"><label for="jc">Code</label><input class="input" id="jc" name="code" required maxlength="6" value="${esc((new URLSearchParams(location.search).get('join') || '').toUpperCase())}" style="text-transform:uppercase;letter-spacing:.2em;font-size:24px"></div>
       <div class="field"><label for="yn2">Your first name</label><input class="input" id="yn2" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Join</button></form>`}
     ${mode !== 'choose' ? `<button class="btn ghost" style="width:100%;margin-top:6px" data-act="onboard" data-mode="choose">Back</button>` : ''}
     <p class="err" id="gate-err" role="alert"></p><button class="btn ghost" style="width:100%" data-act="sign-out">Sign out</button></div></div>`;
@@ -1786,6 +1792,22 @@ const A = {
     LS.set('gbudget:' + el.dataset.list, {total: +r.total || 0, count: items.length, at: Date.now()}); render();
   },
   async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast('Connected ✓'); render(); },
+  invite() {
+    const code = (S.household || {}).join_code || '', link = location.origin + location.pathname + '?join=' + encodeURIComponent(code);
+    const msg = `Join our family on Skylike, our shared calendar, lists and meals. Open ${link} on your phone, sign in with your email, and the code ${code} is filled in for you.`;
+    const enc = encodeURIComponent(msg);
+    sheet(`<h2>Invite your partner</h2><p class="help">Send them this. The link opens Skylike with your code ready; they just sign in with their email.</p>
+      <div class="invite-msg">${esc(msg)}</div>
+      <div class="invite-btns">${navigator.share ? `<button class="btn" data-act="invite-share">${icon('copy')}Share…</button>` : ''}
+        <a class="btn soft" href="https://wa.me/?text=${enc}" target="_blank" rel="noopener">WhatsApp</a>
+        <a class="btn soft" href="sms:?&body=${enc}">Text message</a>
+        <a class="btn soft" href="mailto:?subject=${encodeURIComponent('Join our family on Skylike')}&body=${enc}">Email</a>
+        <button class="btn ghost" data-act="invite-copy">Copy</button></div>
+      <p class="help" style="margin-top:12px">Code: <b class="num" style="letter-spacing:.15em">${esc(code)}</b></p>`);
+    S._inviteMsg = msg;
+  },
+  async 'invite-share'() { try { await navigator.share({title: 'Join our family on Skylike', text: S._inviteMsg}); } catch {} },
+  async 'invite-copy'() { try { await navigator.clipboard.writeText(S._inviteMsg); toast('Copied'); } catch { toast('Press and hold the message to copy it.'); } },
   'setup-all'() { sheet(`<h2>Get Skylike ready</h2><p class="help">About 10 minutes. Do them in any order; each one ticks itself off.</p>${setupListHTML()}<div class="row" style="margin-top:14px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><span class="grow"></span><button class="btn ghost" data-act="setup-hide">Hide this checklist</button></div>`); },
   async 'setup-hide'() { closeSheet(); await saveSettings({setupHidden: true}); toast('Hidden. Find it again in Settings → Household.', 3500); },
   async 'setup-show'() { await saveSettings({setupHidden: false}); S.view = 'family'; render(); },
