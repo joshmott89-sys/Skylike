@@ -129,6 +129,14 @@ body.night .zone h2 .more{color:var(--ocean-ink)}
 .chip{display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font-weight:650;font-size:16.5px}
 .chip .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c,var(--ocean-2))}
 .chip .b svg{width:18px;height:18px;stroke-width:2.2}
+.bins{display:inline-flex}
+.bins .b{box-shadow:0 0 0 2.5px var(--surface)}
+.bins .b + .b{margin-left:-9px}
+.binweeks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 14px}
+.bw{padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--ocean-2) 7%,transparent)}
+.bw .lbl{margin-bottom:6px}
+.bw .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c)}
+.bw .b svg{width:18px;height:18px;stroke-width:2.2}
 .chip em{font-style:normal;color:var(--ink-2);font-weight:600}
 .ev{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .ev:last-child{border-bottom:0}
@@ -630,14 +638,26 @@ function reminderToday(r, k) {
   const w = Math.round(daysBetween(r.anchor_date, k) / 7);
   return ((w % r.every_weeks) + r.every_weeks) % r.every_weeks === 0;
 }
+function binNames(rs) {
+  if (rs.length === 1) return rs[0].title;
+  const n = rs.map(r => r.title.replace(/\s*bins?$/i, ''));
+  return n.slice(0, -1).join(', ') + ' + ' + n[n.length - 1] + ' bins';
+}
+function nextCollections(from, days = 21) {
+  const out = [];
+  for (let i = 0; i < days; i++) { const kk = addDaysKey(from, i), rs = S.reminders.filter(r => reminderToday(r, kk)); if (rs.length) out.push([kk, rs]); }
+  return out;
+}
 function chipsFor(k, now) {
   const st = settings(), out = [], hr = hoursFloat(now);
   // bins: evening before, and morning of
   const tomorrow = addDaysKey(k, 1);
-  S.reminders.forEach(r => {
-    if (r.show_day_before && reminderToday(r, tomorrow) && hr >= 15) out.push({icon: 'bin', c: BIN_COLOURS[r.color], text: `${r.title}`, sub: 'out tonight'});
-    else if (reminderToday(r, k) && hr < 12) out.push({icon: 'bin', c: BIN_COLOURS[r.color], text: `${r.title}`, sub: r.show_day_before ? 'collected today' : 'today'});
-  });
+  // One chip naming exactly which bins go out, e.g. "Red + Yellow bins · out tonight".
+  const tonight = S.reminders.filter(r => r.show_day_before && reminderToday(r, tomorrow) && hr >= 15);
+  const morning = hr < 12 ? S.reminders.filter(r => reminderToday(r, k)) : [];
+  const binChip = (rs, sub) => rs.length && out.push({icon: 'bin', bins: rs.map(r => BIN_COLOURS[r.color]), text: binNames(rs), sub});
+  binChip(tonight, 'out tonight');
+  if (!tonight.length) binChip(morning, morning.some(r => r.show_day_before) ? 'collected today' : 'today');
   if (st.holidays) {
     if (WA_HOLIDAYS[k]) out.push({icon: 'star', c: '#D9773B', text: WA_HOLIDAYS[k], sub: 'public holiday'});
     else for (let i = 1; i <= 6; i++) { const kk = addDaysKey(k, i); if (WA_HOLIDAYS[kk]) { out.push({icon: 'star', c: '#D9773B', text: WA_HOLIDAYS[kk], sub: i === 1 ? 'tomorrow' : fmtDay(kk, {weekday: 'long'})}); break; } }
@@ -830,7 +850,7 @@ function notesZoneHTML() {
 function chipsHTML() {
   const now = new Date(), c = chipsFor(dayKey(now), now);
   if (!c.length) return '';
-  return `<div class="chips">${c.slice(0, 5).map(x => `<span class="chip"><span class="b" style="--c:${x.c}">${icon(x.icon)}</span>${esc(x.text)} <em>${esc(x.sub)}</em></span>`).join('')}</div>`;
+  return `<div class="chips">${c.slice(0, 5).map(x => `<span class="chip">${x.bins ? `<span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span>` : `<span class="b" style="--c:${x.c}">${icon(x.icon)}</span>`}${esc(x.text)} <em>${esc(x.sub)}</em></span>`).join('')}</div>`;
 }
 
 /* ----- views ----- */
@@ -989,13 +1009,14 @@ V.settings = () => {
     <button class="btn" style="margin-top:16px" data-act="edit-member">${icon('plus')}Add someone</button></div>`;
   if (t === 'calendar') body = calendarSettingsHTML();
   if (t === 'reminders') body = `
-    <div class="panel"><h2>Bin days</h2><p class="help">Shows “out tonight” the evening before, so nobody misses the truck.</p>
-      ${S.reminders.map(r => `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span class="chip" style="box-shadow:none;padding:0"><span class="b" style="--c:${BIN_COLOURS[r.color]}">${icon('bin')}</span></span><div class="grow"><b>${esc(r.title)}</b><div class="lbl">${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][r.weekday]}${r.every_weeks > 1 ? `, every ${r.every_weeks} weeks` : ', every week'}</div></div><button class="icon-btn" data-act="del-row" data-table="reminders" data-id="${r.id}" aria-label="Delete">${icon('trash')}</button></div>`).join('') || ''}
+    <div class="panel"><h2>Bin days</h2><p class="help">Add each bin on its own. For bins that swap week to week (say yellow one week, green the next), set both to every 2 weeks and give each its next collection date. The screen then says which bins go out, the evening before.</p>
+      ${(nc => nc.length ? `<div class="binweeks">${nc.slice(0, 2).map(([kk, rs]) => `<div class="bw"><div class="lbl">${esc(fmtDay(kk, {weekday: 'short', day: 'numeric', month: 'short'}))}</div><div class="row" style="gap:8px"><span class="bins">${rs.map(r => `<span class="b" style="--c:${BIN_COLOURS[r.color]}">${icon('bin')}</span>`).join('')}</span><b>${esc(binNames(rs))}</b></div></div>`).join('')}</div>` : '')(nextCollections(dayKey(new Date())))}
+      ${S.reminders.map(r => `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span class="chip" style="box-shadow:none;padding:0"><span class="b" style="--c:${BIN_COLOURS[r.color]}">${icon('bin')}</span></span><div class="grow"><b>${esc(r.title)}</b><div class="lbl">${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][r.weekday]}${r.every_weeks > 1 ? `, every ${r.every_weeks} weeks` : ', every week'}${(n => n ? ' · next ' + esc(fmtDay(n[0], {weekday: 'short', day: 'numeric', month: 'short'})) : '')(nextCollections(dayKey(new Date()), 28).find(([, rs]) => rs.includes(r)))}</div></div><button class="icon-btn" data-act="del-row" data-table="reminders" data-id="${r.id}" aria-label="Delete">${icon('trash')}</button></div>`).join('') || ''}
       <form data-form="add-reminder" style="margin-top:14px">
         <div class="row"><input class="input grow" name="title" placeholder="e.g. Red bin" required maxlength="60"><select class="input" name="color" style="width:auto">${Object.keys(BIN_COLOURS).map(c => `<option value="${c}">${c[0].toUpperCase() + c.slice(1)}</option>`).join('')}</select></div>
         <div class="row" style="margin-top:10px"><select class="input" name="weekday" style="width:auto" aria-label="Collection day">${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((d, i) => `<option value="${i}" ${i === 2 ? 'selected' : ''}>${d}</option>`).join('')}</select>
           <select class="input" name="every" style="width:auto"><option value="1">Every week</option><option value="2">Every 2 weeks</option></select>
-          <label class="lbl">Next collection <input class="input" type="date" name="anchor" style="width:auto"></label><button class="btn">Add</button></div></form></div>
+          <label class="lbl">Next collection (needed for every 2 weeks) <input class="input" type="date" name="anchor" style="width:auto"></label><button class="btn">Add</button></div></form></div>
     <div class="panel"><h2>Countdowns</h2><p class="help">Counted in sleeps, so the kids can follow along.</p>
       ${S.countdowns.map(c => `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>${esc(c.emoji ? c.emoji + ' ' : '')}${esc(c.title)}</b><div class="lbl">${esc(fmtDay(c.date, {weekday: 'long', day: 'numeric', month: 'long'}))}</div></div><button class="icon-btn" data-act="del-row" data-table="countdowns" data-id="${c.id}" aria-label="Delete">${icon('trash')}</button></div>`).join('')}
       <form data-form="add-countdown" class="row" style="margin-top:14px"><input class="input grow" name="title" placeholder="e.g. Christmas" required maxlength="60"><input class="input" type="date" name="date" required style="width:auto"><button class="btn">Add</button></form></div>`;
@@ -1326,6 +1347,7 @@ const F = {
   async 'add-reminder'(f) {
     const row = {household_id: S.hid, title: f.title.value.trim(), color: f.color.value, weekday: +f.weekday.value, every_weeks: +f.every.value, anchor_date: f.anchor.value || null, show_day_before: true};
     if (row.every_weeks > 1 && !row.anchor_date) return toast('For fortnightly bins, pick the date of the next collection.', 4000);
+    if (row.anchor_date) row.weekday = weekdayOfKey(row.anchor_date); // the date decides the day, so they can't disagree
     const {data, error} = await sb.from('reminders').insert(row).select().single(); if (error) return toast("Couldn't save that.");
     if (!S.reminders.find(r => r.id === data.id)) S.reminders.push(data); render();
   },
@@ -1431,7 +1453,7 @@ function startDemo() {
   const I = (id, l, text, done) => ({id, list_id: l, text, done: !!done, sort: +id.slice(1)});
   S.items = [I('i1', 'l1', 'Milk'), I('i2', 'l1', 'Bananas'), I('i3', 'l1', 'Weet-Bix'), I('i4', 'l1', 'Nappies (size 5)'), I('i5', 'l1', 'Coffee beans', true), I('i6', 'l2', 'Book car service'), I('i7', 'l2', 'RSVP to Mia\'s party'), I('i8', 'l2', 'Pay kindy fees'), I('i9', 'l2', 'Return library books', true)];
   S.notes = [{id: 'n1', text: 'Plumber coming Thursday morning. Leave the side gate open.', color: 'wattle', author_id: 'm2', created_at: now.toISOString()}, {id: 'n2', text: 'Ruby lost a tooth! Tooth fairy tonight.', color: 'sea', author_id: 'm1', created_at: now.toISOString()}, {id: 'n3', text: 'Hats for kindy this week, sun is fierce.', color: 'coral', author_id: 'm2', created_at: now.toISOString()}];
-  S.reminders = [{id: 'r1', title: 'Red bin', color: 'red', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 1, show_day_before: true}, {id: 'r2', title: 'Yellow bin', color: 'yellow', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 1, show_day_before: true}];
+  S.reminders = [{id: 'r1', title: 'Red bin', color: 'red', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 1, show_day_before: true}, {id: 'r2', title: 'Yellow bin', color: 'yellow', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 2, anchor_date: addDaysKey(k, 1), show_day_before: true}, {id: 'r3', title: 'Green bin', color: 'green', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 2, anchor_date: addDaysKey(k, 8), show_day_before: true}];
   S.countdowns = [{id: 'cd1', title: 'Christmas', date: `${tzParts(now).y}-12-25`}];
   S.calStatus = {connected: true, last_sync_at: now.toISOString()}; S.realtime = 'live'; S.lastData = Date.now();
   S.devices = [{id: S.deviceId, name: 'Family screen', kind: 'tablet', app_version: APP_VERSION, last_seen: now.toISOString()}];
