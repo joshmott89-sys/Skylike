@@ -12,7 +12,9 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <title>Skylike</title>
+<link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:"Nunito";src:url("fonts/nunito-latin-wght-normal.woff2") format("woff2");font-weight:200 1000;font-style:normal;font-display:swap}
 :root{
   --ground:#E8EFF1; --surface:#F8FBFC; --raise:#FFFFFF; --sand:#E9DDC8; --sand-ink:#5E4B2E;
   --ink:#10293A; --ink-2:#46606F; --ink-3:#6B8290; --line:rgba(0,0,0,.10);
@@ -21,7 +23,7 @@
   --ok:#3E8A63; --warn:#C98A12; --bad:#C24A3A;
   --shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22);
   --radius:22px; --radius-s:14px;
-  --font:ui-rounded,"SF Pro Rounded","SF Pro Text",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font:"Nunito",ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --rail:92px; --pad:22px;
   color-scheme:light;
 }
@@ -34,7 +36,7 @@ body.night{
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{font-family:var(--font);background:var(--ground);color:var(--ink);font-size:18px;line-height:1.4;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overflow:hidden;transition:background .6s ease,color .6s ease}
+body{font-family:var(--font);font-feature-settings:"tnum" 0;background:var(--ground);color:var(--ink);font-size:18px;line-height:1.4;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overflow:hidden;transition:background .6s ease,color .6s ease}
 ::selection{background:color-mix(in srgb,var(--apricot) 45%,transparent);color:var(--ink)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -66,7 +68,7 @@ main{overflow:hidden;display:flex;flex-direction:column;min-width:0}
 
 /* ---------- sky band (signature) ---------- */
 .sky{position:relative;flex:none;height:clamp(230px,35vh,330px);color:#fff;overflow:hidden;background:linear-gradient(180deg,var(--sky-top),var(--sky-bot));transition:background 2s linear}
-.sky::after{content:"";position:absolute;inset:auto 0 0 0;height:38%;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(11,79,108,.16));pointer-events:none}
+.sky::after{content:none}
 .sky.dark{color:#E7ECF6}
 .sky-head{position:absolute;inset:calc(18px + env(safe-area-inset-top)) var(--pad) auto var(--pad);display:flex;justify-content:space-between;align-items:flex-start;gap:20px;z-index:3}
 .clock{font-size:clamp(64px,9.4vw,112px);font-weight:650;letter-spacing:-.035em;line-height:.92;text-shadow:0 2px 10px rgba(0,0,0,.14)}
@@ -79,6 +81,8 @@ main{overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .wx .t{font-size:clamp(40px,5vw,60px);font-weight:650;letter-spacing:-.03em;line-height:1}
 .wx .r{font-size:16px;font-weight:600;opacity:.92}
 .horizon{position:absolute;left:var(--pad);right:var(--pad);bottom:16px;height:46%;z-index:2}
+.horizon::before{content:"";position:absolute;left:calc(-1 * var(--pad));right:calc(-1 * var(--pad));bottom:-16px;height:41px;background:linear-gradient(180deg,rgba(18,108,143,.28),rgba(11,79,108,.5))}
+body.night .horizon::before{background:linear-gradient(180deg,rgba(20,35,61,.6),rgba(8,16,30,.8))}
 .horizon .line{position:absolute;left:0;right:0;bottom:24px;height:2px;background:rgba(255,255,255,.55);border-radius:2px}
 .horizon .past{position:absolute;left:0;bottom:24px;height:2px;background:#fff;border-radius:2px}
 .tick{position:absolute;bottom:0;font-size:13px;font-weight:600;transform:translateX(-50%);opacity:.85}
@@ -89,7 +93,14 @@ main{overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .sun.moon::before{background:radial-gradient(circle,rgba(230,226,212,.22) 0%,rgba(230,226,212,0) 60%)}
 .pill{position:absolute;bottom:34px;height:40px;max-width:30%;display:flex;align-items:center;gap:8px;padding:0 14px 0 6px;border-radius:99px;background:rgba(255,255,255,.92);color:var(--ink);font-size:15.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px -8px rgba(0,0,0,.45);z-index:2;border:0;transition:opacity .4s}
 .pill.r1{bottom:80px}
+.stem{position:absolute;bottom:26px;width:2px;margin-left:-1px;background:rgba(255,255,255,.85);border-radius:2px;z-index:1}
+body.night .stem{background:rgba(175,192,210,.5)}
 .more-ev{position:absolute;right:0;top:-34px;font-size:14px;font-weight:700;background:rgba(255,255,255,.25);padding:3px 10px;border-radius:99px}
+body.night .pill{background:#1C2944;color:#C3CFDF;box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
+body.night .sky{color:#C9D3E6}
+body.night .wx svg{stroke:#AFC0D2}
+body.night .face{filter:saturate(.55) brightness(.72)}
+body.night .mark{border-color:#8A9BB4}
 .pill .dot{width:28px;height:28px;border-radius:50%;background:var(--c);flex:none;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
 .pill.done{opacity:.55}
 .pill.now{box-shadow:0 0 0 3px var(--apricot),0 6px 18px -8px rgba(0,0,0,.45)}
@@ -123,6 +134,7 @@ body.night .zone h2 .more{color:var(--ocean-ink)}
 .ev .when{font-weight:700;font-size:17px;min-width:76px;color:var(--ink-2)}
 .ev .what{font-size:21px;font-weight:650;line-height:1.2}
 .ev .who{display:flex;align-items:center;gap:6px;font-size:15px;color:var(--ink-2);margin-top:3px;font-weight:600}
+.ev .who .mini{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--c) 22%,var(--raise));display:grid;place-items:center;font-size:18px}
 .ev .who i{width:12px;height:12px;border-radius:50%;background:var(--c)}
 .ev.next .what{font-size:26px}
 .ev.next .when{color:var(--apricot-ink);background:color-mix(in srgb,var(--apricot) 28%,transparent);padding:6px 10px;border-radius:12px;text-align:center}
@@ -140,8 +152,9 @@ body.night .ev.next .when{color:var(--apricot)}
 .item .txt{flex:1;min-width:0;overflow-wrap:anywhere}
 .item .x{border:0;background:none;color:var(--ink-3);padding:6px;border-radius:10px;opacity:.7}
 .listtag{font-size:14px;font-weight:700;color:var(--ink-3);text-transform:none;margin:10px 0 2px}
+.zone .notes{-webkit-mask-image:linear-gradient(180deg,#000 88%,transparent);mask-image:linear-gradient(180deg,#000 88%,transparent);padding-bottom:20px}
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;overflow:auto;align-content:start}
-.note{position:relative;border-radius:16px;padding:14px 16px 30px;font-size:18px;font-weight:600;line-height:1.3;color:#2B2416;background:var(--nc,#EADFC9);box-shadow:0 1px 1px rgba(0,0,0,.05),0 8px 18px -12px rgba(0,0,0,.35);overflow-wrap:anywhere;min-height:110px;transform:rotate(var(--rot,0deg))}
+.note{position:relative;border-radius:16px;padding:14px 38px 30px 16px;font-size:18px;font-weight:600;line-height:1.3;color:#2B2416;background:var(--nc,#EADFC9);box-shadow:0 1px 1px rgba(0,0,0,.05),0 8px 18px -12px rgba(0,0,0,.35);overflow-wrap:anywhere;min-height:110px;transform:rotate(var(--rot,0deg))}
 body.night .note{filter:brightness(.55) saturate(.8)}
 .note .by{position:absolute;left:16px;bottom:9px;font-size:13px;font-weight:700;opacity:.65}
 .note .x{position:absolute;right:6px;top:6px;border:0;background:none;padding:6px;opacity:.5;color:inherit}
@@ -200,7 +213,7 @@ textarea.input{min-height:96px;resize:vertical}
 
 /* week / month */
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
-.day{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px;min-height:280px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.day{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px;min-height:calc(100vh - 170px);display:flex;flex-direction:column;gap:8px;min-width:0}
 .day.today{box-shadow:0 0 0 3px var(--apricot),var(--shadow)}
 .day .dh{font-weight:700;font-size:15px;color:var(--ink-2);display:flex;justify-content:space-between;align-items:baseline}
 .day .dh b{font-size:26px;color:var(--ink);letter-spacing:-.02em}
@@ -285,6 +298,7 @@ body.night .hero .leave{color:var(--apricot)}
   .zone{overflow:visible}
   .week{grid-template-columns:1fr}
   .day{min-height:0}
+  .row>.grow{min-width:40px}
   .page h1{font-size:28px}
   .capture{bottom:calc(84px + env(safe-area-inset-bottom))}
   .mc{min-height:62px;padding:4px}.mc .e span{display:none}
@@ -393,6 +407,7 @@ const daysBetween = (a, b) => Math.round((keyToDate(b) - keyToDate(a)) / 864e5);
 const fmtTime = d => new Intl.DateTimeFormat('en-AU', {timeZone: TZ, hour:'numeric', minute:'2-digit', hour12:true}).format(d).replace(/\s?([ap])\.?m\.?/i, (m, a) => a.toLowerCase() + 'm');
 const fmtDay = (k, opts) => new Intl.DateTimeFormat('en-AU', Object.assign({timeZone:'UTC'}, opts)).format(keyToDate(k));
 const hoursFloat = d => { const p = tzParts(d); return p.h + p.min / 60; };
+const ago = mins => mins < 1 ? 'just now' : relMins(mins) + ' ago';
 function relMins(mins) {
   if (mins < 1) return 'now';
   if (mins < 60) return `${Math.round(mins)} min`;
@@ -682,7 +697,7 @@ function skyHTML(compact) {
   const [top, bot] = skyAt(h), dark = h < 6.2 || h > 19.2;
   const ds = st.dayStart, de = st.dayEnd, span = de - ds;
   const pct = x => Math.max(0, Math.min(100, (x - ds) / span * 100));
-  const nowPct = pct(h), sunUp = h >= ds && h <= de;
+  const nowPct = pct(h), sunUp = !dark && h >= ds && h < de;
   const s = Math.sin(Math.PI * Math.max(0, Math.min(1, (h - ds) / span)));
   const arc = compact ? 30 : 74, base = compact ? 22 : 26;
   const evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day);
@@ -695,14 +710,16 @@ function skyHTML(compact) {
     const sh = hoursFloat(new Date(e.starts_at));
     const done = new Date(e.ends_at) < now, live = !done && new Date(e.starts_at) <= now;
     const m = eventMember(e);
+    const markHTML = `<span class="mark ${done ? 'done' : ''} ${live ? 'live' : ''}" style="left:${pct(sh)}%;--c:${eventColour(e)}" aria-hidden="true"></span>`;
     if (compact || done) return `<span class="mark ${done ? 'done' : ''} ${live ? 'live' : ''}" style="left:${pct(sh)}%;--c:${eventColour(e)}" title="${esc(fmtTime(new Date(e.starts_at)) + ' ' + e.title)}"></span>`;
     const label = `${fmtTime(new Date(e.starts_at))} ${e.title}`;
     const w = Math.min(26, (Math.min(label.length, 28) * 9.2 + 66) / horizonPx * 100);
     let left = Math.min(pct(sh), 100 - w);
     let row = rowEnd.findIndex(end => left >= end + 0.8);
-    if (row < 0) { extra++; return ''; }
+    if (row < 0) { extra++; return markHTML; }
     rowEnd[row] = left + w;
-    return `<button class="pill r${row} ${done ? 'done' : ''} ${live ? 'now' : ''}" style="left:${left}%;width:${w}%;--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><span class="dot">${m ? esc((m.emoji || m.name.charAt(0)).toUpperCase()) : ''}</span><span>${esc(label)}</span></button>`;
+    const stem = `<span class="stem" style="left:${pct(sh)}%;height:${row ? 54 : 8}px" aria-hidden="true"></span>`;
+    return markHTML + stem + `<button class="pill r${row} ${done ? 'done' : ''} ${live ? 'now' : ''}" style="left:${left}%;width:${w}%;--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><span class="dot">${m ? esc((m.emoji || m.name.charAt(0)).toUpperCase()) : ''}</span><span>${esc(label)}</span></button>`;
   }).join('');
   const ticks = [];
   for (let t = Math.ceil(ds / 3) * 3; t <= de; t += 3) ticks.push(`<span class="tick" style="left:${pct(t)}%">${t === 12 ? 'noon' : ((t + 11) % 12 + 1) + (t < 12 ? 'am' : 'pm')}</span>`);
@@ -715,7 +732,7 @@ function skyHTML(compact) {
     <div class="horizon">
       <div class="line"></div><div class="past" style="width:${nowPct}%"></div>
       <div class="sun ${sunUp ? '' : 'moon'}" style="left:${sunUp ? nowPct : 92}%;bottom:${sunUp ? base + s * arc : base + arc * .6}px" aria-hidden="true"></div>
-      ${pills}${extra && !compact ? `<span class="more-ev">+${extra} more</span>` : ''}
+      ${pills}
       ${compact ? '' : ticks.join('')}
     </div></section>`;
 }
@@ -729,7 +746,7 @@ function upNextHTML(limit = 4) {
     const m = eventMember(e), st = new Date(e.starts_at), live = st <= now;
     return `<div class="ev ${i === 0 && label === 'Up next' ? 'next' : ''}" style="--c:${eventColour(e)}">
       <div class="when num">${live ? 'Now' : esc(fmtTime(st))}</div>
-      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who"><i></i>${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
+      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
   }).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
     ? `<div class="empty"><b>Nothing else today</b>Tomorrow is clear too.</div>`
@@ -775,11 +792,11 @@ V.focus = () => {
     const start = new Date(next.starts_at), mins = (start - now) / 60e3, live = mins <= 0;
     const buffer = next.location ? st.leaveBuffer : 0, leaveIn = mins - buffer;
     const pctLeft = Math.max(0, Math.min(100, 100 - (leaveIn / 120) * 100));
-    hero = `<div class="hero"><div class="lead">${live ? 'Happening now' : 'Next up'}</div><div class="big">${esc(next.title || 'Busy')}</div>
+    hero = `<div class="hero"><div class="big">${esc(next.title || 'Busy')}</div>
       <div class="lead num">${esc(fmtTime(start))}${next.location ? ' · ' + esc(next.location) : ''}</div>
-      ${live ? '' : buffer ? `<div class="leave">${leaveIn <= 0 ? 'Time to leave' : `Leave in <span class="num">${esc(relMins(leaveIn))}</span>`}</div><div class="meter"><i style="width:${pctLeft}%"></i></div>`
+      ${live ? '<div class="leave">Happening now</div>' : buffer ? `<div class="leave">${leaveIn <= 0 ? 'Time to leave' : `Leave in <span class="num">${esc(relMins(leaveIn))}</span>`}</div><div class="meter"><i style="width:${pctLeft}%"></i></div>`
         : `<div class="leave">Starts in <span class="num">${esc(relMins(mins))}</span></div><div class="meter"><i style="width:${Math.max(0, Math.min(100, 100 - mins / 120 * 100))}%"></i></div>`}</div>`;
-  } else hero = `<div class="hero"><div class="lead">Today</div><div class="big">Nothing else on today</div><div class="lead">Enjoy the gap.</div></div>`;
+  } else hero = `<div class="hero"><div class="big">Nothing else on today</div><div class="lead">Enjoy the gap.</div></div>`;
   const later = today.slice(1, 4).map(e => `<div class="ev" style="--c:${eventColour(e)}"><div class="when num">${esc(fmtTime(new Date(e.starts_at)))}</div><div><div class="what">${esc(e.title)}</div></div></div>`).join('');
   const t = listByKind('todo'), top = t ? listItems(t.id, false).slice(0, 5) : [];
   return `${skyHTML(true)}<div class="focus">${hero}
@@ -930,12 +947,15 @@ V.settings = () => {
       ${S.devices.sort((a, b) => b.last_seen.localeCompare(a.last_seen)).map(d => { const ago = (Date.now() - new Date(d.last_seen)) / 60e3;
         return `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="grow"><b>${esc(d.name)}</b>${d.id === S.deviceId ? ' <span class="lbl">(this one)</span>' : ''}<div class="lbl">${d.kind === 'tablet' ? 'Family screen' : 'Phone'} · v${esc(d.app_version)} · seen ${ago < 2 ? 'just now' : esc(relMins(ago)) + ' ago'}</div></div><button class="btn soft" data-act="cmd" data-cmd="reload" data-id="${esc(d.id)}">Refresh</button></div>`; }).join('')}
       <button class="btn" style="margin-top:14px" data-act="cmd" data-cmd="reload">${icon('refresh')}Refresh every screen</button></div>
-    <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(relMins((Date.now() - S.lastData) / 60e3)) + ' ago' : 'never'}.</p></div>`;
+    <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(ago((Date.now() - S.lastData) / 60e3)) : 'never'}.</p></div>`;
   return `<div class="page"><h1>Settings</h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 };
+let BRIDGE_SRC = null;
+function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
 function calendarSettingsHTML() {
+  if (!BRIDGE_SRC) prefetchBridge();
   const cs = S.calStatus || {};
-  const status = cs.connected ? (cs.last_sync_error ? `<span class="status bad">Problem: ${esc(cs.last_sync_error)}</span>` : `<span class="status ok">Connected${cs.last_sync_at ? ' · synced ' + esc(relMins((Date.now() - new Date(cs.last_sync_at)) / 60e3)) + ' ago' : ''}</span>`) : '<span class="status warn">Not connected</span>';
+  const status = cs.connected ? (cs.last_sync_error ? `<span class="status bad">Problem: ${esc(cs.last_sync_error)}</span>` : `<span class="status ok">Connected${cs.last_sync_at ? ' · synced ' + esc(ago((Date.now() - new Date(cs.last_sync_at)) / 60e3)) : ''}</span>`) : '<span class="status warn">Not connected</span>';
   const key = LS.get('pendingKey:' + S.hid, null);
   return `<div class="panel"><h2>Google Calendar</h2><p class="help">${status}</p>
     ${cs.connected ? `<div class="row" style="margin-bottom:6px"><button class="btn" data-act="cal-sync">${icon('refresh')}Sync now</button><button class="btn soft" data-act="cal-reconnect">Reconnect</button></div>` : ''}
@@ -955,10 +975,10 @@ function calendarSettingsHTML() {
 const NAV = [['family','Home','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['notes','Notes','note'],['sitter','Sitter','sitter'],['settings','Settings','gear']];
 function railHTML() {
   const adults = S.members.filter(m => m.kind !== 'kid');
-  const sync = !S.online ? ['bad', 'Offline'] : S.realtime === 'live' ? ['', 'Live'] : ['warn', S.realtime === 'lost' ? 'Retrying' : 'Linking'];
+  const sync = DEMO ? ['warn', 'Sample'] : !S.online ? ['bad', 'Offline'] : S.realtime === 'live' ? ['', 'Live'] : ['warn', S.realtime === 'lost' ? 'Retrying' : 'Linking'];
   return `<div class="faces">${adults.map(m => `<button class="face ${S.activeMember === m.id ? 'on' : ''}" style="--c:${esc(m.color)}" data-act="me" data-id="${m.id}" aria-label="${esc(m.name)}'s view">${m.emoji ? esc(m.emoji) : esc(m.name.charAt(0).toUpperCase())}</button>`).join('')}</div>
     ${NAV.map(([v, l, ic]) => `<button class="navbtn ${(S.view === v || (v === 'family' && ['focus','planner'].includes(S.view))) ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}
-    <span class="grow"></span><button class="syncdot ${sync[0]}" data-act="go" data-view="settings" data-tab="admin" title="${S.lastData ? 'Updated ' + relMins((Date.now() - S.lastData) / 60e3) + ' ago' : ''}"><i></i>${sync[1]}</button>`;
+    <span class="grow"></span><button class="syncdot ${sync[0]}" data-act="go" data-view="settings" data-tab="admin" title="${S.lastData ? 'Updated ' + ago((Date.now() - S.lastData) / 60e3) : ''}"><i></i>${sync[1]}</button>`;
 }
 function tabbarHTML() {
   const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['notes','Notes','note'],['settings','More','gear']];
@@ -1080,14 +1100,16 @@ const A = {
   async 'sign-out'() { await sb.auth.signOut(); LS.set('hid', null); location.reload(); },
   onboard(el) { S._onboard = el.dataset.mode; renderOnboard(); },
   'otp-back'() { S._otpEmail = null; renderGate(); },
-  async 'copy-script'() {
+  'copy-script'() {
     let key = LS.get('pendingKey:' + S.hid, null);
     if (!key) { key = (uid() + uid()).replace(/-/g, '').slice(0, 40); LS.set('pendingKey:' + S.hid, key); }
-    try {
-      const src = await (await fetch('apps-script/bridge.gs', {cache: 'no-store'})).text();
-      await navigator.clipboard.writeText(src.replace('__SKYLIKE_KEY__', key));
-      toast('Script copied. Paste it into a new Apps Script project.', 3600);
-    } catch { toast("Couldn't copy. Open Settings on a device that allows copying."); }
+    const showManual = src => sheet(`<h2>Copy this script</h2><p class="help" style="color:var(--ink-2)">Select all of it and copy, then paste into Apps Script.</p><textarea class="input" readonly style="min-height:300px;font-family:ui-monospace,Menlo,monospace;font-size:13px">${esc(src)}</textarea><div class="row" style="margin-top:12px"><span class="grow"></span><button class="btn" data-act="close-sheet">Done</button></div>`);
+    if (!BRIDGE_SRC) { prefetchBridge().then(() => BRIDGE_SRC ? showManual(BRIDGE_SRC.replace('__SKYLIKE_KEY__', key)) : toast("Couldn't load the script. Check the connection.")); return; }
+    const src = BRIDGE_SRC.replace('__SKYLIKE_KEY__', key);
+    // must run inside the tap for Safari
+    (navigator.clipboard ? navigator.clipboard.writeText(src) : Promise.reject())
+      .then(() => toast('Script copied. Paste it into a new Apps Script project.', 3600))
+      .catch(() => showManual(src));
     render();
   },
   'cal-reconnect'() { if (!LS.get('pendingKey:' + S.hid, null)) LS.set('pendingKey:' + S.hid, (uid() + uid()).replace(/-/g, '').slice(0, 40)); render(); },
@@ -1247,7 +1269,7 @@ function startDemo() {
   const now = new Date(), k = dayKey(now), at = (dk, hm) => { const [h, m] = hm.split(':').map(Number); const d = keyToDate(dk); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h - 8, m)).toISOString(); };
   const hid = 'demo'; S.hid = hid; S.session = {user: {id: 'u1', email: 'sample@example.com'}};
   S.household = {id: hid, name: 'Sample family', timezone: 'Australia/Perth', join_code: 'SAMPLE', settings: {sitter: {contacts: [{name: 'Alex (Dad)', role: 'Parent', phone: '0400 000 001'}, {name: 'Sam (Mum)', role: 'Parent', phone: '0400 000 002'}, {name: 'Nan', role: 'Grandma, 5 min away', phone: '0400 000 003'}], bedtimes: [{name: 'Ruby', time: '7:00pm'}, {name: 'Leo', time: '7:30pm'}], wifi: {name: 'SampleHouse', password: 'sample-wifi'}, notes: 'Leo has a nightlight. Ruby gets one book.'}}};
-  S.members = [{id: 'm1', name: 'Alex', color: '#2F7BB5', kind: 'adult', home_view: 'focus', user_id: 'u1'}, {id: 'm2', name: 'Sam', color: '#7B5EA7', kind: 'adult', home_view: 'planner'}, {id: 'm3', name: 'Ruby', color: '#D49A12', kind: 'kid', home_view: 'family'}, {id: 'm4', name: 'Leo', color: '#3F8A68', kind: 'kid', home_view: 'family'}];
+  S.members = [{id: 'm1', name: 'Alex', color: '#2F7BB5', kind: 'adult', home_view: 'focus', user_id: 'u1'}, {id: 'm2', name: 'Sam', color: '#7B5EA7', kind: 'adult', home_view: 'planner'}, {id: 'm3', name: 'Ruby', color: '#D49A12', kind: 'kid', home_view: 'family', emoji: '🐨'}, {id: 'm4', name: 'Leo', color: '#3F8A68', kind: 'kid', home_view: 'family', emoji: '🐢'}];
   S.calendars = [{id: 'c1', google_id: 'alex', name: 'Alex', member_id: 'm1', enabled: true}, {id: 'c2', google_id: 'sam', name: 'Sam', member_id: 'm2', enabled: true}, {id: 'c3', google_id: 'kids', name: 'Kids', member_id: 'm3', enabled: true}, {id: 'c4', google_id: 'leo', name: 'Leo', member_id: 'm4', enabled: true}];
   const E = (id, cal, dk, s, e, title, loc) => ({id, calendar_id: cal, event_id: id, title, starts_at: at(dk, s), ends_at: at(dk, e), all_day: false, location: loc || null});
   const t1 = addDaysKey(k, 1), t2 = addDaysKey(k, 2), t3 = addDaysKey(k, 3);

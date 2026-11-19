@@ -21,6 +21,6 @@ STORY: From across the room: time, weather, what's next and who it's for. Up clo
 
 FIRST VIEWPORT: Left ocean rail with family faces, view switcher and sync dot. Top 34%: sky band with large clock and date at left, weather at right, events as pills on the horizon, sun at now. Below: Up next (three events, large), Lists preview, Notes board, with reminder chips (bin night, countdowns, school holidays) leading the lower area.
 
-FORM: Coastal light, candidate 3 of 7 on the ordered list (assigned by roll; user chose it over the visual-timetable pick and the canon). seed: none (unavailable)
+FORM: Coastal light, candidate 3 of 7 on the ordered list (assigned by roll; user chose it over the visual-timetable pick and the canon). seed:d9edf2aa9b83952f
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
