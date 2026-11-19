@@ -191,6 +191,11 @@ textarea.input{min-height:96px;resize:vertical}
 .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .row>.grow{flex:1;min-width:160px}
 .addbar{display:flex;gap:10px;margin:4px 0 14px}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin:-4px 0 16px}
+.qa{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px 0 12px;border:1.5px dashed color-mix(in srgb,var(--ocean-2) 45%,transparent);border-radius:99px;background:transparent;color:var(--ocean-2);font:inherit;font-weight:650;font-size:16px;transition:background .15s,transform .1s}
+.qa svg{width:16px;height:16px}
+.qa:active{transform:scale(.96);background:color-mix(in srgb,var(--ocean-2) 12%,transparent)}
+body.night .qa{color:#9CC3D3;border-color:rgba(156,195,211,.4)}
 .addbar .input{flex:1}
 .panel{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
 .panel h2{font-size:22px;margin:0 0 6px;font-weight:700}
@@ -505,8 +510,31 @@ async function loadAll() {
   S.household = hh.data; TZ = hh.data.timezone || TZ;
   TABLES.forEach((t, i) => { if (!rest[i].error) S[KEY_OF[t]] = rest[i].data || []; });
   S.lastData = Date.now(); saveSnap();
-  refreshCalStatus();
+  refreshCalStatus(); loadHistory();
   return true;
+}
+async function loadHistory() {
+  const {data} = await sb.from('list_history').select('list_id,text,times,last_added').eq('household_id', S.hid);
+  if (data) { S.history = data; if (S.view === 'lists') render(); }
+}
+// Quick-add suggestions: what this family adds most (recent first on ties), topped up with starters. Always 5.
+const STARTERS = {
+  todo: ['Take bins out', 'Go grocery shopping', 'Take meds', 'Pay the bills', 'Water the plants', 'Change the sheets', 'Book a haircut', 'Wash the car', 'Return library books', 'Pack kindy bag'],
+  grocery: ['Milk', 'Bread', 'Bananas', 'Eggs', 'Butter', 'Cheese', 'Yoghurt', 'Apples', 'Nappies', 'Chicken', 'Coffee', 'Toilet paper', 'Pasta', 'Rice', 'Weet-Bix'],
+  custom: []
+};
+function suggestionsFor(l, n = 5) {
+  const open = new Set(listItems(l.id, false).map(i => i.text.trim().toLowerCase()));
+  const seen = new Set(), out = [];
+  const push = t => { const k = t.trim().toLowerCase(); if (!k || open.has(k) || seen.has(k)) return; seen.add(k); out.push(t.trim()); };
+  (S.history || []).filter(h => h.list_id === l.id).sort((a, b) => b.times - a.times || (b.last_added > a.last_added ? 1 : -1)).forEach(h => push(h.text));
+  (STARTERS[l.kind] || []).forEach(push);
+  return out.slice(0, n);
+}
+function bumpHistory(listId, text) {
+  const k = text.trim().toLowerCase(), h = (S.history = S.history || []).find(x => x.list_id === listId && x.text.toLowerCase() === k);
+  if (h) { h.times++; h.last_added = new Date().toISOString(); } else S.history.push({list_id: listId, text: text.trim(), times: 1, last_added: new Date().toISOString()});
+  sb.rpc('bump_list_history', {p_list: listId, p_text: text}).then(() => {}, () => {});
 }
 async function refreshCalStatus() {
   const {data} = await sb.rpc('calendar_status', {p_household: S.hid});
@@ -917,6 +945,7 @@ V.lists = () => {
   return `<div class="page"><h1>Lists<span class="sp"></span><button class="btn soft" data-act="new-list">${icon('plus')}New list</button></h1>
     <div class="tabs">${tabs}</div>
     <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
+      ${(sug => sug.length ? `<div class="quick" aria-label="Quick add">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : '')(suggestionsFor(l))}
       <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
       ${l.kind === 'custom' ? `<div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button></div>` : ''}
@@ -1147,6 +1176,14 @@ const A = {
   wake() { $('#night').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
   'close-sheet'(el, e) { if (e.target === el || el.tagName === 'BUTTON') closeSheet(); },
   async 'toggle-item'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.done = !it.done; it.done_at = it.done ? new Date().toISOString() : null; render(); await db(sb.from('list_items').update({done: it.done, done_at: it.done_at}).eq('id', it.id)); },
+  async 'quick-add'(el) {
+    const listId = el.dataset.list, text = el.dataset.text, k = text.toLowerCase();
+    const done = S.items.find(i => i.list_id === listId && i.done && i.text.trim().toLowerCase() === k);
+    bumpHistory(listId, text);
+    if (done) { done.done = false; done.done_at = null; render(); await db(sb.from('list_items').update({done: false, done_at: null}).eq('id', done.id)); return; }
+    const row = {id: uid(), household_id: S.hid, list_id: listId, text, added_by: (meMember() || {}).id || null, sort: Date.now() / 1000, done: false, created_at: new Date().toISOString()};
+    S.items.push(row); render(); await db(sb.from('list_items').insert(row));
+  },
   async 'del-item'(el) { S.items = S.items.filter(i => i.id !== el.dataset.id); render(); await db(sb.from('list_items').delete().eq('id', el.dataset.id)); },
   async 'clear-done'(el) { const ids = S.items.filter(i => i.list_id === el.dataset.id && i.done).map(i => i.id); S.items = S.items.filter(i => !ids.includes(i.id)); render(); await db(sb.from('list_items').delete().in('id', ids)); },
   'pick-list'(el) { S.listId = el.dataset.id; render(); },
@@ -1239,7 +1276,7 @@ const F = {
   async 'add-item'(f) {
     const text = f.text.value.trim(); if (!text || !f.dataset.list) return;
     const row = {id: uid(), household_id: S.hid, list_id: f.dataset.list, text, added_by: (meMember() || {}).id || null, sort: Date.now() / 1000, done: false, created_at: new Date().toISOString()};
-    S.items.push(row); f.text.value = ''; render();
+    S.items.push(row); f.text.value = ''; bumpHistory(row.list_id, text); render();
     await db(sb.from('list_items').insert(row));
   },
   async 'new-list'(f) { const row = {id: uid(), household_id: S.hid, name: f.name.value.trim(), kind: 'custom', sort: S.lists.length}; S.lists.push(row); S.listId = row.id; closeSheet(); render(); await db(sb.from('lists').insert(row)); },
@@ -1247,7 +1284,7 @@ const F = {
     const text = f.text.value.trim(); if (!text) return; const kind = f.kind.value, me = meMember();
     closeSheet();
     if (kind === 'note') { const row = {id: uid(), household_id: S.hid, text, color: f.color.value, author_id: me ? me.id : null, created_at: new Date().toISOString()}; S.notes.unshift(row); render(); await db(sb.from('notes').insert(row)); toast('Note added'); }
-    else { const l = listByKind(kind); if (!l) return; const row = {id: uid(), household_id: S.hid, list_id: l.id, text: text.slice(0, 200), added_by: me ? me.id : null, sort: Date.now() / 1000, done: false, created_at: new Date().toISOString()}; S.items.push(row); render(); await db(sb.from('list_items').insert(row)); toast(`Added to ${l.name}`); }
+    else { const l = listByKind(kind); if (!l) return; const row = {id: uid(), household_id: S.hid, list_id: l.id, text: text.slice(0, 200), added_by: me ? me.id : null, sort: Date.now() / 1000, done: false, created_at: new Date().toISOString()}; S.items.push(row); bumpHistory(l.id, row.text); render(); await db(sb.from('list_items').insert(row)); toast(`Added to ${l.name}`); }
   },
   async member(f) {
     const id = f.dataset.id, row = {name: f.name.value.trim(), emoji: f.emoji.value.trim() || null, color: f.color.value, kind: f.kind.value, home_view: f.kind.value === 'kid' ? 'family' : f.home_view.value};
