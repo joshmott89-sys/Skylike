@@ -1,0 +1,914 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T12:51:57+00:00",
+  "title": "Design System: Skylike",
+  "extensions": {
+    "colorMeta": {
+      "ocean": {
+        "role": "primary",
+        "displayName": "Indian Ocean Deep",
+        "canonical": "#0B4F6C",
+        "tonalRamp": [
+          "#000D19",
+          "#052939",
+          "#1A475D",
+          "#316884",
+          "#538AA7",
+          "#7EACC6",
+          "#AACFE5",
+          "#D6F4FF"
+        ]
+      },
+      "ocean-bright": {
+        "role": "primary",
+        "displayName": "Shallow Water",
+        "canonical": "#126C8F",
+        "tonalRamp": [
+          "#000E1B",
+          "#002A3D",
+          "#044862",
+          "#1D6A8A",
+          "#448CAD",
+          "#73AECB",
+          "#A1D1EA",
+          "#D0F5FF"
+        ]
+      },
+      "ocean-ink": {
+        "role": "primary",
+        "displayName": "Spray",
+        "canonical": "#E6F2F7",
+        "tonalRamp": [
+          "#080C0D",
+          "#202628",
+          "#3C4346",
+          "#596367",
+          "#7A8488",
+          "#9EA7AA",
+          "#C3CACE",
+          "#EAF0F2"
+        ]
+      },
+      "ocean-ink-muted": {
+        "role": "primary",
+        "displayName": "Wet Sand Blue",
+        "canonical": "#9CC3D3",
+        "tonalRamp": [
+          "#020D12",
+          "#142830",
+          "#2C4651",
+          "#466774",
+          "#668896",
+          "#8DAAB7",
+          "#B5CED8",
+          "#DFF2FA"
+        ]
+      },
+      "apricot": {
+        "role": "secondary",
+        "displayName": "Sunset Apricot",
+        "canonical": "#F2A65A",
+        "tonalRamp": [
+          "#1C0300",
+          "#3F1900",
+          "#663300",
+          "#8F4F00",
+          "#B37128",
+          "#D1975F",
+          "#EFBE91",
+          "#FFE6C3"
+        ]
+      },
+      "apricot-ink": {
+        "role": "secondary",
+        "displayName": "Burnt Apricot",
+        "canonical": "#7A4210",
+        "tonalRamp": [
+          "#190500",
+          "#3B1C01",
+          "#603614",
+          "#885329",
+          "#AC744A",
+          "#CA9976",
+          "#E9C0A2",
+          "#FFE7D0"
+        ]
+      },
+      "sand": {
+        "role": "tertiary",
+        "displayName": "Limestone Sand",
+        "canonical": "#E9DDC8",
+        "tonalRamp": [
+          "#0E0B05",
+          "#2A241A",
+          "#494133",
+          "#6A604F",
+          "#8B816F",
+          "#ADA494",
+          "#D0C8BB",
+          "#F4EEE3"
+        ]
+      },
+      "sand-ink": {
+        "role": "tertiary",
+        "displayName": "Limestone Ink",
+        "canonical": "#5E4B2E",
+        "tonalRamp": [
+          "#110A02",
+          "#2E2313",
+          "#4E3F2A",
+          "#705E43",
+          "#927F63",
+          "#B3A28A",
+          "#D5C7B2",
+          "#F8EDDD"
+        ]
+      },
+      "sea-mist": {
+        "role": "neutral",
+        "displayName": "Sea Mist",
+        "canonical": "#E8EFF1",
+        "tonalRamp": [
+          "#090C0C",
+          "#222627",
+          "#3E4344",
+          "#5D6264",
+          "#7E8385",
+          "#A1A6A7",
+          "#C6CACB",
+          "#ECEFF0"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Foam",
+        "canonical": "#F8FBFC",
+        "tonalRamp": [
+          "#0A0B0C",
+          "#242526",
+          "#404243",
+          "#5F6262",
+          "#808384",
+          "#A3A5A6",
+          "#C8C9CA",
+          "#EDEFEF"
+        ]
+      },
+      "raise": {
+        "role": "neutral",
+        "displayName": "White Water",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#A5A5A5",
+          "#C9C9C9",
+          "#EEEEEE"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Deep Harbour Ink",
+        "canonical": "#10293A",
+        "tonalRamp": [
+          "#040C13",
+          "#182732",
+          "#314553",
+          "#4C6577",
+          "#6D8699",
+          "#92A8B9",
+          "#BACCDA",
+          "#E2F1FC"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Channel Grey",
+        "canonical": "#46606F",
+        "tonalRamp": [
+          "#040C12",
+          "#19272F",
+          "#324550",
+          "#4D6573",
+          "#6D8695",
+          "#93A9B6",
+          "#BACCD7",
+          "#E3F1FA"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Weathered Grey",
+        "canonical": "#6B8290",
+        "tonalRamp": [
+          "#050C11",
+          "#1B272E",
+          "#34454E",
+          "#506471",
+          "#708693",
+          "#96A8B4",
+          "#BCCCD5",
+          "#E4F1F8"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgba(0,0,0,.10)"
+      },
+      "ok": {
+        "role": "status",
+        "displayName": "Eucalypt OK",
+        "canonical": "#3E8A63",
+        "tonalRamp": [
+          "#001104",
+          "#002E19",
+          "#134E33",
+          "#2A714E",
+          "#4E936E",
+          "#7BB494",
+          "#A8D6BA",
+          "#D5F9E3"
+        ]
+      },
+      "warn": {
+        "role": "status",
+        "displayName": "Wattle Warning",
+        "canonical": "#C98A12",
+        "tonalRamp": [
+          "#1A0400",
+          "#3D1C00",
+          "#623700",
+          "#8A5300",
+          "#AE7500",
+          "#CC9B51",
+          "#EBC287",
+          "#FFE9BC"
+        ]
+      },
+      "bad": {
+        "role": "status",
+        "displayName": "Coral Alert",
+        "canonical": "#C24A3A",
+        "tonalRamp": [
+          "#230000",
+          "#4B0602",
+          "#761E14",
+          "#A4372A",
+          "#CB5B4B",
+          "#E88676",
+          "#FFB1A2",
+          "#FFDCD0"
+        ]
+      },
+      "family-ocean": {
+        "role": "family",
+        "displayName": "Ocean",
+        "canonical": "#2F7BB5",
+        "tonalRamp": [
+          "#000C21",
+          "#002746",
+          "#08456F",
+          "#1F669A",
+          "#4588BF",
+          "#73ABDB",
+          "#A1CFF7",
+          "#D0F3FF"
+        ]
+      },
+      "family-jacaranda": {
+        "role": "family",
+        "displayName": "Jacaranda",
+        "canonical": "#7B5EA7",
+        "tonalRamp": [
+          "#10041E",
+          "#2B1B42",
+          "#4A356A",
+          "#6C5194",
+          "#8D73B8",
+          "#AE98D5",
+          "#D1BFF2",
+          "#F4E7FF"
+        ]
+      },
+      "family-wattle": {
+        "role": "family",
+        "displayName": "Wattle",
+        "canonical": "#D49A12",
+        "tonalRamp": [
+          "#1A0500",
+          "#3B1D00",
+          "#603800",
+          "#885600",
+          "#AB7700",
+          "#CA9D49",
+          "#E8C382",
+          "#FFEAB8"
+        ]
+      },
+      "family-eucalypt": {
+        "role": "family",
+        "displayName": "Eucalypt",
+        "canonical": "#3F8A68",
+        "tonalRamp": [
+          "#001106",
+          "#002E1C",
+          "#144E36",
+          "#2B7052",
+          "#4F9272",
+          "#7BB497",
+          "#A8D6BD",
+          "#D5F9E5"
+        ]
+      },
+      "family-banksia": {
+        "role": "family",
+        "displayName": "Banksia",
+        "canonical": "#D9773B",
+        "tonalRamp": [
+          "#200000",
+          "#451100",
+          "#6E2A00",
+          "#9A4500",
+          "#C06730",
+          "#DD8F64",
+          "#FAB894",
+          "#FFE2C5"
+        ]
+      },
+      "family-reef": {
+        "role": "family",
+        "displayName": "Reef",
+        "canonical": "#D2526D",
+        "tonalRamp": [
+          "#230004",
+          "#4B0219",
+          "#761932",
+          "#A4314D",
+          "#CB556D",
+          "#E88292",
+          "#FFADB9",
+          "#FFD9E2"
+        ]
+      },
+      "family-coast": {
+        "role": "family",
+        "displayName": "Coast",
+        "canonical": "#3A9AA0",
+        "tonalRamp": [
+          "#001013",
+          "#002D30",
+          "#004D51",
+          "#076F74",
+          "#3B9196",
+          "#6EB2B7",
+          "#9ED5D8",
+          "#CEF8FA"
+        ]
+      },
+      "family-granite": {
+        "role": "family",
+        "displayName": "Granite",
+        "canonical": "#66727E",
+        "tonalRamp": [
+          "#080C10",
+          "#1F262C",
+          "#3A434C",
+          "#58636D",
+          "#78848F",
+          "#9CA6B0",
+          "#C2CAD3",
+          "#E9EFF6"
+        ]
+      },
+      "note-sand": {
+        "role": "note-paper",
+        "displayName": "Sand paper",
+        "canonical": "#EADFC9",
+        "tonalRamp": [
+          "#0E0B05",
+          "#2A241A",
+          "#484133",
+          "#69604E",
+          "#8B816F",
+          "#ACA494",
+          "#CFC8BB",
+          "#F3EEE3"
+        ]
+      },
+      "note-sea": {
+        "role": "note-paper",
+        "displayName": "Sea paper",
+        "canonical": "#CDE7E0",
+        "tonalRamp": [
+          "#050D0B",
+          "#1B2825",
+          "#354642",
+          "#516661",
+          "#728882",
+          "#97AAA5",
+          "#BDCDC9",
+          "#E5F2EE"
+        ]
+      },
+      "note-wattle": {
+        "role": "note-paper",
+        "displayName": "Wattle paper",
+        "canonical": "#F6E2A0",
+        "tonalRamp": [
+          "#110A00",
+          "#2E2400",
+          "#4E4110",
+          "#716025",
+          "#938147",
+          "#B3A574",
+          "#D5C9A1",
+          "#F8EFCF"
+        ]
+      },
+      "note-jacaranda": {
+        "role": "note-paper",
+        "displayName": "Jacaranda paper",
+        "canonical": "#E1D6F1",
+        "tonalRamp": [
+          "#0D0912",
+          "#28222F",
+          "#453E4F",
+          "#655C72",
+          "#877D94",
+          "#A9A1B5",
+          "#CCC6D6",
+          "#F1ECF9"
+        ]
+      },
+      "note-coral": {
+        "role": "note-paper",
+        "displayName": "Coral paper",
+        "canonical": "#F6D1CB",
+        "tonalRamp": [
+          "#130806",
+          "#31201D",
+          "#523B38",
+          "#765954",
+          "#997A75",
+          "#B99E99",
+          "#DAC3BF",
+          "#FCEAE7"
+        ]
+      },
+      "note-sky": {
+        "role": "note-paper",
+        "displayName": "Sky paper",
+        "canonical": "#D3E6F4",
+        "tonalRamp": [
+          "#060C10",
+          "#1D262D",
+          "#38444D",
+          "#54646F",
+          "#758591",
+          "#99A7B2",
+          "#BFCBD4",
+          "#E7F0F7"
+        ]
+      },
+      "night-ground": {
+        "role": "night",
+        "displayName": "Night Ground",
+        "canonical": "#0C1424",
+        "tonalRamp": [
+          "#080B12",
+          "#1F2530",
+          "#3A4251",
+          "#586174",
+          "#788396",
+          "#9CA5B7",
+          "#C2C9D8",
+          "#E9EFFA"
+        ]
+      },
+      "night-surface": {
+        "role": "night",
+        "displayName": "Night Surface",
+        "canonical": "#121C30",
+        "tonalRamp": [
+          "#070B14",
+          "#1E2532",
+          "#394254",
+          "#566178",
+          "#76839A",
+          "#9AA5BA",
+          "#C0CADB",
+          "#E7EFFD"
+        ]
+      },
+      "night-raise": {
+        "role": "night",
+        "displayName": "Night Raise",
+        "canonical": "#17233B",
+        "tonalRamp": [
+          "#060B15",
+          "#1D2534",
+          "#374257",
+          "#54617B",
+          "#74839E",
+          "#99A5BE",
+          "#BFCADE",
+          "#E6EFFF"
+        ]
+      },
+      "night-ink": {
+        "role": "night",
+        "displayName": "Night Ink",
+        "canonical": "#B9C6D6",
+        "tonalRamp": [
+          "#080C11",
+          "#1F262D",
+          "#3A434D",
+          "#58626F",
+          "#788391",
+          "#9CA6B2",
+          "#C2CAD4",
+          "#E9EFF7"
+        ]
+      },
+      "night-ink-2": {
+        "role": "night",
+        "displayName": "Night Ink 2",
+        "canonical": "#8697AB",
+        "tonalRamp": [
+          "#060C12",
+          "#1D2630",
+          "#384351",
+          "#546374",
+          "#758496",
+          "#99A7B6",
+          "#BFCAD8",
+          "#E6F0FA"
+        ]
+      },
+      "night-rail": {
+        "role": "night",
+        "displayName": "Night Rail",
+        "canonical": "#08101E",
+        "tonalRamp": [
+          "#080B12",
+          "#1F252F",
+          "#3A4250",
+          "#586272",
+          "#788395",
+          "#9CA6B5",
+          "#C2CAD7",
+          "#E9EFF9"
+        ]
+      },
+      "night-ocean-bright": {
+        "role": "night",
+        "displayName": "Night Ocean Bright",
+        "canonical": "#13233D",
+        "tonalRamp": [
+          "#050B16",
+          "#1B2536",
+          "#354359",
+          "#50627E",
+          "#7183A1",
+          "#96A6C0",
+          "#BCCAE0",
+          "#E4EFFF"
+        ]
+      },
+      "night-apricot": {
+        "role": "night",
+        "displayName": "Night Apricot",
+        "canonical": "#C98B52",
+        "tonalRamp": [
+          "#190500",
+          "#3B1C00",
+          "#603606",
+          "#88531C",
+          "#AC7440",
+          "#CB9A6F",
+          "#EAC09D",
+          "#FFE8CC"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Sky clock",
+        "purpose": "The clock in the sky band only; weather temperature shares the voice."
+      },
+      "headline": {
+        "displayName": "Focus hero",
+        "purpose": "The single next event on the Focus view."
+      },
+      "page-title": {
+        "displayName": "Page title",
+        "purpose": "Top of inner pages (Calendar, Lists, Notes, Sitter, Settings)."
+      },
+      "title": {
+        "displayName": "Zone title",
+        "purpose": "Zone, panel and sheet headings."
+      },
+      "event": {
+        "displayName": "Event name",
+        "purpose": "Event names in Up next; next event steps to 26px."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "List items, notes, help text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and sentence-case list-group tags."
+      },
+      "nav": {
+        "displayName": "Rail label",
+        "purpose": "Labels under rail icons."
+      }
+    },
+    "shadows": [
+      {
+        "name": "field-lift",
+        "value": "0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22)",
+        "purpose": "Every resting field: zones, panels, chips, tabs, day cells, icon buttons, toasts."
+      },
+      {
+        "name": "field-lift-night",
+        "value": "0 1px 2px rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6)",
+        "purpose": "Field lift under the night palette."
+      },
+      {
+        "name": "sky-pill",
+        "value": "0 6px 18px -8px rgba(0,0,0,.45)",
+        "purpose": "Event pills floating in the sky band."
+      },
+      {
+        "name": "paper",
+        "value": "0 1px 1px rgba(0,0,0,.05),0 8px 18px -12px rgba(0,0,0,.35)",
+        "purpose": "Sticky notes."
+      },
+      {
+        "name": "floating-action",
+        "value": "0 10px 26px -10px rgba(0,0,0,.35)",
+        "purpose": "The capture button."
+      },
+      {
+        "name": "sheet",
+        "value": "0 -10px 40px -10px rgba(0,0,0,.3)",
+        "purpose": "Bottom sheets, over a rgba(10,24,34,.38) scrim."
+      },
+      {
+        "name": "now-ring",
+        "value": "0 0 0 3px var(--apricot)",
+        "purpose": "Today cell, live sky pill and mark; layered over the element's own lift."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-pop",
+        "value": "cubic-bezier(.2,.8,.2,1)",
+        "purpose": "Face selection scale (200ms)."
+      },
+      {
+        "name": "ease-sheet",
+        "value": "cubic-bezier(.2,.9,.2,1)",
+        "purpose": "Sheet rise, 280ms from 40px below."
+      },
+      {
+        "name": "control",
+        "value": "150-200ms",
+        "purpose": "Button, checkbox, toggle, nav colour changes."
+      },
+      {
+        "name": "palette",
+        "value": "600ms ease",
+        "purpose": "Day/night ground and rail swap."
+      },
+      {
+        "name": "sky",
+        "value": "2s linear",
+        "purpose": "Sky gradient crossfade between time-of-day keyframes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "prefers-reduced-motion disables all animation and transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone",
+        "value": "760px"
+      },
+      {
+        "name": "tablet-narrow",
+        "value": "761px-1100px"
+      }
+    ],
+    "skyKeyframes": [
+      [
+        0,
+        "#0E1630",
+        "#1B2747"
+      ],
+      [
+        4.5,
+        "#16213F",
+        "#2F3B66"
+      ],
+      [
+        5.6,
+        "#3E4F86",
+        "#E79A72"
+      ],
+      [
+        6.6,
+        "#7AA9CF",
+        "#F4C9A0"
+      ],
+      [
+        9,
+        "#5BA3D3",
+        "#CFE6F2"
+      ],
+      [
+        15,
+        "#4E9BD0",
+        "#D6EBF4"
+      ],
+      [
+        17.3,
+        "#6F96C6",
+        "#F2C9A2"
+      ],
+      [
+        18.5,
+        "#5A5E9E",
+        "#EE9A6B"
+      ],
+      [
+        19.4,
+        "#2E3769",
+        "#9C6B8D"
+      ],
+      [
+        20.5,
+        "#18213F",
+        "#2C3760"
+      ],
+      [
+        24,
+        "#0E1630",
+        "#1B2747"
+      ]
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action on pages and sheets.",
+      "html": "<button class=\"ds-btn\">Save</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:12px 18px;min-height:48px;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);font-weight:700;font-size:17px;background:var(--ocean,#0B4F6C);color:#fff;transition:filter .15s,transform .1s;cursor:pointer}.ds-btn:hover{filter:brightness(1.08)}.ds-btn:active{transform:scale(.98)}.ds-btn:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px}"
+    },
+    {
+      "name": "Soft Button",
+      "kind": "button",
+      "refersTo": "button-soft",
+      "description": "Secondary action on a foam field with the field lift.",
+      "html": "<button class=\"ds-btn-soft\">Cancel</button>",
+      "css": ".ds-btn-soft{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:14px;padding:12px 18px;min-height:48px;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);font-weight:700;font-size:17px;background:var(--surface,#F8FBFC);color:var(--ink,#10293A);box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22));transition:filter .15s,transform .1s;cursor:pointer}.ds-btn-soft:hover{filter:brightness(1.03)}.ds-btn-soft:active{transform:scale(.98)}.ds-btn-soft:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px}"
+    },
+    {
+      "name": "Capture Button",
+      "kind": "button",
+      "refersTo": "button-capture",
+      "description": "The single floating apricot add action.",
+      "html": "<button class=\"ds-capture\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Add</button>",
+      "css": ".ds-capture{border:0;border-radius:99px;background:var(--apricot,#F2A65A);color:#3D2208;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);font-weight:750;font-size:19px;padding:16px 24px 16px 18px;display:inline-flex;gap:10px;align-items:center;box-shadow:0 10px 26px -10px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s}.ds-capture:active{transform:scale(.98)}.ds-capture:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled input on white water with an ocean focus stroke.",
+      "html": "<label class=\"ds-field\"><span>List item</span><input class=\"ds-input\" placeholder=\"Add milk\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif)}.ds-field span{font-size:15px;font-weight:700;color:var(--ink-2,#46606F)}.ds-input{border:2px solid var(--line,rgba(0,0,0,.1));background:var(--raise,#fff);border-radius:14px;padding:12px 14px;min-height:50px;font:inherit;font-size:18px;color:var(--ink,#10293A);outline:none;transition:border-color .15s}.ds-input:hover{border-color:var(--ink-3,#6B8290)}.ds-input:focus,.ds-input:focus-visible{border-color:var(--ocean-2,#126C8F)}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "rail-nav-active",
+      "description": "Ocean rail with member faces and icon-over-label view buttons.",
+      "html": "<nav class=\"ds-rail\"><span class=\"ds-face on\" style=\"--c:#2F7BB5\">A</span><span class=\"ds-face\" style=\"--c:#7B5EA7\">S</span><hr><button class=\"ds-nav on\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z\"/></svg>Home</button><button class=\"ds-nav\"><svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"5\" width=\"16\" height=\"15\" rx=\"2\"/><path d=\"M4 10h16M9 3v4M15 3v4\"/></svg>Calendar</button></nav>",
+      "css": ".ds-rail{width:92px;background:var(--ocean,#0B4F6C);color:var(--ocean-ink,#E6F2F7);display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 0;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif)}.ds-rail hr{width:60px;border:0;border-top:1px solid rgba(230,242,247,.14);margin:6px 0}.ds-face{width:56px;height:56px;border-radius:50%;border:3px solid transparent;display:grid;place-items:center;font-weight:700;font-size:22px;color:#fff;background:var(--c);transition:transform .2s cubic-bezier(.2,.8,.2,1)}.ds-face.on{border-color:var(--apricot,#F2A65A);transform:scale(1.06)}.ds-nav{width:68px;min-height:62px;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2,#9CC3D3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .2s,color .2s}.ds-nav:hover{color:var(--ocean-ink,#E6F2F7)}.ds-nav.on{background:rgba(230,242,247,.13);color:#fff}.ds-nav:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px}"
+    },
+    {
+      "name": "Reminder Chip",
+      "kind": "chip",
+      "refersTo": "chip-reminder",
+      "description": "Bin night, countdowns and school terms under the sky.",
+      "html": "<span class=\"ds-chip\"><b style=\"--c:#7B5EA7\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"9\" width=\"16\" height=\"11\" rx=\"1\"/><path d=\"M3 9h18M12 9v11M12 9c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1\"/></svg></b>Christmas <em>36 sleeps</em></span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:99px;background:var(--surface,#F8FBFC);box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22));font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);font-weight:650;font-size:16.5px;color:var(--ink,#10293A)}.ds-chip b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c)}.ds-chip em{font-style:normal;color:var(--ink-2,#46606F);font-weight:600}"
+    },
+    {
+      "name": "Zone",
+      "kind": "card",
+      "refersTo": "zone",
+      "description": "Foam field on sea-mist with the single field lift; title plus ocean text link.",
+      "html": "<section class=\"ds-zone\"><h2>Up next <button>Week</button></h2><div class=\"ds-ev\"><span class=\"ds-when\">3:30pm</span><span class=\"ds-what\">Swimming</span></div><div class=\"ds-ev\"><span class=\"ds-when plain\">5:30pm</span><span class=\"ds-what\">Pick up groceries</span></div></section>",
+      "css": ".ds-zone{background:var(--surface,#F8FBFC);border-radius:22px;box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22));padding:20px 22px;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);color:var(--ink,#10293A);max-width:420px}.ds-zone h2{margin:0 0 12px;font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center}.ds-zone h2 button{margin-left:auto;font:inherit;font-size:15px;font-weight:600;color:var(--ocean-2,#126C8F);background:none;border:0;padding:6px 4px;cursor:pointer}.ds-zone h2 button:hover{text-decoration:underline}.ds-zone h2 button:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px;border-radius:10px}.ds-ev{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line,rgba(0,0,0,.1));font-variant-numeric:tabular-nums}.ds-ev:last-child{border-bottom:0}.ds-when{font-weight:700;font-size:17px;min-width:76px;text-align:center;color:var(--apricot-ink,#7A4210);background:color-mix(in srgb,var(--apricot,#F2A65A) 28%,transparent);padding:6px 10px;border-radius:12px}.ds-when.plain{background:none;color:var(--ink-2,#46606F);text-align:left;padding:0}.ds-what{font-size:21px;font-weight:650;line-height:1.2}"
+    },
+    {
+      "name": "Sticky Note",
+      "kind": "custom",
+      "refersTo": "note",
+      "description": "Tilted pale paper on the notes board.",
+      "html": "<div class=\"ds-note\">Plumber coming Thursday. Leave the side gate open.<span>Sam</span></div>",
+      "css": ".ds-note{position:relative;width:200px;border-radius:16px;padding:14px 38px 30px 16px;font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif);font-size:18px;font-weight:600;line-height:1.3;color:#2B2416;background:#F6E2A0;box-shadow:0 1px 1px rgba(0,0,0,.05),0 8px 18px -12px rgba(0,0,0,.35);transform:rotate(-1.2deg);min-height:110px;transition:transform .2s}.ds-note:hover{transform:rotate(0deg)}.ds-note span{position:absolute;left:16px;bottom:9px;font-size:13px;font-weight:700;opacity:.65}"
+    },
+    {
+      "name": "Sky Band",
+      "kind": "custom",
+      "refersTo": "sky-pill",
+      "description": "Signature: time-tinted sky with clock, horizon, sun at now and stemmed event pills.",
+      "html": "<section class=\"ds-sky\"><div class=\"ds-clock\">3:05<small>pm</small></div><div class=\"ds-sun\"></div><div class=\"ds-hz\"><i class=\"ds-line\"></i><i class=\"ds-past\"></i><i class=\"ds-stem\"></i><i class=\"ds-mark\"></i><button class=\"ds-pill\"><b>R</b>3:30pm Swimming</button></div></section>",
+      "css": ".ds-sky{position:relative;height:260px;overflow:hidden;color:#fff;background:linear-gradient(180deg,#4E9BD0,#D6EBF4);font-family:var(--font,Nunito,ui-rounded,system-ui,sans-serif)}.ds-clock{position:absolute;left:22px;top:18px;font-size:88px;font-weight:650;letter-spacing:-.035em;line-height:.92;text-shadow:0 2px 10px rgba(0,0,0,.14);font-variant-numeric:tabular-nums}.ds-clock small{font-size:.3em;font-weight:600;letter-spacing:0;margin-left:.15em;opacity:.85}.ds-sun{position:absolute;left:55%;bottom:110px;width:46px;height:46px;margin-left:-23px;border-radius:50%;background:radial-gradient(circle at 40% 38%,#FFF4D6,#FFD08A 55%,#F2A65A);box-shadow:0 0 60px 30px rgba(255,214,150,.35)}.ds-hz{position:absolute;left:22px;right:22px;bottom:16px;height:110px}.ds-line,.ds-past{position:absolute;left:0;bottom:24px;height:2px;border-radius:2px}.ds-line{right:0;background:rgba(255,255,255,.55)}.ds-past{width:55%;background:#fff}.ds-stem{position:absolute;left:62%;bottom:26px;width:2px;height:12px;background:rgba(255,255,255,.85)}.ds-mark{position:absolute;left:62%;bottom:18px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#D49A12;border:3px solid #fff;box-shadow:0 0 0 3px #F2A65A}.ds-pill{position:absolute;left:58%;bottom:38px;height:40px;display:flex;align-items:center;gap:8px;padding:0 14px 0 6px;border:0;border-radius:99px;background:rgba(255,255,255,.92);color:var(--ink,#10293A);font:inherit;font-size:15.5px;font-weight:650;box-shadow:0 0 0 3px #F2A65A,0 6px 18px -8px rgba(0,0,0,.45);cursor:pointer}.ds-pill b{width:28px;height:28px;border-radius:50%;background:#D49A12;color:#fff;display:grid;place-items:center;font-size:12px}.ds-pill:focus-visible{outline:3px solid var(--ocean-2,#126C8F);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Today Is a Sky",
+    "overview": "**Creative North Star: \"Today Is a Sky\"**\n\nSkylike is a Perth coastal morning turned into a family calendar. The top of every home view is the real day's sky, 6am to 9pm, painted by the actual hour: dawn violet, midday Indian Ocean blue, apricot sunset, dusk navy. A sun (a moon after dark) sits at now; the family's events stand on its horizon as white pills tied by stems to colour marks on the timeline. Everything below the horizon is calm ground: sea-mist, limestone-sand accents, soft rounded fields with almost no lines.\n\nThe system is built for glancing from across a hallway. Numerals are huge and tabular, type is a single rounded face in heavy weights, and each screen carries a few large things rather than many small ones. Colour is spent on people (each family member owns a flora colour) and on now (apricot); structure is carried by tone and soft shadow, not borders. At night the whole palette is swapped, not dimmed: ground, surfaces, rail and type move to low-luminance dusk navy and family colours desaturate, so the screen never glows in a dark room.\n\nIt rejects the category default of white cards over a colour-coded agenda grid, and it rejects dashboard density and cold, techy chrome.",
+    "keyCharacteristics": [
+      "A live sky band whose gradient follows the true time of day, with sun or moon at now.",
+      "One rounded face (Nunito, self-hosted variable) at 600-750 weight; tabular numerals for every time.",
+      "Deep ocean rail on the left (tablet) or a sea-mist tab bar (phone); everything else floats on sea-mist ground.",
+      "Generous radius everywhere, pill shapes for anything tappable-and-small, soft offset shadows, near-zero borders.",
+      "Family colours from local flora identify people; apricot means now.",
+      "A full night palette swap at low luminance, plus a near-black idle clock."
+    ],
+    "rules": [
+      {
+        "name": "The Apricot Means Now Rule",
+        "body": "Apricot marks the present moment, the person whose view this is, or time pressure. It never decorates, and no second warm accent competes with it.",
+        "section": "colors"
+      },
+      {
+        "name": "The People Own Colour Rule",
+        "body": "Flora colours identify a family member and nothing else. Chrome, headings and controls stay ocean and ink; a reminder chip borrows a flora disc only as the badge behind its icon.",
+        "section": "colors"
+      },
+      {
+        "name": "The Swap, Don't Dim Rule",
+        "body": "Night is a separate palette at low luminance, not an opacity layer over the day palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Nunito carries every role. Monospace appears only where a person must copy characters exactly.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Time Rule",
+        "body": "Every time, count and temperature uses tabular numerals so the clock never jitters and columns of times align.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "Labels and group tags are sentence case at normal tracking; nothing is uppercase-spaced.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Lift Rule",
+        "body": "Every resting field uses the same field-lift shadow. Depth differences come from tone, not from stacking more shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Ring For State Rule",
+        "body": "Selection and now are 3px rings (apricot for now, ink for chosen swatch, ocean-bright for focus), never heavier shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** open every home view with the live sky band and keep its gradient tied to the true time of day.",
+      "**Do** keep apricot for now, the active person, and time pressure; use the now ring (3px apricot) to mark today.",
+      "**Do** identify people with their flora colour on faces, dots, marks and tints, and pair kid-facing items with an icon or emoji avatar so pre-readers can follow.",
+      "**Do** use one field-lift shadow on foam fields over sea-mist ground, with hairlines only between rows.",
+      "**Do** set every time in tabular numerals and keep headings at 650-750 weight in the one rounded face.",
+      "**Do** swap to the night palette after dark rather than lowering opacity.",
+      "**Do** keep touch targets at least 48px and honour safe-area insets."
+    ],
+    "donts": [
+      "**Don't** build white cards over a colour-coded agenda grid; that is the category default this system replaces.",
+      "**Don't** add borders around fields or stack heavier shadows for emphasis; use tone or a ring.",
+      "**Don't** use flora colours for chrome, headings or decoration.",
+      "**Don't** introduce a second display face, or use monospace anywhere but codes to be typed.",
+      "**Don't** add uppercase tracked labels or small category tags above headings.",
+      "**Don't** put bright white or saturated fields on screen at night."
+    ]
+  }
+}
