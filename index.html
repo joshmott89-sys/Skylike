@@ -123,6 +123,12 @@ body.night .mark{border-color:#8A9BB4}
 .board{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;padding:18px var(--pad) calc(22px + env(safe-area-inset-bottom));min-height:0;flex:1}
 .zone{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .zone h2{margin:0 0 12px;font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.zone h2 .h2link{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:4px 0;font:inherit;color:inherit;cursor:pointer}
+.zone h2 .h2link svg{width:18px;height:18px;color:var(--ink-3);transition:transform .15s}
+.zone h2 .h2link:active svg{transform:translateX(3px)}
+.seg.sm{margin-left:auto;box-shadow:none;background:color-mix(in srgb,var(--ocean-2) 8%,transparent)}
+.seg.sm button{font-size:14.5px;padding:6px 12px;min-height:38px}
+.seg.sm .n{margin-left:6px;font-size:12.5px;opacity:.7}
 .zone h2 .more{margin-left:auto;font-size:15px;font-weight:600;color:var(--ocean-2);background:none;border:0;padding:6px 4px}
 body.night .zone h2 .more{color:var(--ocean-ink)}
 .chips{display:flex;gap:10px;flex-wrap:wrap;padding:16px var(--pad) 0}
@@ -345,7 +351,14 @@ body.night .hero .leave{color:var(--apricot)}
   .capture{bottom:calc(84px + env(safe-area-inset-bottom))}
   .mc{min-height:62px;padding:4px}.mc .e span{display:none}
 }
-@media (max-width:1100px) and (min-width:761px){.board{grid-template-columns:1fr 1fr}.board .zone.notes-z{grid-column:1/-1}}
+/* Mid-size tablets (e.g. iPad 10.2" landscape): Up next and Notes stacked on the left, Lists runs the full height on the right; the page scrolls. */
+@media (max-width:1100px) and (min-width:761px){
+  main{overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .board{grid-template-columns:1fr 1fr;grid-template-areas:"up lists" "notes lists";grid-template-rows:auto 1fr;flex:none;align-items:start}
+  .board .up-z{grid-area:up}.board .lists-z{grid-area:lists;align-self:stretch}.board .notes-z{grid-area:notes}
+  .board .zone{overflow:visible}
+  .board .zone .notes{-webkit-mask-image:none;mask-image:none;overflow:visible}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -878,26 +891,28 @@ function upNextHTML(limit = 4) {
   const body = rows || (S.calStatus && S.calStatus.connected
     ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
     : `<div class="empty"><b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);
-  return `<div class="zone"><h2>${label}<button class="more" data-act="go" data-view="calendar">Week</button></h2>${body}</div>`;
+  return `<div class="zone up-z"><h2><button class="h2link" data-act="go" data-view="calendar" data-mode="day" data-k="${label === 'Tomorrow' ? addDaysKey(k, 1) : k}">${label}${icon('right')}</button><button class="more" data-act="go" data-view="calendar" data-mode="week">Week</button></h2>${body}</div>`;
 }
 function itemRow(it, showX = false) {
   return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><span class="txt">${esc(it.text)}</span>${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
 }
 function listsZoneHTML() {
-  const g = listByKind('grocery'), t = listByKind('todo');
-  const gi = g ? listItems(g.id, false) : [], ti = t ? listItems(t.id, false) : [];
-  return `<div class="zone"><h2>Lists<button class="more" data-act="go" data-view="lists">All lists</button></h2>
-    <div class="items scroll">
-    ${g ? `<div class="listtag">${esc(g.name)} · ${gi.length}</div><ul class="items">${gi.slice(0, 5).map(i => itemRow(i)).join('') || '<li class="empty">All stocked up</li>'}</ul>` : ''}
-    ${t ? `<div class="listtag">${esc(t.name)} · ${ti.length}</div><ul class="items">${ti.slice(0, 4).map(i => itemRow(i)).join('') || '<li class="empty">Nothing to do</li>'}</ul>` : ''}
-    </div></div>`;
+  // One list at a time, To do by default; the choice is remembered on this screen.
+  const shown = [listByKind('todo'), listByKind('grocery')].filter(Boolean);
+  const l = shown.find(x => x.kind === LS.get('homeList', 'todo')) || shown[0];
+  if (!l) return `<div class="zone lists-z"><h2><button class="h2link" data-act="go" data-view="lists">Lists${icon('right')}</button></h2><div class="empty">No lists yet.</div></div>`;
+  const items = listItems(l.id, false), cap = 12;
+  return `<div class="zone lists-z"><h2><button class="h2link" data-act="go" data-view="lists" data-list="${l.id}">Lists${icon('right')}</button>
+      <span class="seg sm">${shown.map(x => `<button class="${x.id === l.id ? 'on' : ''}" data-act="home-list" data-kind="${x.kind}">${esc(x.name)}<span class="n num">${listItems(x.id, false).length}</span></button>`).join('')}</span></h2>
+    <div class="items scroll"><ul class="items">${items.slice(0, cap).map(i => itemRow(i)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up' : 'Nothing to do'}</li>`}</ul>
+    ${items.length > cap ? `<button class="btn ghost" style="margin-top:8px" data-act="go" data-view="lists" data-list="${l.id}">${items.length - cap} more in ${esc(l.name)}</button>` : ''}</div></div>`;
 }
 function noteHTML(n, i) {
   const a = memberById(n.author_id), rot = [-1.2, .8, -.4, 1.1, -.9, .5][i % 6];
   return `<div class="note n-${esc(n.color)}" style="--rot:${rot}deg">${esc(n.text)}${a ? `<span class="by">${esc(a.name)}</span>` : ''}<button class="x" data-act="del-note" data-id="${n.id}" aria-label="Remove note">${icon('x')}</button></div>`;
 }
 function notesZoneHTML() {
-  return `<div class="zone notes-z"><h2>Notes<button class="more" data-act="add-note">Add</button></h2>
+  return `<div class="zone notes-z"><h2><button class="h2link" data-act="go" data-view="notes">Notes${icon('right')}</button><button class="more" data-act="add-note">Add</button></h2>
     <div class="notes">${S.notes.slice(0, 6).map(noteHTML).join('') || '<div class="empty"><b>No notes</b>Leave one for the family.</div>'}</div></div>`;
 }
 function chipsHTML() {
@@ -1245,7 +1260,10 @@ async function saveSettings(patch) {
 async function db(op, msg) { const {error} = await op; if (error) { console.error(error); toast(msg || "Couldn't save that. Check the connection."); return false; } return true; }
 
 const A = {
-  go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view; if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') { S.activeMember = null; if (isPhone()) { const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } } } closeSheet(); render(); },
+  'home-list'(el) { LS.set('homeList', el.dataset.kind); render(); },
+  go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view;
+    if (el.dataset.list) S.listId = el.dataset.list;
+    if (el.dataset.mode) { S.calMode = el.dataset.mode; S.calOffset = 0; S.dayKey = el.dataset.k || dayKey(new Date()); } if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') { S.activeMember = null; if (isPhone()) { const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } } } closeSheet(); render(); },
   me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.home_view === 'family' ? 'family' : m.home_view; } render(); },
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
   wake() { $('#night').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
