@@ -292,8 +292,10 @@ body.night .hero .leave{color:var(--apricot)}
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);box-shadow:0 -1px 0 var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
   .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:700;color:var(--ink-3);padding:6px 0}
   .tabbar button.on{color:var(--ocean-2)}
+  body.night .tabbar button.on{color:var(--apricot)}
   :root{--pad:16px}
   .board,.focus,.split{grid-template-columns:1fr;overflow:visible}
+  main{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .board{flex:none}
   .zone{overflow:visible}
   .week{grid-template-columns:1fr}
@@ -749,7 +751,7 @@ function upNextHTML(limit = 4) {
       <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
   }).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
-    ? `<div class="empty"><b>Nothing else today</b>Tomorrow is clear too.</div>`
+    ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
     : `<div class="empty"><b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);
   return `<div class="zone"><h2>${label}<button class="more" data-act="go" data-view="calendar">Week</button></h2>${body}</div>`;
 }
@@ -832,6 +834,7 @@ V.calendar = () => {
   const today = dayKey(new Date());
   const head = `<h1>${S.calMode === 'week' ? 'Week' : 'Month'}<span class="sp"></span>
     <button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button>
+    <button class="icon-btn" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button>
     <button class="btn soft" data-act="cal-shift" data-n="0">Today</button>
     <button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button>
     <span class="seg"><button class="${S.calMode === 'week' ? 'on' : ''}" data-act="cal-mode" data-mode="week">Week</button><button class="${S.calMode === 'month' ? 'on' : ''}" data-act="cal-mode" data-mode="month">Month</button></span></h1>`;
@@ -1081,7 +1084,7 @@ async function saveSettings(patch) {
 async function db(op, msg) { const {error} = await op; if (error) { console.error(error); toast(msg || "Couldn't save that. Check the connection."); return false; } return true; }
 
 const A = {
-  go(el) { S.view = el.dataset.view; if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') S.activeMember = null; closeSheet(); render(); },
+  go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view; if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') S.activeMember = null; closeSheet(); render(); },
   me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.home_view === 'family' ? 'family' : m.home_view; } render(); },
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
   wake() { $('#night').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
@@ -1126,12 +1129,25 @@ const A = {
     render();
   },
   'cal-reconnect'() { if (!LS.get('pendingKey:' + S.hid, null)) LS.set('pendingKey:' + S.hid, (uid() + uid()).replace(/-/g, '').slice(0, 40)); render(); },
+  async 'cal-refresh'(el) { await refreshCalendar(true); },
   async 'cal-sync'() { toast('Syncing calendar…'); const r = await callFn({action: 'sync'}); toast(r.error ? 'Sync problem: ' + r.error : `Calendar synced · ${r.events ?? 0} events`, 3500); refreshCalStatus(); },
   async 'cal-refresh-list'() { const r = await callFn({action: 'calendars'}); toast(r.error ? r.error : 'Calendar list updated'); const {data} = await sb.from('calendars').select('*').eq('household_id', S.hid); if (data) S.calendars = data; render(); },
   async 'cal-toggle'(el) { const c = S.calendars.find(x => x.id === el.dataset.id); c.enabled = !c.enabled; render(); await db(sb.from('calendars').update({enabled: c.enabled}).eq('id', c.id)); callFn({action: 'sync'}); },
   async 'del-feed'(el) { if (!confirm('Remove this calendar from the screen?')) return; const gid = el.dataset.gid; S.calendars = S.calendars.filter(c => c.google_id !== gid); S.events = S.events.filter(e => e.calendar_id !== gid); render(); await db(sb.rpc('remove_calendar_feed', {p_household: S.hid, p_google_id: gid})); refreshCalStatus(); },
   async cmd(el) { await db(sb.from('commands').insert({household_id: S.hid, command: el.dataset.cmd, device_id: el.dataset.id || null})); toast(el.dataset.id ? 'Sent' : 'Sent to every screen'); }
 };
+let lastCalRefresh = 0;
+async function refreshCalendar(loud) {
+  if (DEMO) { if (loud) toast('Calendar refreshed'); return; }
+  if (!S.calStatus || !S.calStatus.connected) { if (loud) toast('Add a calendar in Settings first.'); return; }
+  lastCalRefresh = Date.now();
+  if (loud) toast('Checking Google Calendar…');
+  const r = await callFn({action: 'sync'});
+  const ev = await sb.from('events_cache').select('*').eq('household_id', S.hid).gte('ends_at', new Date(Date.now() - 3 * 864e5).toISOString()).order('starts_at');
+  if (ev.data) S.events = ev.data;
+  refreshCalStatus(); render();
+  if (loud) toast(r.error ? 'Calendar problem: ' + r.error : 'Calendar up to date', 3000);
+}
 async function callFn(body) {
   const {data: {session}} = await sb.auth.getSession();
   try {
