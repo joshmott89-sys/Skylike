@@ -301,6 +301,11 @@ body.night .hero .leave{color:var(--apricot)}
 #saver img.on{opacity:1}
 #saver .cap{position:absolute;left:32px;bottom:28px;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.6)}
 #saver .cap .clock{font-size:72px}
+.cds{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
+#saver .cds{justify-content:flex-start}
+.cd{padding:10px 18px;border-radius:99px;font-size:20px;font-weight:650;background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.cd b{font-weight:800;margin-left:4px}
+#night .cd{background:rgba(127,141,163,.1);color:#55627A}
 .sheet-bg{position:fixed;inset:0;background:rgba(10,24,34,.38);z-index:40;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s ease-out}
 .sheet{background:var(--ground);width:min(640px,100%);border-radius:28px 28px 0 0;padding:22px 22px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px -10px rgba(0,0,0,.3);animation:up .28s cubic-bezier(.2,.9,.2,1);max-height:90vh;overflow:auto}
 @media(min-width:761px){.sheet-bg{align-items:center}.sheet{border-radius:28px}}
@@ -688,6 +693,10 @@ function nextCollections(from, days = 21) {
   for (let i = 0; i < days; i++) { const kk = addDaysKey(from, i), rs = S.reminders.filter(r => reminderToday(r, kk)); if (rs.length) out.push([kk, rs]); }
   return out;
 }
+function countdownsHTML(k, n = 3) {
+  const list = S.countdowns.map(c => [c, daysBetween(k, c.date)]).filter(([, d]) => d >= 0 && d <= 60).sort((a, b) => a[1] - b[1]).slice(0, n);
+  return list.length ? `<div class="cds">${list.map(([c, d]) => `<span class="cd">${c.emoji ? esc(c.emoji) + ' ' : ''}${esc(c.title)} <b class="num">${d === 0 ? 'today!' : d === 1 ? '1 sleep' : d + ' sleeps'}</b></span>`).join('')}</div>` : '';
+}
 function chipsFor(k, now) {
   const st = settings(), out = [], hr = hoursFloat(now);
   // bins: evening before, and morning of
@@ -712,9 +721,10 @@ function chipsFor(k, now) {
       if (next) { const d = daysBetween(k, next[0]); out.push({icon: 'school', c: '#3A9AA0', text: d <= 3 ? 'Back to school' : 'School holidays', sub: d <= 3 ? (d === 1 ? 'tomorrow' : fmtDay(next[0], {weekday: 'long'})) : `${d} sleeps to go`}); }
     } else { const d = daysBetween(k, inTerm[1]); if (d >= 0 && d <= 4) out.push({icon: 'school', c: '#3A9AA0', text: 'Holidays start', sub: d === 0 ? 'after today' : `in ${d} sleeps`}); }
   }
+  // Countdowns live on the idle screens (photos, night clock); home only shows one on the day itself.
   S.countdowns.forEach(c => {
     const d = daysBetween(k, c.date);
-    if (d >= 0 && d <= 60) out.push({icon: 'gift', c: '#7B5EA7', text: c.title, sub: d === 0 ? 'today!' : d === 1 ? '1 sleep' : `${d} sleeps`, emoji: c.emoji});
+    if (d === 0) out.push({icon: 'gift', c: '#7B5EA7', text: c.title, sub: d === 0 ? 'today!' : d === 1 ? '1 sleep' : `${d} sleeps`, emoji: c.emoji});
   });
   return out;
 }
@@ -755,7 +765,7 @@ function idleTick() {
   const nightEl = $('#night');
   if (night && deviceKind() === 'tablet' && idle >= 2) {
     if (!nightEl.classList.contains('on')) nightEl.classList.add('on');
-    nightEl.innerHTML = `<div class="clock num">${clockHTML(now)}</div><div class="date">${esc(fmtDay(dayKey(now), {weekday:'long', day:'numeric', month:'long'}))}</div>`;
+    nightEl.innerHTML = `<div class="clock num">${clockHTML(now)}</div><div class="date">${esc(fmtDay(dayKey(now), {weekday:'long', day:'numeric', month:'long'}))}</div>${countdownsHTML(dayKey(now))}`;
   } else nightEl.classList.remove('on');
   if (!night && deviceKind() === 'tablet' && st.saver.on && S.photos.length && idle >= st.saver.after) startSaver();
   if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= st.idleReturn && !document.querySelector('.sheet-bg') && !['settings'].includes(S.view)) {
@@ -783,7 +793,7 @@ function showSlide() {
   const img = new Image(); img.alt = ''; img.src = saverUrls[saverIdx++ % saverUrls.length];
   img.onload = () => { el.appendChild(img); requestAnimationFrame(() => img.classList.add('on')); const imgs = el.querySelectorAll('img'); if (imgs.length > 2) imgs[0].remove(); };
   let cap = el.querySelector('.cap'); if (!cap) { cap = document.createElement('div'); cap.className = 'cap'; el.appendChild(cap); }
-  cap.innerHTML = `<div class="clock num">${clockHTML(now)}</div>`;
+  cap.innerHTML = `<div class="clock num">${clockHTML(now)}</div>${countdownsHTML(dayKey(now))}`;
 }
 function stopSaver() { clearInterval(saverT); const el = $('#saver'); el.classList.remove('on'); el.innerHTML = ''; S.lastTouch = Date.now(); }
 
@@ -1498,7 +1508,7 @@ function startDemo() {
   S.items = [I('i1', 'l1', 'Milk'), I('i2', 'l1', 'Bananas'), I('i3', 'l1', 'Weet-Bix'), I('i4', 'l1', 'Nappies (size 5)'), I('i5', 'l1', 'Coffee beans', true), I('i6', 'l2', 'Book car service'), I('i7', 'l2', 'RSVP to Mia\'s party'), I('i8', 'l2', 'Pay kindy fees'), I('i9', 'l2', 'Return library books', true)];
   S.notes = [{id: 'n1', text: 'Plumber coming Thursday morning. Leave the side gate open.', color: 'wattle', author_id: 'm2', created_at: now.toISOString()}, {id: 'n2', text: 'Ruby lost a tooth! Tooth fairy tonight.', color: 'sea', author_id: 'm1', created_at: now.toISOString()}, {id: 'n3', text: 'Hats for kindy this week, sun is fierce.', color: 'coral', author_id: 'm2', created_at: now.toISOString()}];
   S.reminders = [{id: 'r1', title: 'Red bin', color: 'red', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 1, show_day_before: true}, {id: 'r2', title: 'Yellow bin', color: 'yellow', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 2, anchor_date: addDaysKey(k, 1), show_day_before: true}, {id: 'r3', title: 'Green bin', color: 'green', weekday: (weekdayOfKey(k) + 1) % 7, every_weeks: 2, anchor_date: addDaysKey(k, 8), show_day_before: true}];
-  S.countdowns = [{id: 'cd1', title: 'Christmas', date: `${tzParts(now).y}-12-25`}];
+  S.countdowns = [{id: 'cd0', title: 'Ruby turns 5', emoji: '🎂', date: addDaysKey(k, 9)}, {id: 'cd1', title: 'Christmas', date: `${tzParts(now).y}-12-25`}];
   S.calStatus = {connected: true, last_sync_at: now.toISOString()}; S.realtime = 'live'; S.lastData = Date.now();
   S.devices = [{id: S.deviceId, name: 'Family screen', kind: 'tablet', app_version: APP_VERSION, last_seen: now.toISOString()}];
   const v = new URLSearchParams(location.search).get('view'); if (v) { S.view = v; if (v === 'focus') S.activeMember = 'm1'; if (v === 'planner') S.activeMember = 'm2'; }
