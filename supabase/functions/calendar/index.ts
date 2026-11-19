@@ -99,7 +99,7 @@ async function syncHousehold(hid: string) {
   const { data: feeds } = await admin.from("calendar_feeds_private").select("id, url").eq("household_id", hid);
   if (!b && !(feeds && feeds.length)) return { household_id: hid, skipped: "not connected" };
   const from = new Date(Date.now() - 2 * 864e5);
-  const to = new Date(Date.now() + 42 * 864e5);
+  const to = new Date(Date.now() + 400 * 864e5); // ~13 months so month view can look ahead
   const errors: string[] = [];
   let rows: any[] = [];
   const handled = new Set<string>();

@@ -133,6 +133,8 @@ body.night .zone h2 .more{color:var(--ocean-ink)}
 .ev{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .ev:last-child{border-bottom:0}
 .ev .when{font-weight:700;font-size:17px;min-width:76px;color:var(--ink-2)}
+.ev .when .til{display:block;font-weight:600;font-size:13px;color:var(--ink-3);margin-top:1px}
+.ev.next .when .til{color:inherit;opacity:.75}
 .ev .what{font-size:21px;font-weight:650;line-height:1.2}
 .ev .who{display:flex;align-items:center;gap:6px;font-size:15px;color:var(--ink-2);margin-top:3px;font-weight:600}
 .ev .who .mini{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--c) 22%,var(--raise));display:grid;place-items:center;font-size:18px}
@@ -423,6 +425,7 @@ const keyToDate = k => { const [y,m,d] = k.split('-').map(Number); return new Da
 const addDaysKey = (k, n) => { const d = keyToDate(k); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const weekdayOfKey = k => keyToDate(k).getUTCDay();
 const daysBetween = (a, b) => Math.round((keyToDate(b) - keyToDate(a)) / 864e5);
+const untilHTML = e => `<span class="til">to ${esc(fmtTime(new Date(e.ends_at)))}</span>`;
 const fmtTime = d => new Intl.DateTimeFormat('en-AU', {timeZone: TZ, hour:'numeric', minute:'2-digit', hour12:true}).format(d).replace(/\s?([ap])\.?m\.?/i, (m, a) => a.toLowerCase() + 'm');
 const fmtDay = (k, opts) => new Intl.DateTimeFormat('en-AU', Object.assign({timeZone:'UTC'}, opts)).format(keyToDate(k));
 const hoursFloat = d => { const p = tzParts(d); return p.h + p.min / 60; };
@@ -768,7 +771,7 @@ function upNextHTML(limit = 4) {
   const rows = list.slice(0, limit).map((e, i) => {
     const m = eventMember(e), st = new Date(e.starts_at), live = st <= now;
     return `<div class="ev ${i === 0 && label === 'Up next' ? 'next' : ''}" style="--c:${eventColour(e)}">
-      <div class="when num">${live ? 'Now' : esc(fmtTime(st))}</div>
+      <div class="when num">${live ? 'Now' : esc(fmtTime(st))}${untilHTML(e)}</div>
       <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
   }).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
@@ -816,11 +819,11 @@ V.focus = () => {
     const buffer = next.location ? st.leaveBuffer : 0, leaveIn = mins - buffer;
     const pctLeft = Math.max(0, Math.min(100, 100 - (leaveIn / 120) * 100));
     hero = `<div class="hero"><div class="big">${esc(next.title || 'Busy')}</div>
-      <div class="lead num">${esc(fmtTime(start))}${next.location ? ' · ' + esc(next.location) : ''}</div>
+      <div class="lead num">${esc(fmtTime(start))} – ${esc(fmtTime(new Date(next.ends_at)))}${next.location ? ' · ' + esc(next.location) : ''}</div>
       ${live ? '<div class="leave">Happening now</div>' : buffer ? `<div class="leave">${leaveIn <= 0 ? 'Time to leave' : `Leave in <span class="num">${esc(relMins(leaveIn))}</span>`}</div><div class="meter"><i style="width:${pctLeft}%"></i></div>`
         : `<div class="leave">Starts in <span class="num">${esc(relMins(mins))}</span></div><div class="meter"><i style="width:${Math.max(0, Math.min(100, 100 - mins / 120 * 100))}%"></i></div>`}</div>`;
   } else hero = `<div class="hero"><div class="big">Nothing else on today</div><div class="lead">Enjoy the gap.</div></div>`;
-  const later = today.slice(1, 4).map(e => `<div class="ev" style="--c:${eventColour(e)}"><div class="when num">${esc(fmtTime(new Date(e.starts_at)))}</div><div><div class="what">${esc(e.title)}</div></div></div>`).join('');
+  const later = today.slice(1, 4).map(e => `<div class="ev" style="--c:${eventColour(e)}"><div class="when num">${esc(fmtTime(new Date(e.starts_at)))}${untilHTML(e)}</div><div><div class="what">${esc(e.title)}</div></div></div>`).join('');
   const t = listByKind('todo'), top = t ? listItems(t.id, false).slice(0, 5) : [];
   return `${skyHTML(true)}<div class="focus">${hero}
     <div style="display:flex;flex-direction:column;gap:18px;min-height:0">
@@ -855,7 +858,7 @@ const BANDS = [['morning', 'Morning', 0, 11.5, 'sunrise', 8.5], ['lunch', 'Lunch
 const bandOf = e => { const h = hoursFloat(new Date(e.starts_at)); return BANDS.find(b => h >= b[2] && h < b[3]) || BANDS[0]; };
 function evRow(e, big) {
   const m = eventMember(e), st = new Date(e.starts_at);
-  return `<button class="ev evbtn" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${e.all_day ? 'All day' : esc(fmtTime(st))}</div>
+  return `<button class="ev evbtn" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${e.all_day ? 'All day' : esc(fmtTime(st)) + untilHTML(e)}</div>
     <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
 }
 V.calendar = () => {
