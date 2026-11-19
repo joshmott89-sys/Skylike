@@ -138,6 +138,24 @@ body.night .seg.sm{border-color:rgba(156,195,211,.35);background:rgba(255,255,25
 body.night .zone h2 .more{color:var(--ocean-ink)}
 .quick-go{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .quick-go .btn{justify-content:center}
+.setupcard{display:flex;align-items:center;gap:14px;margin:16px var(--pad) 0;padding:14px 18px;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);border-left:5px solid var(--apricot)}
+.setupcard>.grow,.sstep>.grow{flex:1;min-width:0}
+.sc-ring{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--apricot) var(--p),color-mix(in srgb,var(--ink) 9%,transparent) 0);display:grid;place-items:center;flex:none}
+.sc-ring b{width:40px;height:40px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:13px}
+.sstep{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.sdot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.sstep.done .sdot{background:#4E9A3F;border-color:#4E9A3F;color:#fff}.sdot svg{width:16px;height:16px;stroke-width:3}
+.sstep.done b{color:var(--ink-2)}
+.tour{text-align:center;padding:8px 6px}
+.tour .te{font-size:64px;line-height:1.2}
+.tour h2{font-size:26px;margin:8px 0}
+.tour p{font-size:17px;line-height:1.5;color:var(--ink-2);max-width:460px;margin:0 auto 14px}
+.tdots{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
+.tdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}.tdots i.on{background:var(--ocean-2);width:22px;border-radius:99px}
+.dkinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:10px}
+.dkind{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 14px;border:2px solid var(--line);border-radius:20px;background:var(--surface);font:inherit;color:var(--ink);text-align:center}
+.dkind:active{border-color:var(--ocean-2)}
+.dkind span{font-size:44px}.dkind b{font-size:18px}.dkind small{color:var(--ink-2);font-size:14px}
 .mweek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
 .mday{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:178px;padding:14px;border:0;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);text-align:left;color:var(--ink);font:inherit}
 .mday.today{outline:3px solid var(--apricot);outline-offset:-3px}
@@ -535,7 +553,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0840'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-0900'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1154,7 +1172,7 @@ function chipsHTML() {
 
 /* ----- views ----- */
 const V = {};
-V.family = () => `${skyHTML(isPhone())}${chipsHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 V.focus = () => {
   const me = meMember(), now = new Date(), k = dayKey(now), st = settings();
@@ -1276,6 +1294,54 @@ V.lists = () => {
 V.notes = () => `<div class="page" style="max-width:none"><h1>Notes<span class="sp"></span><button class="btn" data-act="add-note">${icon('plus')}New note</button></h1>
   <div class="notes" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${S.notes.map(noteHTML).join('') || '<div class="empty"><b>No notes yet</b>Notes show on the family screen until someone clears them.</div>'}</div></div>`;
 
+/* ----- guided setup: checklist, device setup, quick tour ----- */
+function setupSteps() {
+  const adultsSignedIn = S.members.filter(m => m.kind !== 'kid' && m.user_id).length;
+  return [
+    ['family', 'Add your family', 'Each parent and kid, with a colour and an emoji', S.members.length >= 2, {act: 'go', view: 'settings', tab: 'family'}],
+    ['partner', 'Invite your partner', 'They sign in on their phone and enter your code', adultsSignedIn >= 2, {act: 'go', view: 'settings', tab: 'household'}],
+    ['calendar', 'Connect your calendars', 'Paste each Google calendar\'s secret link', !!(S.calStatus && S.calStatus.connected), {act: 'go', view: 'settings', tab: 'calendar'}],
+    ['screen', 'Set up the wall screen', 'Keep it awake and locked to Skylike', S.devices.some(d => d.kind === 'tablet'), {act: 'device-setup'}],
+    ['bins', 'Add bin days', 'So the screen says which bins go out', S.reminders.length > 0, {act: 'go', view: 'settings', tab: 'reminders'}],
+    ['kids', 'Kids\' routines and jobs', 'Picture routines and stars', !kids().length || S.routines.length > 0, {act: 'go', view: 'kids'}],
+    ['kitchen', 'Turn on the AI helper', 'Free key for meals, pantry photos, brain-dump', !!S.aiOn, {act: 'go', view: 'settings', tab: 'kitchen'}],
+    ['photos', 'Add some family photos', 'For the idle screen', S.photos.length > 0, {act: 'go', view: 'settings', tab: 'photos'}]];
+}
+function setupListHTML() {
+  return setupSteps().map(([id, t, sub, done, go]) => `<div class="sstep ${done ? 'done' : ''}"><span class="sdot">${done ? icon('check') : ''}</span><div class="grow"><b>${t}</b><div class="lbl">${sub}</div></div>${done ? '' : `<button class="btn soft" data-act="${go.act}" ${go.view ? `data-view="${go.view}"` : ''} ${go.tab ? `data-tab="${go.tab}"` : ''}>Start</button>`}</div>`).join('');
+}
+function setupCardHTML() {
+  if ((DEMO && !window.__showSetup) || settings().setupHidden) return '';
+  const steps = setupSteps(), done = steps.filter(x => x[3]).length; if (done === steps.length) return '';
+  const next = steps.find(x => !x[3]);
+  return `<div class="setupcard"><div class="sc-ring" style="--p:${done / steps.length * 360}deg"><b class="num">${done}/${steps.length}</b></div>
+    <div class="grow"><b>Get Skylike ready</b><div class="lbl">Next: ${next[1]}</div></div>
+    <button class="btn" data-act="${next[4].act}" ${next[4].view ? `data-view="${next[4].view}"` : ''} ${next[4].tab ? `data-tab="${next[4].tab}"` : ''}>Start</button><button class="btn ghost" data-act="setup-all">See all</button></div>`;
+}
+const TOUR = [
+  ['☀️', 'Today, at a glance', 'The sky strip shows the day: every event sits at its time, the sun moves along. Chips below say what to wear, which bins go out and what to bring.'],
+  ['⭐', 'Kids', 'Picture routines for mornings and bedtime that kids tap through themselves, small jobs that earn stars, and rewards to save for.'],
+  ['🍽️', 'Meals and groceries', 'Plan the week\'s dinners, keep track of what\'s in, and dump the whole shopping list in one go. Tick it off at the shops and the pantry updates.'],
+  ['📱', 'Your phone', 'Same family, live. Each parent can open to their own view: Focus (one thing at a time) or Planner (checklist first). Changes show on the wall in seconds.'],
+  ['🌙', 'Looks after itself', 'When nobody\'s touching it, it shows a clock and family photos, dims at night, and updates itself. Tap anywhere to come back.']];
+function tourSheet(i = 0) {
+  const [e, t, d] = TOUR[i];
+  sheet(`<div class="tour"><div class="te">${e}</div><h2>${t}</h2><p>${d}</p><div class="tdots">${TOUR.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="row" style="justify-content:center">${i < TOUR.length - 1 ? `<button class="btn ghost" data-act="tour-end">Skip</button><button class="btn" data-act="tour" data-i="${i + 1}">Next</button>` : `<button class="btn" data-act="tour-end">Let's go</button>`}</div></div>`);
+}
+function deviceSheet(step = 'kind') {
+  const adults = S.members.filter(m => m.kind !== 'kid');
+  if (step === 'kind') return sheet(`<h2>What is this device?</h2><p class="help">You can change this later in Settings → Screen.</p>
+    <div class="dkinds"><button class="dkind" data-act="dev-kind" data-k="tablet"><span>🖼️</span><b>The family screen</b><small>A tablet on the wall or bench that stays on</small></button>
+    <button class="dkind" data-act="dev-kind" data-k="phone"><span>📱</span><b>My phone</b><small>For checking and adding things on the go</small></button></div>`);
+  if (step === 'phone') return sheet(`<h2>Whose phone is this?</h2><div class="dkinds">${adults.map(m => `<button class="dkind" data-act="dev-who" data-id="${m.id}">${avatar(m, 'lg')}<b>${esc(m.name)}</b></button>`).join('')}</div>`);
+  const tabs = LS.get('kioskTab', /iPad|Macintosh/.test(navigator.userAgent) ? 'ipad' : 'android');
+  sheet(`<h2>Keep the family screen on</h2><p class="help">Plug it in for good. Then:</p>
+    <span class="seg" style="margin-bottom:12px">${[['ipad', 'iPad'], ['android', 'Android']].map(([k, l]) => `<button class="${tabs === k ? 'on' : ''}" data-act="kiosk-tab" data-k="${k}">${l}</button>`).join('')}</span>
+    ${tabs === 'ipad' ? `<ol class="steps"><li><b>Settings → Display &amp; Brightness → Auto-Lock → Never.</b></li><li>In Safari, tap <b>Share → Add to Home Screen</b>, then open Skylike from that icon.</li><li><b>Settings → Accessibility → Guided Access</b>: turn it on, set a passcode, set Display Auto-Lock to Never.</li><li>Open Skylike, <b>triple-click</b> the top (or home) button, tap <b>Start</b>.</li></ol>`
+      : `<ol class="steps"><li><b>Settings → Developer options → Stay awake</b> (while charging). To show Developer options, tap Build number 7 times in About phone/tablet.</li><li>In Chrome, tap <b>⋮ → Add to Home screen</b>, then open Skylike from that icon.</li><li><b>Settings → Security → App pinning</b>: turn it on.</li><li>Open Skylike, open Recent apps, tap its icon and choose <b>Pin</b>.</li></ol>`}
+    <p class="help">Check later from your phone in Settings → Devices: it should say “seen just now”.</p><button class="btn" data-act="dev-done">Done</button>`);
+}
 /* ----- kids: picture routines, chores, stars ----- */
 const kids = () => S.members.filter(m => m.kind === 'kid');
 const hm = t => { const [a, b] = String(t || '0:0').split(':').map(Number); return a + (b || 0) / 60; };
@@ -1416,6 +1482,7 @@ V.settings = () => {
   if (t === 'household') body = `
     <div class="panel"><h2>Household</h2><p class="help">Shared by everyone who joins with the code below.</p>
       <form data-form="hh-name" class="row"><input class="input grow" name="name" value="${esc(hh.name)}" maxlength="80" aria-label="Household name"><button class="btn">Save</button></form></div>
+    <div class="panel"><h2>Setup checklist</h2>${setupListHTML()}<div class="row" style="margin-top:12px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><button class="btn ghost" data-act="device-setup">Set up this device</button>${st.setupHidden ? `<button class="btn ghost" data-act="setup-show">Show on home screen</button>` : ''}</div></div>
     <div class="panel"><h2>Invite your partner</h2><p class="help">On their phone: open Skylike, sign in with their email, choose “Join a household” and enter this code.</p><span class="code">${esc(hh.join_code)}</span></div>
     <div class="panel"><h2>Weather location</h2><p class="help">Currently ${esc(st.location.name || 'set')} (${st.location.lat.toFixed(2)}, ${st.location.lon.toFixed(2)}).</p>
       <button class="btn soft" data-act="use-location">Use this device's location</button></div>
@@ -1567,7 +1634,7 @@ function renderOnboard() {
     ${mode === 'choose' ? `<h1>Welcome</h1><p>Set up your family, or join one your partner already made.</p>
       <button class="btn" style="width:100%;margin-bottom:10px" data-act="onboard" data-mode="create">Set up our household</button>
       <button class="btn soft" style="width:100%" data-act="onboard" data-mode="join">Join with a code</button>`
-    : mode === 'create' ? `<h1>Your household</h1><form data-form="create-hh"><div class="field"><label for="hn">Household name</label><input class="input" id="hn" name="name" placeholder="The Smiths" required maxlength="80"></div>
+    : mode === 'create' ? `<h1>Your household</h1><p>Name it and add yourself. A short checklist then walks you through the rest (about 10 minutes).</p><form data-form="create-hh"><div class="field"><label for="hn">Household name</label><input class="input" id="hn" name="name" placeholder="The Smiths" required maxlength="80"></div>
       <div class="field"><label for="yn">Your first name</label><input class="input" id="yn" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Create</button></form>`
     : `<h1>Join a household</h1><form data-form="join-hh"><div class="field"><label for="jc">Code</label><input class="input" id="jc" name="code" required maxlength="6" style="text-transform:uppercase;letter-spacing:.2em;font-size:24px"></div>
       <div class="field"><label for="yn2">Your first name</label><input class="input" id="yn2" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Join</button></form>`}
@@ -1719,6 +1786,16 @@ const A = {
     LS.set('gbudget:' + el.dataset.list, {total: +r.total || 0, count: items.length, at: Date.now()}); render();
   },
   async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast('Connected ✓'); render(); },
+  'setup-all'() { sheet(`<h2>Get Skylike ready</h2><p class="help">About 10 minutes. Do them in any order; each one ticks itself off.</p>${setupListHTML()}<div class="row" style="margin-top:14px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><span class="grow"></span><button class="btn ghost" data-act="setup-hide">Hide this checklist</button></div>`); },
+  async 'setup-hide'() { closeSheet(); await saveSettings({setupHidden: true}); toast('Hidden. Find it again in Settings → Household.', 3500); },
+  async 'setup-show'() { await saveSettings({setupHidden: false}); S.view = 'family'; render(); },
+  tour(el) { tourSheet(+el.dataset.i); },
+  'tour-end'() { LS.set('toured', 1); closeSheet(); },
+  'device-setup'() { deviceSheet('kind'); },
+  'dev-kind'(el) { LS.set('deviceKind', el.dataset.k); if (el.dataset.k === 'tablet') { LS.set('deviceName', 'Family screen'); heartbeat(); keepAwake(); deviceSheet('kiosk'); } else deviceSheet('phone'); },
+  'dev-who'(el) { const m = memberById(el.dataset.id); LS.set('deviceName', (m ? m.name + "'s " : '') + 'phone'); LS.set('deviceSetup', 1); heartbeat(); closeSheet(); if (m && m.home_view !== 'family') { S.activeMember = m.id; S.view = m.home_view; } render(); if (!LS.get('toured', 0)) setTimeout(() => tourSheet(0), 300); },
+  'kiosk-tab'(el) { LS.set('kioskTab', el.dataset.k); deviceSheet('kiosk'); },
+  'dev-done'() { LS.set('deviceSetup', 1); closeSheet(); render(); if (!LS.get('toured', 0)) setTimeout(() => tourSheet(0), 300); },
   'home-list'(el) { LS.set('homeList', el.dataset.kind); render(); },
   go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view;
     if (el.dataset.list) S.listId = el.dataset.list;
@@ -2065,6 +2142,7 @@ async function start() {
   try { const ok = await loadAll(); if (!ok) { S.household = null; return start(); } } catch (err) { console.error(err); }
   if (deviceKind() === 'phone' && !S._phoneHomeSet) { S._phoneHomeSet = true; const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } }
   subscribe(); heartbeat(); loadWeather(); keepAwake(); render(); idleTick();
+  if (!LS.get('deviceSetup', 0)) { if (localStorage.getItem('skylike:deviceKind')) LS.set('deviceSetup', 1); else setTimeout(() => deviceSheet('kind'), 600); }
 }
 let lastMinute = -1;
 setInterval(() => {
