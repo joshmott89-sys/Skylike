@@ -34,15 +34,21 @@ async function pickModel(key: string): Promise<string> {
 
 // Free-tier Gemini: the "Lite" model answers in about a second and has the most generous free limit,
 // so it does everything first; if it's busy or over its limit, try the full Flash model, then give a clear message.
-async function gemini(key: string, prompt: string, image?: { data: string; mime: string }, opts: { timeout?: number; level?: string } = {}) {
-  const models = ["gemini-flash-lite-latest", await pickModel(key)].filter((m, i, a) => a.indexOf(m) === i);
+// Free-tier daily limits differ a lot by model (Flash can be as low as 20 a day). Once a model says it's out, skip it until it resets.
+const outUntil = new Map<string, number>();
+async function gemini(key: string, prompt: string, image?: { data: string; mime: string } | { data: string; mime: string }[], opts: { timeout?: number; level?: string } = {}) {
+  const lite = "gemini-flash-lite-latest";
+  // Lite twice (it's occasionally slow, a retry usually lands fast), then the full Flash model.
+  const models = [lite, lite, await pickModel(key)].filter((m, i, a) => m === lite || a.indexOf(m) === i);
   const parts: any[] = [{ text: prompt }];
-  if (image) parts.push({ inline_data: { mime_type: image.mime || "image/jpeg", data: image.data } });
-  let lastErr = "";
+  const imgs = image ? (Array.isArray(image) ? image : [image]) : [];
+  imgs.forEach(im => parts.push({ inline_data: { mime_type: im.mime || "image/jpeg", data: im.data } }));
+  let lastErr = "", slow = false;
   for (const model of models) {
+    const ok = outUntil.get(key + model); if (ok && ok > Date.now()) { lastErr = lastErr || "limit"; continue; }
     const t0 = Date.now();
     const call = (thinking: boolean) => {
-      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), model.includes("lite") ? 45000 : (opts.timeout || 60000));
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), model.includes("lite") ? (imgs.length === 1 ? 30000 : 45000) : (imgs.length ? 50000 : Math.min(opts.timeout || 60000, 50000)));
       const generationConfig: any = { responseMimeType: "application/json", temperature: 0.4 };
       if (thinking) generationConfig.thinkingConfig = { thinkingLevel: model.includes("lite") ? "minimal" : (opts.level || "minimal") };
       return fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
@@ -52,17 +58,21 @@ async function gemini(key: string, prompt: string, image?: { data: string; mime:
     };
     let r: Response;
     try { r = await call(true); if (r.status === 400) { const peek = await r.clone().text(); if (/thinking/i.test(peek)) r = await call(false); } }
-    catch { console.log(JSON.stringify({ model, ms: Date.now() - t0, timeout: true })); lastErr = "slow"; continue; }
+    catch { console.log(JSON.stringify({ model, ms: Date.now() - t0, timeout: true })); lastErr = "slow"; slow = true; continue; }
     const d = await r.json().catch(() => ({}));
     console.log(JSON.stringify({ model, ms: Date.now() - t0, status: r.status, usage: d?.usageMetadata, err: d?.error?.message }));
-    if (r.status === 429) { lastErr = "limit"; continue; }
+    if (r.status === 429) {
+      const msg = String(d?.error?.message || ""), wait = msg.match(/retry in (?:(\d+)h)?(?:(\d+)m)?([\d.]+)s/);
+      if (/per day/i.test(msg)) outUntil.set(key + model, Date.now() + (wait ? ((+wait[1] || 0) * 3600 + (+wait[2] || 0) * 60 + (+wait[3] || 0)) * 1000 : 3600e3));
+      lastErr = slow ? "slow" : "limit"; continue;
+    }
     if (r.status === 404 || r.status >= 500) { lastErr = d?.error?.message || "busy"; continue; }
     if (!r.ok) throw new Error(d?.error?.message || "AI request failed");
     const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
     try { return { model, out: JSON.parse(text.replace(/^```json\s*|```$/g, "")) }; } catch { lastErr = "unreadable"; continue; }
   }
   throw new Error(lastErr === "limit" ? "Today's free AI limit is used up for now. Try again in a few minutes."
-    : lastErr === "slow" ? (image ? "The AI took too long to read that photo. Try again, or take it a little further back." : "The AI took too long to answer. Try again in a moment.")
+    : lastErr === "slow" ? (imgs.length ? "The AI took too long to read that photo. Try again, or take it a little further back." : "The AI took too long to answer. Try again in a moment.")
     : lastErr === "unreadable" ? "The AI reply couldn't be read. Try again." : "Google's AI is busy right now. Try again in a minute.");
 }
 
@@ -152,13 +162,14 @@ Brain-dump: """${text}"""`);
     }
 
     if (a === "pantry_photo") {
-      const img = String(body.image || "");
-      if (img.length > 7_000_000) return json({ error: "That photo is too big. Try again a little further back." }, 400);
-      const { out } = await gemini(key, `This is a photo of a family's ${body.place || "fridge or pantry"}. List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
+      const imgs = (Array.isArray(body.images) ? body.images : [body.image]).filter(Boolean).slice(0, 5).map((d: string) => ({ data: String(d), mime: "image/jpeg" }));
+      if (!imgs.length) return json({ error: "No photo came through. Try again." }, 400);
+      if (imgs.reduce((a: number, x: any) => a + x.data.length, 0) > 14_000_000) return json({ error: "Those photos are too big. Try fewer at once." }, 400);
+      const { out } = await gemini(key, `${imgs.length > 1 ? `These ${imgs.length} photos together show one family's ${body.place || "fridge or pantry"} (e.g. shelves, then each door). Treat them as one inventory and don't list an item twice just because it shows in two photos.` : `This is a photo of a family's ${body.place || "fridge or pantry"}.`} List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
 Use short, plain Australian names (e.g. "Milk", "Tinned tuna", "Jalapenos"), no brand unless it is the product's common name. Mark items that look nearly finished as low. Skip anything you can't identify confidently. List each item once.
 Already recorded (if an item is the same thing, use EXACTLY this name): ${JSON.stringify(body.existing || []).slice(0, 2500)}.
 If you can see cooked leftovers (food in containers or covered bowls) and can reasonably tell what they are, list them as "Leftover <dish>" with leftover:true and a guess at portions (whole number). If you can't tell what a container holds, skip it.
-Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},{"name":"Leftover spaghetti bolognese","place":"fridge","leftover":true,"portions":2}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" }, { timeout: 90000 });
+Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},{"name":"Leftover spaghetti bolognese","place":"fridge","leftover":true,"portions":2}]} where place is one of fridge, freezer, pantry.`, imgs, { timeout: 90000 });
       return json({ items: (out.items || []).slice(0, 80) });
     }
 

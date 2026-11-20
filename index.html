@@ -603,7 +603,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1805'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1815'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1882,9 +1882,17 @@ const A = {
   async 'left-add'(el) { const n = +el.dataset.n; closeSheet(); if (!n) return; await pantryAdd([{name: 'Leftover ' + el.dataset.t.replace(/\s*\(.*?\)\s*/g, ' ').trim(), place: 'fridge', leftover: true, portions: n}]); toast('Added to the fridge as leftovers'); },
   'left-new'() { sheet(`<h2>Add leftovers</h2><form data-form="left-new"><input class="input" name="name" placeholder="e.g. Spag bol, fried rice" required maxlength="60"><div class="row" style="margin-top:12px"><span class="lbl">Portions</span>${[1, 2, 3, 4, 6].map(n => `<label class="daychk"><input type="radio" name="n" value="${n}" ${n === 2 ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div><button class="btn" style="margin-top:12px">Add to fridge</button></form>`); },
   async 'left-use'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; p.portions = (p.portions || 1) - 1; if (p.portions <= 0) { S.pantry = S.pantry.filter(x => x !== p); render(); await db(sb.from('pantry').delete().eq('id', p.id)); toast('All eaten'); } else { render(); await db(sb.from('pantry').update({portions: p.portions}).eq('id', p.id)); } },
-  'scan-done'() { const SS = S.scanSess; closeSheet(); if (!SS) return; SS.done = true;
-    if (SS.read + SS.failed < SS.taken) toast(`Reading the last ${SS.taken - SS.read - SS.failed} photo${SS.taken - SS.read - SS.failed === 1 ? '' : 's'}. I'll check what's gone when it's done.`, 4000);
-    else scanFinish(SS); },
+  async 'scan-done'() { const SS = S.scanSess; closeSheet(); if (!SS || SS.done) return; SS.done = true; await SS.chain;
+    if (!SS.imgs.length) { S.scanSess = null; return; }
+    // One AI request per batch of up to 4 photos: far fewer requests against the daily free limit than one per photo.
+    for (let i = 0; i < SS.imgs.length; i += 4) {
+      const batch = SS.imgs.slice(i, i + 4);
+      S.scanning = `Reading ${batch.length} ${SS.place} photo${batch.length === 1 ? '' : 's'}${SS.imgs.length > 4 ? ` (${i + batch.length} of ${SS.imgs.length})` : ''}… up to a minute`; render();
+      const r = await callAI({action: 'pantry_photo', images: batch, place: SS.place, existing: S.pantry.map(p => p.name)});
+      if (r.error) { SS.failed += batch.length; toast(r.error, 5000); continue; }
+      const items = (r.items || []).map(x => Object.assign({}, x, {place: SS.place})); SS.seen.push(...items.map(x => x.name)); SS.found += items.length; SS.added += await pantryAdd(items); SS.read += batch.length;
+    }
+    scanFinish(SS); },
   'scan-pick'(el) { const pl = el.dataset.place;
     S.scanSess = null;
     sheet(`<h2>Scan the ${pl}</h2><p class="help">${pl === 'fridge' ? 'Take the shelves first, then each door. You can add as many photos as you need before it checks what\'s gone.' : 'Stand back so the whole shelf fits. You can add more photos before it checks what\'s gone.'}</p>
@@ -2291,9 +2299,10 @@ document.addEventListener('change', async e => {
     if (!S.aiOn) { closeSheet(); return toast('Add a free Gemini key in Settings → Kitchen first.', 4000); }
     // A scan session covers several photos (shelves, then each door). Photos are read in the background while you
     // keep taking them; only once you say you're done do we compare with the last snapshot.
-    if (!S.scanSess || S.scanSess.place !== place) S.scanSess = {place, seen: [], before: S.pantry.filter(p => p.place === place && !p.leftover).map(p => p.id), taken: 0, read: 0, failed: 0, found: 0, added: 0, chain: Promise.resolve(), done: false};
-    const SS = S.scanSess; SS.taken += files.length; if (S.scanning) { scanStatus(SS); render(); }
-    files.forEach(f => { SS.chain = SS.chain.then(() => scanOne(SS, f)); });
+    if (!S.scanSess || S.scanSess.place !== place) S.scanSess = {place, seen: [], before: S.pantry.filter(p => p.place === place && !p.leftover).map(p => p.id), taken: 0, read: 0, failed: 0, found: 0, added: 0, imgs: [], chain: Promise.resolve(), done: false};
+    const SS = S.scanSess; SS.taken += files.length;
+    // shrink each photo now (fast, on the phone); they're all sent to the AI together when you tap That's everything
+    files.forEach(f => { SS.chain = SS.chain.then(() => photoToBase64(f).then(d => SS.imgs.push(d)).catch(() => { SS.failed++; toast("Couldn't open one of the photos. Try taking it again.", 4000); })); });
     scanMoreSheet();
   }
   if (el.dataset.act === 'album-pick') {
@@ -2303,18 +2312,6 @@ document.addEventListener('change', async e => {
   }
 });
 
-const scanStatus = SS => { S.scanning = `Reading ${SS.place} photos: ${SS.read + SS.failed} of ${SS.taken} done…`; };
-async function scanOne(SS, file) {
-  scanStatus(SS); render(); scanMoreSheet(true);
-  try {
-    const image = await photoToBase64(file);
-    const r = await callAI({action: 'pantry_photo', image, mime: 'image/jpeg', place: SS.place, existing: S.pantry.map(p => p.name)});
-    if (r.error) { SS.failed++; toast(r.error, 4500); }
-    else { const items = (r.items || []).map(x => Object.assign({}, x, {place: SS.place})); SS.seen.push(...items.map(x => x.name)); SS.found += items.length; SS.added += await pantryAdd(items); SS.read++; }
-  } catch { SS.failed++; toast("Couldn't open one of the photos. Try taking it again.", 4000); }
-  if (SS.read + SS.failed >= SS.taken) { S.scanning = null; render(); if (SS.done) scanFinish(SS); }
-  scanMoreSheet(true);
-}
 function scanFinish(SS) {
   if (S.scanSess === SS) S.scanSess = null; S.scanning = null; render(); if (!SS.read) return;
   toast(`${SS.read} photo${SS.read === 1 ? '' : 's'}: found ${SS.found} thing${SS.found === 1 ? '' : 's'} in the ${SS.place}${SS.added ? `, ${SS.added} new` : ', all already listed'}`, 4000);
@@ -2325,12 +2322,12 @@ function scanFinish(SS) {
 function scanMoreSheet(refresh) {
   const SS = S.scanSess; if (!SS || SS.done) return;
   if (refresh && !document.querySelector('#scan-more')) return; // only update it if it's still open
-  const pl = SS.place, waiting = SS.taken - SS.read - SS.failed;
+  const pl = SS.place;
   sheet(`<div id="scan-more"><h2>${SS.taken} photo${SS.taken === 1 ? '' : 's'} of the ${esc(pl)}</h2>
-    <p class="help">${waiting ? `Reading in the background (${SS.read} of ${SS.taken} done). Keep going, no need to wait.` : `All read: found ${SS.found} thing${SS.found === 1 ? '' : 's'}${SS.added ? ` (${SS.added} new)` : ''}.`}${SS.failed ? ` ${SS.failed} couldn't be read, take ${SS.failed === 1 ? 'it' : 'them'} again.` : ''} ${pl === 'fridge' ? 'Got the doors and drawers too?' : 'Anything else to add?'}</p>
+    <p class="help">Keep snapping, no waiting. They're all read together when you tap <b>That's everything</b>.${SS.failed ? ` ${SS.failed} couldn't be opened, take ${SS.failed === 1 ? 'it' : 'them'} again.` : ''} ${pl === 'fridge' ? 'Got the doors and drawers too?' : 'Anything else to add?'}</p>
     <div class="scanpick"><label class="btn ghost">${icon('camera')} Take another photo<input type="file" accept="image/*" capture="environment" data-change="pantry-photo" data-place="${pl}" hidden></label>
     <label class="btn ghost">Choose from photos<input type="file" accept="image/*" multiple data-change="pantry-photo" data-place="${pl}" hidden></label>
-    <button class="btn" data-act="scan-done">That's everything</button></div></div>`, {focus: false, keepScroll: true});
+    <button class="btn" data-act="scan-done">That's everything, read ${SS.taken === 1 ? 'it' : `all ${SS.taken}`}</button></div></div>`, {focus: false, keepScroll: true});
 }
 /* photos */
 async function uploadPhotos(files) {
