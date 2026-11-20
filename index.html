@@ -323,6 +323,14 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .daychk input:checked + span{background:var(--ocean);border-color:var(--ocean);color:#fff}
 body.night .kid{border-top-color:var(--c)}
 @media (max-width:760px){.goal{flex-wrap:wrap}.goal>span:first-child{flex-basis:100%}.kidsgrid{grid-template-columns:minmax(0,1fr)}.ktiles{grid-template-columns:repeat(3,minmax(0,1fr))}.kid{padding:16px 14px 18px}.ktile{min-height:100px}.ktile .em{font-size:40px}}
+.kitchen{flex:none;margin:14px var(--pad) 0;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;align-items:stretch;gap:0;overflow:hidden}
+.ktonight{display:flex;align-items:center;gap:14px;padding:14px 20px;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;flex:0 1 auto;min-width:0}
+.ktonight .ke{font-size:36px;line-height:1}.ktonight .kl{display:block;font-size:12.5px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ktonight .kt2{display:block;font-size:19px;font-weight:750;line-height:1.2}.ktonight .km{display:block;font-size:13.5px;color:var(--muted)}.ktonight.empty .kt2{color:var(--muted)}
+.klines{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:12px 18px;border-left:1px solid var(--line,rgba(0,0,0,.07))}
+.kline{display:flex;align-items:center;gap:10px;font-size:15.5px;line-height:1.3}.kline>span:nth-child(2){flex:1;min-width:0}.kline small{color:var(--muted);font-size:13px}.ki{font-size:20px}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+@media (max-width:700px){.kitchen{flex-direction:column}.klines{border-left:0;border-top:1px solid var(--line,rgba(0,0,0,.07))}}
 .chips{display:flex;gap:10px;flex-wrap:wrap;padding:16px var(--pad) 0}
 .chip{display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font-weight:650;font-size:16.5px}
 .chip .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c,var(--ocean-2))}
@@ -629,7 +637,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1930'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1950'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -994,6 +1002,9 @@ function chipsFor(k, now) {
   const tomorrow = addDaysKey(k, 1);
   // What to bring: today until 10am, tomorrow's from 3pm so bags get packed the night before.
   const bk = hr < 10 ? k : hr >= 15 ? tomorrow : null;
+  // Shop day (optional, Settings → Kitchen): the evening before and the morning of
+  const sd = kset().shopDay, gl = listByKind('grocery'), gn = gl ? listItems(gl.id, false).length : 0;
+  if (sd != null && gn) { if (weekdayOfKey(tomorrow) === sd && hr >= 15) out.push({icon: 'list', c: '#2E8B57', text: `Shop tomorrow: ${gn} on the list`, sub: 'groceries', act: 'go-groceries'}); else if (weekdayOfKey(k) === sd && hr < 15) out.push({icon: 'list', c: '#2E8B57', text: `Shop day: ${gn} on the list`, sub: 'today', act: 'go-groceries'}); }
   // Lunchboxes: pack this morning (until 9:30), prep tonight for tomorrow (from 6pm)
   const lk = hr < 9.5 ? k : hr >= 18 ? tomorrow : null, lm = lk && mealOn(lk, 'lunch');
   if (lm) { const who = [...new Set((lm.ingredients || []).map(i => i.who).filter(Boolean))], mains = who.map(w => { const it = (lm.ingredients || []).find(i => i.who === w && i.slot === 'Lunch'); return it ? `${w} ${foodEmoji(it.name)}` : w; });
@@ -1257,6 +1268,26 @@ function notesZoneHTML() {
   return `<div class="zone notes-z"><h2><button class="h2link" data-act="go" data-view="notes">Notes${icon('right')}</button><button class="more" data-act="add-note">Add</button></h2>
     <div class="notes">${S.notes.slice(0, 6).map(noteHTML).join('') || '<div class="empty"><b>No notes</b>Leave one for the family.</div>'}</div></div>`;
 }
+/* Kitchen card on home: tonight's dinner, defrost reminders, and what's missing for tomorrow. Each line only shows when it has something to say. */
+// things worth defrosting (frozen peas or chips go straight in)
+const needsThaw = n => aisleOf(n) === 'Meat & seafood' || /stock|pastry|bread|soup|sauce|bolognese|curry|casserole|leftover/.test(normFood(n));
+function kitchenHTML() {
+  const now = new Date(), k = dayKey(now), hr = hoursFloat(now), tmr = addDaysKey(k, 1), lines = [];
+  const tonight = mealOn(k), tomorrow = mealOn(tmr);
+  const inFreezer = m => m && !m.cooked ? [...new Set((m.ingredients || []).map(x => S.pantry.find(p => p.place === 'freezer' && !p.leftover && needsThaw(p.name) && sameFood(p.name, x.name))).filter(Boolean).map(p => p.name))] : [];
+  const g = listByKind('grocery'), onList = t => g && listItems(g.id, false).some(i => sameFood(i.text, t));
+  const missing = m => m && !m.cooked && !m.leftovers_of ? (m.ingredients || []).filter(x => !haveIt(x.name) && !onList(x.name)).map(x => x.name) : [];
+  // defrost: this morning for tonight, from 3pm for tomorrow
+  const dz = hr < 11 ? inFreezer(tonight) : hr >= 15 ? inFreezer(tomorrow) : [];
+  if (dz.length) lines.push(`<div class="kline"><span class="ki">❄️</span><span><b>${hr < 11 ? 'Defrost now' : 'Defrost tonight'}:</b> ${esc(dz.join(', '))} <small>for ${hr < 11 ? "tonight's" : "tomorrow's"} ${esc((hr < 11 ? tonight : tomorrow).title)}</small></span></div>`);
+  // missing: tonight's until 4pm, then tomorrow's
+  const mk = hr < 16 ? k : tmr, mm = mealOn(mk), miss = missing(mm);
+  if (miss.length) lines.push(`<div class="kline"><span class="ki">🛒</span><span><b>Missing for ${mk === k ? 'tonight' : 'tomorrow'}:</b> ${esc(miss.slice(0, 4).join(', '))}${miss.length > 4 ? ` +${miss.length - 4}` : ''}</span><button class="btn soft sm" data-act="kitchen-missing" data-k="${mk}">Add to list</button></div>`);
+  if (!tonight && !lines.length) return '';
+  const head = tonight ? `<button class="ktonight" data-act="meal-open" data-k="${k}"><span class="ke">${esc(tonight.emoji || '🍽️')}</span><span><span class="kl">${hr >= 20 ? 'Tonight was' : 'Tonight'}</span><span class="kt2">${esc(tonight.leftovers_of ? 'Leftovers: ' + tonight.leftovers_of : tonight.title)}</span>${tonight.prep_time ? `<span class="km">${esc(tonight.prep_time)}${tonight.cooked ? ' · cooked' : ''}</span>` : ''}</span></button>`
+    : `<button class="ktonight empty" data-act="go" data-view="meals"><span class="ke">🍽️</span><span><span class="kl">Tonight</span><span class="kt2">No dinner planned</span></span></button>`;
+  return `<div class="kitchen">${head}${lines.length ? `<div class="klines">${lines.join('')}</div>` : ''}</div>`;
+}
 function chipsHTML() {
   const now = new Date(), c = chipsFor(dayKey(now), now);
   if (!c.length) return '';
@@ -1266,7 +1297,7 @@ function chipsHTML() {
 
 /* ----- views ----- */
 const V = {};
-V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}${kitchenHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 V.focus = () => {
   const me = meMember(), now = new Date(), k = dayKey(now), st = settings();
@@ -1602,7 +1633,7 @@ V.settings = () => {
       ${S.aiOn ? `<button class="btn ghost" style="margin-top:8px" data-act="ai-test">Test the connection</button>` : ''}</div>
     <div class="panel"><h2>Meal planning</h2><form data-form="kitchen">
       <div class="lbl">What the family likes, and anything to avoid</div><textarea class="input" name="prefs" rows="3" placeholder="e.g. Kid-friendly, mild spice, no mushrooms, fish once a week, vegetarian Mondays">${esc(ks.prefs)}</textarea>
-      <div class="row" style="margin-top:10px"><label class="lbl">People <input class="input num" type="number" min="1" max="12" name="servings" value="${ks.servings}" style="width:80px"></label><label class="lbl">Weekly dinner budget $ <input class="input num" type="number" min="0" max="2000" name="budget" value="${ks.budget || ''}" style="width:100px"></label><button class="btn">Save</button></div></form></div>`; }
+      <div class="row" style="margin-top:10px"><label class="lbl">People <input class="input num" type="number" min="1" max="12" name="servings" value="${ks.servings}" style="width:80px"></label><label class="lbl">Shop day <select class="input" name="shopday" style="width:auto">${['', 0, 1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${String(ks.shopDay ?? '') === String(d) ? 'selected' : ''}>${d === '' ? 'No set day' : WD[d]}</option>`).join('')}</select></label><label class="lbl">Weekly dinner budget $ <input class="input num" type="number" min="0" max="2000" name="budget" value="${ks.budget || ''}" style="width:100px"></label><button class="btn">Save</button></div></form></div>`; }
   if (t === 'household') body = `
     <div class="panel"><h2>Household</h2><p class="help">Shared by everyone who joins with the code below.</p>
       <form data-form="hh-name" class="row"><input class="input grow" name="name" value="${esc(hh.name)}" maxlength="80" aria-label="Household name"><button class="btn">Save</button></form></div>
@@ -1907,6 +1938,8 @@ const A = {
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
+  'go-groceries'() { const g = listByKind('grocery'); if (g) S.listId = g.id; S.view = 'lists'; render(); },
+  async 'kitchen-missing'(el) { const m = mealOn(el.dataset.k); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
   async 'shop-mode'(el) { S.shop = el.dataset.list; render(); scrollTo(0, 0); try { S.wake = await navigator.wakeLock?.request('screen'); } catch {} },
   'shop-exit'() { S.shop = null; try { S.wake && S.wake.release(); } catch {} S.wake = null; render(); },
   async 'shop-tick'(el) { await A['toggle-item'](el); },
@@ -2251,7 +2284,7 @@ const F = {
   },
   async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || '', days: [...f.querySelectorAll(`input[name="days_${k.id}"]:checked`)].map(i => +i.value)}; });
     await saveSettings({kitchen: {...kset(), lunchbox: lb}}); closeSheet(); toast('Lunchbox favourites saved'); if (S._plan && S._planReopen) { S._planReopen = 0; planSheet(true); } },
-  async kitchen(f) { await saveSettings({kitchen: {...kset(), prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
+  async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
     let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: recipeLink(title), ingredients: []};
