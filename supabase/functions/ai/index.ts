@@ -26,7 +26,8 @@ async function pickModel(key: string): Promise<string> {
     .filter((n: string) => /flash/.test(n) && !/image|tts|live|audio|embed|thinking|exp/.test(n));
   const ver = (n: string) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0");
   ok.sort((a: string, b: string) => (ver(b) - ver(a)) || (Number(/lite/.test(a)) - Number(/lite/.test(b))) || (Number(/preview/.test(a)) - Number(/preview/.test(b))));
-  const name = ok[0] || "gemini-flash-latest";
+  // Google's own "latest Flash" alias first: stable, fast, and kept current for us.
+  const name = ok.includes("gemini-flash-latest") ? "gemini-flash-latest" : (ok.find((n: string) => !/lite|preview|omni/.test(n)) || ok[0] || "gemini-flash-latest");
   modelCache.set(key, { name, at: Date.now() });
   return name;
 }
@@ -35,10 +36,19 @@ async function gemini(key: string, prompt: string, image?: { data: string; mime:
   const model = await pickModel(key);
   const parts: any[] = [{ text: prompt }];
   if (image) parts.push({ inline_data: { mime_type: image.mime || "image/jpeg", data: image.data } });
-  const r = await fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.4 } }),
-  });
+  // Keep "thinking" short: these are quick sorting jobs, and long thinking made photo scans take over a minute.
+  const call = (thinking: boolean) => {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 50000);
+    const generationConfig: any = { responseMimeType: "application/json", temperature: 0.4 };
+    if (thinking) generationConfig.thinkingConfig = { thinkingLevel: "low" };
+    return fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig }),
+    }).finally(() => clearTimeout(t));
+  };
+  let r: Response;
+  try { r = await call(true); if (r.status === 400) { const peek = await r.clone().text(); if (/thinking/i.test(peek)) r = await call(false); } }
+  catch { throw new Error("The AI took too long. Try again, or try a smaller photo."); }
   const d = await r.json();
   if (r.status === 429) throw new Error("The free AI limit is used up for now. Try again in a minute.");
   if (!r.ok) throw new Error(d?.error?.message || "AI request failed");
@@ -80,7 +90,8 @@ Brain-dump: """${text}"""`);
       const img = String(body.image || "");
       if (img.length > 7_000_000) return json({ error: "That photo is too big. Try again a little further back." }, 400);
       const { out } = await gemini(key, `This is a photo of a family's ${body.place || "fridge or pantry"}. List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
-Use short Australian names. Mark items that look nearly finished as low. Skip anything you can't identify confidently.
+Use short, plain Australian names (e.g. "Milk", "Tinned tuna", "Jalapenos"), no brand unless it is the product's common name. Mark items that look nearly finished as low. Skip anything you can't identify confidently. List each item once.
+Already recorded (if an item is the same thing, use EXACTLY this name): ${JSON.stringify(body.existing || []).slice(0, 2500)}.
 Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" });
       return json({ items: (out.items || []).slice(0, 80) });
     }

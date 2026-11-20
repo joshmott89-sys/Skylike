@@ -183,6 +183,12 @@ body.night .zone h2 .more{color:var(--ocean-ink)}
 .pchip.low{background:color-mix(in srgb,var(--apricot) 26%,transparent)}
 .pchip.low button:first-child::after{content:' · low';color:var(--apricot-ink);font-size:13px}
 .filebtn{cursor:pointer;margin-left:auto}
+.scanbtn{margin-left:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:color-mix(in srgb,var(--ocean-2) 10%,transparent);color:var(--ocean-2);font-size:13.5px;font-weight:750;letter-spacing:0;text-transform:none;cursor:pointer}
+.scanbtn svg{width:16px;height:16px}.scanbtn.off{opacity:.4;pointer-events:none}
+.kt .scanbtn{margin-left:10px}.pcol .kt .num{margin-left:auto}
+.scanning{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:650;color:var(--ocean-2);animation:pulse 1.4s ease-in-out infinite}
+.scanning svg{width:18px;height:18px}
+@keyframes pulse{50%{opacity:.5}}
 .pantry-p h2{display:flex;align-items:center;gap:10px}
 .linkbtn{border:0;background:none;padding:0;font:inherit;color:var(--ocean-2);font-weight:700;text-decoration:underline}
 .gtools{margin:-4px 0 12px;flex-wrap:wrap}
@@ -557,7 +563,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-0930'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1000'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -565,10 +571,11 @@ const AI_URL = SUPABASE_URL + '/functions/v1/ai';
 async function callAI(body) {
   if (DEMO) return {error: 'AI is off in the sample. Sign in to use it.'};
   const {data: {session}} = await sb.auth.getSession();
+  S.busy = (S.busy || 0) + 1;
   try {
     const r = await fetch(AI_URL, {method: 'POST', headers: {'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token, apikey: SUPABASE_KEY}, body: JSON.stringify(Object.assign({household_id: S.hid}, body))});
     return await r.json();
-  } catch { return {error: 'No connection'}; }
+  } catch { return {error: 'No connection'}; } finally { S.busy--; }
 }
 
 const FAMILY_COLOURS = [
@@ -700,7 +707,7 @@ async function checkForUpdate(reopened) {
     const t = await (await fetch(location.pathname + '?check=' + Date.now(), {cache: 'no-store'})).text();
     const m = t.match(/const APP_VERSION = '([^']+)'/);
     if (!m || m[1] === APP_VERSION) return;
-    const busy = document.querySelector('.sheet-bg') || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+    const busy = S.busy > 0 || S.scanning || document.querySelector('.sheet-bg') || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
     if (!busy && (deviceKind() === 'tablet' || reopened)) freshReload(); else showUpdateBanner();
   } catch {}
 }
@@ -1401,7 +1408,7 @@ V.kids = () => {
 
 /* ----- kitchen: meals, pantry, groceries ----- */
 const STAPLES = /^(salt|pepper|black pepper|water|oil|olive oil|vegetable oil|cooking oil|sugar|flour|plain flour)$/i;
-const normFood = t => String(t || '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z ]/g, ' ').replace(/\b(fresh|large|small|medium|chopped|diced|sliced|minced|finely|to serve|optional|of|a|tin|can|cans|tins)\b/g, ' ').replace(/\s+/g, ' ').trim();
+const normFood = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z ]/g, ' ').replace(/\b(fresh|large|small|medium|chopped|diced|sliced|minced|finely|to serve|optional|of|a|tin|can|cans|tins)\b/g, ' ').replace(/\s+/g, ' ').trim();
 function haveIt(name) {
   const n = normFood(name); if (!n || STAPLES.test(n)) return true;
   return S.pantry.some(p => { const q = normFood(p.name); return q && (q === n || n.includes(q) || q.includes(n) || q.split(' ').pop() === n.split(' ').pop()); });
@@ -1426,10 +1433,10 @@ V.meals = () => {
     ${!S.aiOn && !DEMO ? `<p class="help" style="color:var(--ink-2)">Planning, pantry photos and the grocery brain-dump need a free Gemini key. <button class="linkbtn" data-act="go" data-view="settings" data-tab="kitchen">Set it up</button></p>` : ''}
     <div class="mweek">${cards}</div>
     <div class="row mtotal"><span>Dinners this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
-    <div class="panel pantry-p"><h2>What's in<span class="sp"></span><label class="btn soft filebtn">${icon('camera')}Scan a photo<input type="file" accept="image/*" capture="environment" data-change="pantry-photo" hidden></label></h2>
-      <p class="help">Updated when groceries are ticked off, when you cook, or from a photo of the fridge or pantry. Tap an item to mark it running low.</p>
+    <div class="panel pantry-p"><h2>What's in<span class="sp"></span>${S.scanning ? `<span class="scanning">${icon('camera')}${esc(S.scanning)}</span>` : ''}</h2>
+      <p class="help">Tap <b>Scan</b> on the fridge, freezer or pantry to read it from a photo (you can pick several). It also updates when groceries are ticked off and when you cook. Tap an item to mark it running low.</p>
       <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl);
-        return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span></div><div class="pchips">${items.map(p => `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
+        return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span><label class="scanbtn ${S.scanning ? 'off' : ''}" aria-label="Scan the ${name.toLowerCase()} with the camera">${icon('camera')}Scan<input type="file" accept="image/*" multiple data-change="pantry-photo" data-place="${pl}" ${S.scanning ? 'disabled' : ''} hidden></label></div><div class="pchips">${items.map(p => `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
       <form data-form="pantry-add" class="row" style="margin-top:14px"><input class="input grow" name="name" placeholder="Add what's in, e.g. eggs, rice, frozen peas" maxlength="200"><select class="input" name="place" style="width:auto"><option value="">Auto</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option><option value="pantry">Pantry</option></select><button class="btn">Add</button></form>
       ${low.length ? `<div class="row" style="margin-top:12px"><span class="lbl">Running low: ${low.map(p => esc(p.name)).join(', ')}</span><span class="grow"></span><button class="btn soft" data-act="pantry-shop">Add to groceries</button></div>` : ''}</div></div>`;
 };
@@ -1920,9 +1927,16 @@ async function groceryAdd(names, listId) {
   const rows = []; names.forEach(n => { const t = String(n || '').trim(); const k = normFood(t); if (!t || have.has(k)) return; have.add(k); rows.push({id: uid(), household_id: S.hid, list_id: g.id, text: t.slice(0, 200), added_by: (meMember() || {}).id || null, sort: Date.now() / 1000 + rows.length / 1000, done: false, created_at: new Date().toISOString()}); });
   if (!rows.length) return 0; rows.forEach(r => S.items.push(r)); render(); await db(sb.from('list_items').insert(rows)); return rows.length;
 }
+// Same pantry item? Exact after tidying, or one name fully inside the other ("Milkybar" / "Milkybar melts").
+function sameFood(a, b) {
+  const x = normFood(a).split(' ').filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, '')), y = normFood(b).split(' ').filter(w => w.length > 2).map(w => w.replace(/(es|s)$/, ''));
+  if (!x.length || !y.length) return normFood(a) === normFood(b);
+  const [s1, s2] = x.length <= y.length ? [x, y] : [y, x];
+  return s1.every(w => s2.includes(w)) && (s1.length >= 2 || s2.length <= 2);
+}
 async function pantryAdd(items) {
   const rows = [];
-  items.forEach(x => { const name = String(x.name || '').trim().slice(0, 60); if (!name) return; const ex = S.pantry.find(p => normFood(p.name) === normFood(name));
+  items.forEach(x => { const name = String(x.name || '').trim().slice(0, 60); if (!name) return; const ex = S.pantry.find(p => sameFood(p.name, name)) || rows.find(r => sameFood(r.name, name)); if (ex && !ex.id) return;
     if (ex) { ex.low = !!x.low; if (x.qty) ex.qty = x.qty; db(sb.from('pantry').update({low: ex.low, qty: ex.qty, updated_at: new Date().toISOString()}).eq('id', ex.id)); }
     else rows.push({id: uid(), household_id: S.hid, name, qty: x.qty || null, place: ['fridge', 'freezer', 'pantry'].includes(x.place) ? x.place : placeGuess(name), low: !!x.low}); });
   if (rows.length) { rows.forEach(r => S.pantry.push(r)); S.pantry.sort((a, b) => a.name.localeCompare(b.name)); await db(sb.from('pantry').insert(rows)); }
@@ -2101,15 +2115,24 @@ document.addEventListener('change', async e => {
   const el = e.target;
   if (el.dataset.act === 'cal-member') { const c = S.calendars.find(x => x.id === el.dataset.id); c.member_id = el.value || null; render(); await db(sb.from('calendars').update({member_id: c.member_id}).eq('id', c.id)); }
   if (el.dataset.act === 'upload') uploadPhotos(el.files);
-  if (el.dataset.change === 'pantry-photo' && el.files && el.files[0]) {
-    if (!S.aiOn) { el.value = ''; return toast('Add a free Gemini key in Settings → Kitchen first.', 4000); }
-    toast('Looking at your photo…', 6000);
-    try {
-      const image = await photoToBase64(el.files[0]); el.value = '';
-      const r = await callAI({action: 'pantry_photo', image, mime: 'image/jpeg'});
-      if (r.error) return toast(r.error, 4500);
-      const added = await pantryAdd(r.items || []); toast(`Found ${(r.items || []).length} things${added ? `, ${added} new` : ''}`, 3500);
-    } catch { toast("Couldn't read that photo."); }
+  if (el.dataset.change === 'pantry-photo' && el.files && el.files.length) {
+    const files = [...el.files], place = el.dataset.place; el.value = '';
+    if (!S.aiOn) return toast('Add a free Gemini key in Settings → Kitchen first.', 4000);
+    if (S.scanning) return;
+    // One photo at a time, in order, with a status that stays on screen until it's done.
+    let found = 0, added = 0, failed = 0;
+    for (let i = 0; i < files.length; i++) {
+      S.scanning = `Reading ${place} photo${files.length > 1 ? ` ${i + 1} of ${files.length}` : ''}… (up to 30 seconds)`; render();
+      try {
+        const image = await photoToBase64(files[i]);
+        const r = await callAI({action: 'pantry_photo', image, mime: 'image/jpeg', place, existing: S.pantry.map(p => p.name)});
+        if (r.error) { failed++; toast(r.error, 4500); continue; }
+        const items = (r.items || []).map(x => Object.assign({}, x, {place}));
+        found += items.length; added += await pantryAdd(items);
+      } catch { failed++; toast("Couldn't open that photo. Try taking it again.", 4000); }
+    }
+    S.scanning = null; render();
+    if (found || !failed) toast(`Found ${found} thing${found === 1 ? '' : 's'} in the ${place}${added ? `, ${added} new` : ', all already listed'}`, 4000);
   }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
