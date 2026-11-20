@@ -603,7 +603,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1815'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1830'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -2314,10 +2314,12 @@ document.addEventListener('change', async e => {
 
 function scanFinish(SS) {
   if (S.scanSess === SS) S.scanSess = null; S.scanning = null; render(); if (!SS.read) return;
-  toast(`${SS.read} photo${SS.read === 1 ? '' : 's'}: found ${SS.found} thing${SS.found === 1 ? '' : 's'} in the ${SS.place}${SS.added ? `, ${SS.added} new` : ', all already listed'}`, 4000);
+  const seenTxt = [...new Set(SS.seen)].slice(0, 8).join(', ');
+  toast(`${SS.read} photo${SS.read === 1 ? '' : 's'}: spotted ${SS.found ? seenTxt + (SS.found > 8 ? '…' : '') : 'nothing it could name'}${SS.found ? (SS.added ? ` (${SS.added} new)` : ' (all already listed)') : '. Try closer, with the lights on.'}`, 6000);
   if (SS.failed) return; // a photo didn't read, so don't suggest removing things that may have been in it
   const miss = S.pantry.filter(p => SS.before.includes(p.id) && !SS.seen.some(n => sameFood(n, p.name)));
-  if (miss.length) sheet(`<h2>Not in your photos</h2><p class="help">These were in the last ${esc(SS.place)} snapshot but weren't spotted in any of the ${SS.read} photo${SS.read === 1 ? '' : 's'}. Tick the ones that have gone.</p><div id="snap-miss" class="bd">${miss.map(p => `<label class="row bdrow"><input type="checkbox" value="${p.id}"> ${esc(p.name)}</label>`).join('')}</div><div class="row" style="margin-top:14px"><button class="btn" data-act="snap-remove">Remove ticked</button><button class="btn ghost" data-act="close-sheet">Keep them all</button></div>`, {focus: false});
+  const thin = SS.before.length >= 3 && SS.found < SS.before.length / 2; // the photos probably didn't show everything
+  if (miss.length) sheet(`<h2>Not in your photos</h2><p class="help">${thin ? `It only spotted ${SS.found} thing${SS.found === 1 ? '' : 's'} this time, against ${SS.before.length} last time, so the photo${SS.read === 1 ? '' : 's'} may not have shown everything (drawers, frosty bags). Only tick what you know has gone.` : `These were in the last ${esc(SS.place)} snapshot but weren't spotted in any of the ${SS.read} photo${SS.read === 1 ? '' : 's'}. Tick the ones that have gone.`}</p><div id="snap-miss" class="bd">${miss.map(p => `<label class="row bdrow"><input type="checkbox" value="${p.id}"> ${esc(p.name)}</label>`).join('')}</div><div class="row" style="margin-top:14px"><button class="btn" data-act="snap-remove">Remove ticked</button><button class="btn ghost" data-act="close-sheet">Keep them all</button></div>`, {focus: false});
 }
 function scanMoreSheet(refresh) {
   const SS = S.scanSess; if (!SS || SS.done) return;
