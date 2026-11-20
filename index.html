@@ -190,6 +190,11 @@ body.night .ptag{background:transparent}
 .mday.today{outline:3px solid var(--apricot);outline-offset:-3px}
 .mday.cooked{opacity:.6}
 .mday.lunch{min-height:0;padding:12px;gap:4px}.mday.lunch .me{font-size:26px}.mday.lunch .mt{font-size:14.5px;font-weight:700}
+.mday.lunch .lk{font-size:13.5px;line-height:1.3;text-align:left}.mday.lunch .lk b{font-weight:700}
+.lboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.lbox{background:var(--card-2,#f4f1ea);border-radius:14px;padding:12px}.lbh{font-weight:800;margin-bottom:6px}
+.lit{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(0,0,0,.06)}.lit:first-of-type{border-top:0}.ls{font-size:12px;color:var(--muted);width:78px;flex:none}.ln{flex:1;min-width:0}.lr{display:flex;gap:2px;flex:none}.ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
+.kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
+.linkbtn{background:none;border:0;color:var(--accent,#0E4C6E);font:inherit;font-weight:700;text-decoration:underline;padding:0;cursor:pointer}
 .mday.lunch.empty{background:transparent;box-shadow:none}
 .mday.past:not(.cooked){opacity:.55}
 .mday .dn{font-size:14px;font-weight:700;color:var(--ink-2);display:flex;gap:6px;width:100%}
@@ -219,6 +224,7 @@ body.night .ptag{background:transparent}
 .scanning svg{width:18px;height:18px}
 @keyframes pulse{50%{opacity:.5}}
 .pantry-p h2{display:flex;align-items:center;gap:10px}
+.kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .linkbtn{border:0;background:none;padding:0;font:inherit;color:var(--ocean-2);font-weight:700;text-decoration:underline}
 .gtools{margin:-4px 0 12px;flex-wrap:wrap}
 .ing{list-style:none;margin:8px 0 0;padding:0}
@@ -595,7 +601,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1710'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1730'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1459,6 +1465,8 @@ function haveIt(name) {
 }
 const placeGuess = n => /frozen|ice cream|ice block|peas|chips|nuggets/i.test(n) ? 'freezer' : /milk|cheese|yog|butter|cream|egg|chicken|mince|beef|pork|lamb|fish|salmon|ham|bacon|sausage|tofu|lettuce|spinach|berries|juice|dip/i.test(n) ? 'fridge' : 'pantry';
 const recipeLink = t => 'https://www.recipetineats.com/?s=' + encodeURIComponent(t);
+const lbox = () => Object.assign({staples: '', kids: {}}, kset().lunchbox || {});
+const lunchKids = () => (kids().length ? kids() : [{id: 'k', name: 'Kids'}]).map(k => ({name: k.name, likes: (lbox().kids[k.id] || {}).likes || '', wont_eat: (lbox().kids[k.id] || {}).nope || ''}));
 const kset = () => Object.assign({prefs: '', servings: 4, budget: 0}, settings().kitchen || {});
 function weekStart(off = 0) { const t = dayKey(new Date()); return addDaysKey(t, -((weekdayOfKey(t) + 6) % 7) + off * 7); }
 const mealOn = (k, slot = 'dinner') => S.meals.find(m => m.day === k && (m.slot || 'dinner') === slot);
@@ -1477,7 +1485,7 @@ V.meals = () => {
       ${S.planning ? `<span class="btn planning" aria-live="polite"><span class="spin"></span><span id="plan-stage">${planStage()}</span></span>` : `<button class="btn" data-act="meal-plan">${icon('sparkle')}Plan this week</button>`}</h1>
     ${!S.aiOn && !DEMO ? `<p class="help" style="color:var(--ink-2)">Planning, pantry photos and the grocery brain-dump need a free Gemini key. <button class="linkbtn" data-act="go" data-view="settings" data-tab="kitchen">Set it up</button></p>` : ''}
     <div class="mweek">${cards}</div>
-    ${(lun => lun ? `<div class="kt" style="margin:16px 0 8px">Lunches</div><div class="mweek lunchrow">${days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const l = mealOn(k, 'lunch'); return l ? `<button class="mday lunch ${k < today ? 'past' : ''}" data-act="lunch-open" data-k="${k}"><span class="me">${esc(l.emoji || '🥪')}</span><span class="mt">${esc(l.title)}</span>${l.leftovers_of ? '<span class="mm">🍱 leftovers</span>' : ''}</button>` : `<span class="mday lunch empty"></span>`; }).join('')}</div>` : '')(days.some(k => mealOn(k, 'lunch')))}
+    ${(lun => lun ? `<div class="kt row" style="margin:16px 0 8px;justify-content:space-between">Lunches <button class="linkbtn" data-act="lunch-faves">⭐ Favourites</button></div><div class="mweek lunchrow">${days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const l = mealOn(k, 'lunch'); return l ? `<button class="mday lunch ${k < today ? 'past' : ''}" data-act="lunch-open" data-k="${k}"><span class="mm">${esc(fmtDay(k, {weekday: 'short'}))}</span>${[...new Set((l.ingredients || []).map(i => i.who))].map(w => { const main = (l.ingredients || []).find(i => i.who === w && i.slot === 'Lunch'); return `<span class="lk"><b>${esc(w || '')}</b> ${esc(main ? main.name : '')}</span>`; }).join('') || `<span class="mt">${esc(l.title)}</span>`}${l.leftovers_of ? '<span class="mm">🍱 leftovers</span>' : ''}</button>` : `<span class="mday lunch empty"></span>`; }).join('')}</div>` : '')(days.some(k => mealOn(k, 'lunch')))}
     <div class="row mtotal"><span>Food this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
     <div class="panel pantry-p"><h2>What's in<span class="sp"></span>${S.scanning ? `<span class="scanning">${icon('camera')}${esc(S.scanning)}</span>` : ''}</h2>
       <p class="help">Tap <b>Scan</b> on the fridge, freezer or pantry to read it from a photo (you can pick several). It also updates when groceries are ticked off and when you cook. Tap an item to mark it running low.</p>
@@ -1822,7 +1830,7 @@ const A = {
     closeSheet(); S.planning = {at: Date.now()}; render(); planTicker();
     const leftTxt = smallLeft.map(p => `${p.name.replace(/^leftovers?\s*/i, '')} (${p.portions || 1} portion${(p.portions || 1) > 1 ? 's' : ''})`);
     const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: P.notes, budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
-      lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt} : null});
+      lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt, kids: lunchKids(), staples: lbox().staples} : null});
     S.planning = null; clearInterval(planT);
     if (r.error) { render(); return toast(r.error, 5000); }
     const byDay = {}; (r.meals || []).forEach(m => { if (m && m.title) byDay[m.day] = m; });
@@ -1830,8 +1838,11 @@ const A = {
       rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null});
       const ln = Object.keys(leftNights).find(k => leftNights[k] === day);
       if (ln) rows.push({household_id: S.hid, day: ln, slot: 'dinner', title: 'Leftovers: ' + String(m.title).slice(0, 70), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: null, real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: String(m.title).slice(0, 90)}); });
-    (r.lunches || []).forEach(l => { if (!l || !l.title || !lunchDays.includes(l.day)) return;
-      rows.push({household_id: S.hid, day: l.day, slot: 'lunch', for_who: P.lunch, title: String(l.title).slice(0, 90), emoji: l.emoji || '🥪', ingredients: (l.items || []).slice(0, 15), est_cost: +l.est_cost || null, url: null, servings: null, real: false, double_batch: false, prep_time: null, difficulty: null, cooked: false, leftovers_of: l.uses_leftover || null}); });
+    (r.lunches || []).forEach(l => { if (!l || !lunchDays.includes(l.day)) return;
+      const items = []; (l.boxes || []).forEach(b => (b.items || []).forEach(it => it && it.name && items.push({who: String(b.who || 'Kids').slice(0, 30), slot: String(it.slot || 'Lunch').slice(0, 20), name: String(it.name).slice(0, 60), buy: (it.buy || []).slice(0, 5).map(String), new: !!it.new, leftover: !!it.leftover})));
+      if (!items.length) return; const mains = [...new Set(items.filter(i => i.slot === 'Lunch').map(i => i.name))];
+      const lo = items.find(i => i.leftover);
+      rows.push({household_id: S.hid, day: l.day, slot: 'lunch', for_who: P.lunch, title: (mains.join(' · ') || items[0].name).slice(0, 90), emoji: '🍱', ingredients: items.slice(0, 40), est_cost: +l.est_cost || null, url: null, servings: null, real: false, double_batch: false, prep_time: null, difficulty: null, cooked: false, leftovers_of: lo ? lo.name : null}); });
     if (!rows.length) { render(); return toast("The AI didn't come back with a plan. Try again."); }
     const {data, error} = await sb.from('meals').upsert(rows, {onConflict: 'household_id,day,slot'}).select(); if (error) { render(); return toast("Couldn't save the plan."); }
     data.forEach(m => { const i = S.meals.findIndex(x => x.id === m.id || (x.day === m.day && (x.slot || 'dinner') === m.slot)); if (i >= 0) S.meals[i] = m; else S.meals.push(m); });
@@ -1839,11 +1850,18 @@ const A = {
     render(); toast(`Planned ${din.length} dinner${din.length === 1 ? '' : 's'}${lun ? ` and ${lun} lunch${lun === 1 ? '' : 'es'}` : ''}. ${real} of ${cooked} dinners are real RecipeTin Eats recipes.${bigLeft.length ? ' Leftovers big enough for everyone became a leftovers night.' : ''}`, 6000);
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
-  async 'lunch-need'(el) { const m = mealOn(el.dataset.k, 'lunch'); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
+  'lunch-faves'() { favesSheet(); },
+  'plan-faves'() { S._planReopen = 1; favesSheet(); },
+  async 'lunch-rate'(el) { const kid = kids().find(x => x.name === el.dataset.who); if (!kid) return toast('Add the kids in Settings first.');
+    const lb = lbox(), c = Object.assign({likes: '', nope: ''}, lb.kids[kid.id]), key = el.dataset.v === 'up' ? 'likes' : 'nope', other = key === 'likes' ? 'nope' : 'likes', name = el.dataset.name;
+    const list = s => s.split(',').map(x => x.trim()).filter(Boolean); c[other] = list(c[other]).filter(x => !sameFood(x, name)).join(', ');
+    if (!list(c[key]).some(x => sameFood(x, name))) c[key] = list(c[key]).concat(name).join(', ');
+    lb.kids[kid.id] = c; await saveSettings({kitchen: {...kset(), lunchbox: lb}}); toast(key === 'likes' ? `⭐ ${name} added to ${kid.name}'s favourites` : `Got it, no more ${name} for ${kid.name}`); },
+  async 'lunch-need'(el) { const m = mealOn(el.dataset.k, 'lunch'); if (!m) return; const n = await groceryAdd(lunchNeed(m)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
   async 'lunch-del'(el) { const m = mealOn(el.dataset.k, 'lunch'); if (!m) return; S.meals = S.meals.filter(x => x.id !== m.id); closeSheet(); render(); await db(sb.from('meals').delete().eq('id', m.id)); },
   async 'meal-shop'() {
     const mon = weekStart(S.mealOffset || 0), today = dayKey(new Date());
-    const need = []; [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today).forEach(k => { ['dinner', 'lunch'].forEach(sl => { const m = mealOn(k, sl); if (m && !m.cooked) (m.ingredients || []).forEach(x => { if (!haveIt(x.name)) need.push(x); }); }); });
+    const need = []; [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today).forEach(k => { const m = mealOn(k); if (m && !m.cooked) (m.ingredients || []).forEach(x => { if (!haveIt(x.name)) need.push(x); }); const l = mealOn(k, 'lunch'); if (l) lunchNeed(l).forEach(name => need.push({name})); });
     const n = await groceryAdd(need.map(x => x.name)); toast(n ? `Added ${n} to Groceries` : 'Nothing missing. You have it all.', 3000);
   },
   async 'meal-need'(el) { const m = mealOn(el.dataset.k); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
@@ -2012,7 +2030,7 @@ function planSheet(keep) {
     <div class="pblock"><div class="kt">Which days</div><div class="ptags">${days.map(k => { const past = k < today, on = P.days.includes(k), has = mealOn(k); return `<button type="button" class="ptag day ${on ? 'on' : ''}" data-act="plan-day" data-k="${k}" ${past ? 'disabled' : ''} aria-pressed="${on}">${esc(fmtDay(k, {weekday: 'short'}))}</button>`; }).join('')}</div><p class="help">Highlighted nights get new dinners${days.some(k => mealOn(k) && k >= today) ? ' (replacing any already planned)' : ''}.</p></div>
     <div class="pblock row" style="justify-content:space-between"><div class="kt" style="margin:0">Feeding</div><div class="row stepper"><button class="icon-btn" type="button" data-act="plan-people" data-d="-1" aria-label="Fewer">−</button><b class="num">${P.people}</b><button class="icon-btn" type="button" data-act="plan-people" data-d="1" aria-label="More">+</button></div></div>
     <div class="pblock"><div class="kt">Cook once, eat twice</div><div class="ptags">${tag('double', '0', 'No')}${tag('double', '1', '1 night')}${tag('double', '2', '2 nights')}</div><p class="help">Makes a double batch so the next night is leftovers.</p></div>
-    <div class="pblock"><div class="kt">Lunches too?</div><div class="ptags">${tag('lunch', 'none', 'No')}${tag('lunch', 'kids', "Kids' school lunches")}${tag('lunch', 'all', 'Everyone')}</div><p class="help">${P.lunch === 'kids' ? 'Nut-free lunchboxes on school days (weekdays in term).' : P.lunch === 'all' ? 'A lunch for everyone on each highlighted day.' : 'Leftovers too small for a family dinner go into lunches when this is on.'}</p></div>
+    <div class="pblock"><div class="kt">Lunches too?</div><div class="ptags">${tag('lunch', 'none', 'No')}${tag('lunch', 'kids', "Kids' school lunches")}${tag('lunch', 'all', 'Everyone')}</div><p class="help">${P.lunch === 'kids' ? `Nut-free lunchboxes on school days, built mostly from each kid's favourites. <button class="linkbtn" data-act="plan-faves">Edit favourites</button>` : P.lunch === 'all' ? 'A lunch for everyone on each highlighted day.' : 'Leftovers too small for a family dinner go into lunches when this is on.'}</p></div>
     <div class="pblock"><div class="kt">Vibe and effort</div><div class="ptags">${[['Standard family dinners', 'Standard'], ['Quick and easy, under 30 minutes', 'Quick'], ['Something new and exciting', 'Something new'], ['A weekend cooking project', 'Challenge me']].map(([v, l]) => tag('vibe', v, l)).join('')}</div></div>
     <div class="pblock"><div class="kt">Cooking skill</div><div class="ptags">${['Beginner', 'Home cook', 'Confident'].map(v => tag('skill', v)).join('')}</div></div>
     <div class="pblock"><div class="kt">Focus</div><div class="ptags">${['High protein', 'Hidden veggies', 'Budget friendly', 'Low carb', 'Kid favourites'].map(v => tag('focus', v)).join('')}</div></div>
@@ -2021,13 +2039,28 @@ function planSheet(keep) {
     ${S.pantry.some(p => p.leftover) ? `<p class="help">🍱 Leftovers: ${S.pantry.filter(p => p.leftover).map(p => `${esc(p.name.replace(/^leftovers?\s*/i, ''))} (${p.portions || 1}) → ${(p.portions || 1) >= P.people ? 'a leftovers night' : P.lunch !== 'none' ? 'lunches' : 'not enough for dinner; turn on lunches to use it'}`).join('; ')}.</p>` : ''}
     <button class="btn" style="width:100%;justify-content:center;margin-top:6px" data-act="plan-go" ${P.days.length ? '' : 'disabled'}>${icon('sparkle')}${P.days.length ? `Plan ${P.days.length} day${P.days.length === 1 ? '' : 's'}` : 'Pick some days'}</button>`, {focus: false, keepScroll: keep});
 }
+const SLOT_ORDER = ['Crunch & Sip', 'Recess', 'Lunch', 'Snack', 'Treat'];
+const lunchNeed = m => { const out = []; (m.ingredients || []).forEach(it => (it.buy && it.buy.length ? it.buy : [it.name]).forEach(n => { if (!haveIt(n) && !out.some(o => sameFood(o, n))) out.push(n); })); return out; };
 function lunchSheet(k) {
   const m = mealOn(k, 'lunch'); if (!m) return;
-  const ing = m.ingredients || [], need = ing.filter(x => !haveIt(x.name));
-  sheet(`<h2>${esc(m.emoji || '🥪')} ${esc(m.title)}</h2><div class="mbadges"><span class="mb">${m.for_who === 'kids' ? "Kids' lunchboxes" : 'Lunch for everyone'}</span>${m.leftovers_of ? `<span class="mb dbl">🍱 Uses leftover ${esc(m.leftovers_of)}</span>` : ''}${m.est_cost ? `<span class="mb">~$${Math.round(m.est_cost)} to buy</span>` : ''}</div>
-    <p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}</p>
-    <ul class="ing">${ing.map(x => { const h = haveIt(x.name); return `<li class="${h ? 'have' : ''}"><span><b class="num">${esc(x.qty || '')}</b> ${esc(x.name)}</span><span class="tag">${h ? 'Have' : 'Buy'}</span></li>`; }).join('') || '<li class="help">Nothing to list.</li>'}</ul>
-    <div class="row" style="margin-top:14px">${need.length ? `<button class="btn" data-act="lunch-need" data-k="${k}">Add ${need.length} to groceries</button>` : ''}<button class="btn ghost" data-act="lunch-del" data-k="${k}">Remove</button></div>`);
+  const items = m.ingredients || [], need = lunchNeed(m), who = [...new Set(items.map(i => i.who || 'Lunch'))], isKid = n => kids().some(x => x.name === n);
+  const box = w => { const its = items.filter(i => (i.who || 'Lunch') === w).sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
+    return `<div class="lbox"><div class="lbh">${esc(w)}</div>${its.map(i => `<div class="lit"><span class="ls">${esc(i.slot || '')}</span><span class="ln">${esc(i.name)}${i.new ? ' <span class="mb">New</span>' : ''}${i.leftover ? ' <span class="mb dbl">🍱 leftover</span>' : ''}</span>${isKid(w) ? `<span class="lr"><button class="ratebtn" data-act="lunch-rate" data-v="up" data-who="${esc(w)}" data-name="${esc(i.name)}" aria-label="${esc(w)} likes ${esc(i.name)}">👍</button><button class="ratebtn" data-act="lunch-rate" data-v="down" data-who="${esc(w)}" data-name="${esc(i.name)}" aria-label="${esc(w)} won't eat ${esc(i.name)}">👎</button></span>` : ''}</div>`).join('')}</div>`; };
+  sheet(`<h2>🍱 Lunchboxes</h2><p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}${m.est_cost ? ` · ~$${Math.round(m.est_cost)} to buy` : ''}</p>
+    <div class="lboxes">${who.map(box).join('')}</div>
+    ${who.some(isKid) ? '<p class="help">👍 adds it to that kid\'s favourites, 👎 means it won\'t be planned again.</p>' : ''}
+    ${need.length ? `<p class="help"><b>To buy:</b> ${need.map(esc).join(', ')}</p>` : '<p class="help">You have everything for these.</p>'}
+    <div class="row" style="margin-top:14px">${need.length ? `<button class="btn" data-act="lunch-need" data-k="${k}">Add ${need.length} to groceries</button>` : ''}<button class="btn ghost" data-act="lunch-faves">Favourites</button><button class="btn ghost" data-act="lunch-del" data-k="${k}">Remove</button></div>`);
+}
+function favesSheet() {
+  const lb = lbox();
+  sheet(`<h2>Lunchbox favourites</h2><p class="help">Lunches are built mostly from these, with at most one new thing a week. Separate items with commas.</p>
+    <form data-form="lunchbox">
+    <div class="lbl">Staples for every box</div><input class="input" name="staples" value="${esc(lb.staples)}" placeholder="e.g. water bottle, apple, cheese stick">
+    ${kids().map(k => { const c = lb.kids[k.id] || {}; return `<div class="pblock"><div class="kt fk">${avatar(k)} ${esc(k.name)}</div>
+      <div class="lbl">Always happy to eat</div><textarea class="input" rows="2" name="likes_${k.id}" placeholder="e.g. vegemite sandwich, cheese scroll, grapes, popcorn, fruit roll-up">${esc(c.likes || '')}</textarea>
+      <div class="lbl">Won't eat</div><input class="input" name="nope_${k.id}" value="${esc(c.nope || '')}" placeholder="e.g. tomato, ham, anything mixed"></div>`; }).join('') || '<p class="help">Add the kids in Settings → People to set favourites for each one.</p>'}
+    <button class="btn" style="margin-top:12px">Save favourites</button></form>`, {focus: false});
 }
 function mealSheet(k) {
   const m = mealOn(k);
@@ -2113,7 +2146,9 @@ const F = {
     S.aiOn = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
     if (r.error) { toast(r.error, 6000); } else { S.aiModel = r.model; toast('Connected ✓ Meals, pantry photos and the brain-dump are ready.', 4000); } render();
   },
-  async kitchen(f) { await saveSettings({kitchen: {prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
+  async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || ''}; });
+    await saveSettings({kitchen: {...kset(), lunchbox: lb}}); closeSheet(); toast('Lunchbox favourites saved'); if (S._plan && S._planReopen) { S._planReopen = 0; planSheet(true); } },
+  async kitchen(f) { await saveSettings({kitchen: {...kset(), prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
     let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: recipeLink(title), ingredients: []};
@@ -2366,7 +2401,9 @@ function startDemo() {
     {id: 'ml3', day: addDaysKey(k, 2), title: 'Crispy Baked Fish', emoji: '🐟', est_cost: 22, ingredients: ing(['White fish fillets', '600 g'], ['Panko', '1 cup'], ['Potatoes', '800 g'], ['Lemon', '1'])}];
   S.pantry = [['Milk', 'fridge', 'half', false], ['Eggs', 'fridge', '6', false], ['Cheese', 'fridge', '', true], ['Carrot', 'fridge', '3', false], ['Frozen peas', 'freezer', '', false], ['Spaghetti', 'pantry', '', false], ['Rice', 'pantry', '', false], ['Soy sauce', 'pantry', '', false], ['Weet-Bix', 'pantry', '', true]].map(([n, pl, q, lo], i) => ({id: 'p' + i, name: n, place: pl, qty: q || null, low: lo}));
   S.pantry.push({id: 'pl1', name: 'Leftover fried rice', place: 'fridge', leftover: true, portions: 2});
-  [['🥪', 'Cheese & vegemite scrolls, apple, yoghurt', null], ['🍙', 'Fried rice cup, cucumber, crackers', 'fried rice'], ['🌯', 'Ham & cheese wrap, grapes, cheese stick', null]].forEach(([e, t, lo], i) => S.meals.push({id: 'lu' + i, slot: 'lunch', for_who: 'kids', day: addDaysKey(k, i === 0 ? 0 : i + 2), title: t, emoji: e, leftovers_of: lo, ingredients: [{name: 'Cheese slices', qty: '4'}, {name: 'Apples', qty: '2'}], est_cost: 4}));
+  const box = (lunchR, recR, leo, lo) => [{who: 'Ruby', slot: 'Crunch & Sip', name: 'Apple slices', buy: ['Apples']}, {who: 'Ruby', slot: 'Recess', name: 'Cheese stick', buy: ['Cheese sticks']}, {who: 'Ruby', slot: 'Lunch', name: lunchR, buy: ['Bread', 'Vegemite'], leftover: !!lo}, {who: 'Leo', slot: 'Crunch & Sip', name: 'Grapes', buy: ['Grapes']}, {who: 'Leo', slot: 'Recess', name: recR, buy: ['Popcorn'], new: recR === 'Rice crackers'}, {who: 'Leo', slot: 'Lunch', name: leo, buy: ['Wraps', 'Ham']}, {who: 'Leo', slot: 'Treat', name: 'Fruit roll-up', buy: ['Fruit roll-ups']}];
+  [['Vegemite sandwich', 'Popcorn', 'Ham & cheese wrap'], ['Leftover fried rice (thermos)', 'Rice crackers', 'Cheese scroll', 1], ['Vegemite sandwich', 'Popcorn', 'Crackers & cheese']].forEach(([a, b2, c, lo], i) => S.meals.push({id: 'lu' + i, slot: 'lunch', for_who: 'kids', day: addDaysKey(k, i === 0 ? 0 : i + 2), title: a, emoji: '🍱', leftovers_of: lo ? a : null, ingredients: box(a, b2, c, lo), est_cost: 4}));
+  S.household.settings = Object.assign({}, S.household.settings, {kitchen: Object.assign({}, (S.household.settings || {}).kitchen, {lunchbox: {staples: 'water bottle', kids: {m3: {likes: 'vegemite sandwich, apple, cheese stick', nope: 'tomato'}, m4: {likes: 'popcorn, ham wrap, grapes, fruit roll-up', nope: 'mushroom, egg'}}}})});
   S.aiOn = true;
   S.bringRules = [{id: 'b1', emoji: '🧢', title: 'Hat', days: [1,2,3,4,5], member_id: null}, {id: 'b2', emoji: '🩱', title: 'Swimmers + towel', days: [], match: 'swim', member_id: null}, {id: 'b3', emoji: '📚', title: 'Library bag', days: [5], member_id: 'm3'}];
   const v = new URLSearchParams(location.search).get('view'); if (v) { S.view = v; if (v === 'focus') S.activeMember = 'm1'; if (v === 'planner') S.activeMember = 'm2'; }
