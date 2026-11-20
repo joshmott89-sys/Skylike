@@ -629,7 +629,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1915'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1930'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1231,7 +1231,9 @@ function upNextHTML(limit = 4) {
     : `<div class="empty"><b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);
   return `<div class="zone up-z"><h2><button class="h2link" data-act="go" data-view="calendar" data-mode="day" data-k="${label === 'Tomorrow' ? addDaysKey(k, 1) : k}">${label}${icon('right')}</button><button class="more" data-act="go" data-view="calendar" data-mode="week">Week</button></h2>${body}</div>`;
 }
-const priceOf = it => { const b = LS.get('gbudget:' + it.list_id, null); const v = b && b.items ? b.items[normFood(it.text)] : null; return v != null ? v : null; };
+// One shared price book for the household: each item is priced once and kept (refreshed after 30 days), so totals stay steady.
+const priceBook = () => kset().prices || {};
+const priceOf = it => { const e = priceBook()[normFood(it.text)]; if (e) return e.est; const b = LS.get('gbudget:' + it.list_id, null); const v = b && b.items ? b.items[normFood(it.text)] : null; return v != null ? v : null; };
 function itemRow(it, showX = false) {
   const pr = !it.done && showX ? priceOf(it) : null;
   return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><span class="txt">${esc(it.text)}</span>${pr != null ? `<span class="price num">~$${pr < 10 ? pr.toFixed(2) : Math.round(pr)}</span>` : ''}${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
@@ -1980,14 +1982,19 @@ const A = {
     const n = await groceryAdd(picks, el.dataset.list); closeSheet(); toast(`Added ${n} to Groceries`);
   },
   async 'grocery-budget'(el) {
-    const items = listItems(el.dataset.list, false).map(i => i.text); if (!items.length) return toast('The list is empty.');
-    el.disabled = true; const r = await callAI({action: 'budget', items}); el.disabled = false;
-    if (r.error) return toast(r.error, 4500);
-    // keep a price per item (matched by name) so each row shows its own estimate
-    const map = {}; (r.items || []).forEach((x, i) => { const k = normFood(x.name) || normFood(items[i]); if (k && +x.est >= 0) map[k] = +x.est; });
-    items.forEach((t, i) => { const k = normFood(t); if (map[k] == null && r.items && r.items[i] && +r.items[i].est >= 0) map[k] = +r.items[i].est; });
-    const total = Object.values(map).reduce((a, b) => a + b, 0) || +r.total || 0;
-    LS.set('gbudget:' + el.dataset.list, {total, count: items.length, at: Date.now(), items: map}); render();
+    const all = listItems(el.dataset.list, false).map(i => i.text); if (!all.length) return toast('The list is empty.');
+    const book = Object.assign({}, priceBook()), fresh = t => { const e = book[normFood(t)]; return e && Date.now() - e.at < 30 * 864e5; };
+    const items = all.filter(t => !fresh(t));
+    if (items.length) {
+      el.disabled = true; const r = await callAI({action: 'budget', items}); el.disabled = false;
+      if (r.error) return toast(r.error, 4500);
+      (r.items || []).forEach((x, i) => { const k = normFood(items[i] || x.name); if (k && +x.est >= 0) book[k] = {est: Math.round(+x.est * 100) / 100, at: Date.now()}; });
+      const keys = Object.keys(book).sort((x, y) => book[y].at - book[x].at).slice(0, 400), trimmed = {}; keys.forEach(k => trimmed[k] = book[k]);
+      await saveSettings({kitchen: {...kset(), prices: trimmed}});
+    }
+    const total = all.reduce((a2, t) => a2 + ((book[normFood(t)] || {}).est || 0), 0);
+    LS.set('gbudget:' + el.dataset.list, {total, count: all.length, at: Date.now(), items: {}}); render();
+    toast(items.length ? `Priced ${items.length} new item${items.length === 1 ? '' : 's'}${all.length > items.length ? `, kept ${all.length - items.length} from before` : ''}. About $${Math.round(total)}.` : `All ${all.length} items already priced. About $${Math.round(total)}.`, 4500);
   },
   async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast('Connected ✓'); render(); },
   invite() {
@@ -2124,7 +2131,7 @@ function planSheet(keep) {
     ${S.pantry.some(p => p.leftover) ? `<p class="help">🍱 Leftovers: ${S.pantry.filter(p => p.leftover).map(p => `${esc(p.name.replace(/^leftovers?\s*/i, ''))} (${p.portions || 1}) → ${(p.portions || 1) >= P.people ? 'a leftovers night' : P.lunch !== 'none' ? 'lunches' : 'not enough for dinner; turn on lunches to use it'}`).join('; ')}.</p>` : ''}
     <button class="btn" style="width:100%;justify-content:center;margin-top:6px" data-act="plan-go" ${P.days.length ? '' : 'disabled'}>${icon('sparkle')}${P.days.length ? `Plan ${P.days.length} day${P.days.length === 1 ? '' : 's'}` : 'Pick some days'}</button>`, {focus: false, keepScroll: keep});
 }
-const FOOD_EMOJI = [[/sandwich|sanga|toastie/, '🥪'], [/wrap|tortilla|burrito/, '🌯'], [/scroll|croissant/, '🥐'], [/toast|bread|roll\b|bun\b|bagel/, '🍞'], [/muffin|cupcake|cake/, '🧁'], [/pikelet|pancake/, '🥞'], [/pizza/, '🍕'], [/sushi/, '🍣'], [/rice|onigiri/, '🍙'], [/pasta|noodle/, '🍝'], [/apple/, '🍎'], [/banana/, '🍌'], [/grape|raisin|sultana/, '🍇'], [/strawberr|berr/, '🍓'], [/orange|mandarin/, '🍊'], [/watermelon|melon/, '🍉'], [/pear/, '🍐'], [/kiwi/, '🥝'], [/pineapple/, '🍍'], [/mango/, '🥭'], [/carrot/, '🥕'], [/cucumber/, '🥒'], [/tomato/, '🍅'], [/corn|popcorn/, '🍿'], [/cheese/, '🧀'], [/yogh?urt|custard/, '🥛'], [/milk/, '🥛'], [/egg/, '🥚'], [/ham|chicken|turkey|meat/, '🍗'], [/sausage|frank/, '🌭'], [/cracker|rice cake|pretzel|chip|crisp/, '🍘'], [/biscuit|cookie|anzac/, '🍪'], [/roll-?up|lolly|jelly|chocolate|treat/, '🍬'], [/juice|poppa/, '🧃'], [/water/, '💧'], [/soup|thermos/, '🥣'], [/bar\b|muesli/, '🥜']];
+const FOOD_EMOJI = [[/sandwich|sanga|toastie/, '🥪'], [/wrap|tortilla|burrito/, '🌯'], [/scroll|croissant/, '🥐'], [/toast|bread|roll\b|bun\b|bagel/, '🍞'], [/muffin|cupcake|cake/, '🧁'], [/pikelet|pancake/, '🥞'], [/pizza/, '🍕'], [/sushi/, '🍣'], [/rice|onigiri/, '🍙'], [/pasta|noodle/, '🍝'], [/apple/, '🍎'], [/banana/, '🍌'], [/grape|raisin|sultana/, '🍇'], [/blueberr/, '🫐'], [/strawberr|raspberr|berr/, '🍓'], [/orange|mandarin/, '🍊'], [/watermelon|melon/, '🍉'], [/pear/, '🍐'], [/kiwi/, '🥝'], [/pineapple/, '🍍'], [/mango/, '🥭'], [/carrot/, '🥕'], [/cucumber/, '🥒'], [/tomato/, '🍅'], [/corn|popcorn/, '🍿'], [/cheese/, '🧀'], [/yogh?urt|custard/, '🥛'], [/milk/, '🥛'], [/egg/, '🥚'], [/ham|chicken|turkey|meat/, '🍗'], [/sausage|frank/, '🌭'], [/cracker|rice cake|pretzel|chip|crisp/, '🍘'], [/biscuit|cookie|anzac/, '🍪'], [/roll-?up|lolly|jelly|chocolate|treat/, '🍬'], [/juice|poppa/, '🧃'], [/water/, '💧'], [/soup|thermos/, '🥣'], [/bar\b|muesli/, '🥜']];
 const foodEmoji = n => { const t = String(n || '').toLowerCase(); const hit = FOOD_EMOJI.find(([re]) => re.test(t)); return hit ? hit[1] : '🍽️'; };
 const AISLE_ORDER = ['Fruit & veg', 'Bakery', 'Deli', 'Meat & seafood', 'Dairy & eggs', 'Pantry', 'Breakfast', 'Snacks', 'Drinks', 'Baby', 'Health & beauty', 'Household', 'Frozen', 'Other'];
 const AISLE_RULES = [['Frozen', /frozen|ice cream|icy pole|fish fingers|peas\b.*frozen|hash brown|nuggets/], ['Fruit & veg', /apple|banana|grape|berr|orange|mandarin|lemon|lime|pear|melon|mango|kiwi|avocado|tomato|potato|onion|garlic|carrot|cucumber|lettuce|spinach|broccoli|zucchini|capsicum|mushroom|celery|corn\b|cabbage|herb|coriander|parsley|basil|ginger|chilli|pumpkin|sweet potato|beans?\b|salad|fruit|veg/], ['Bakery', /bread|roll|wrap|tortilla|bun|bagel|croissant|muffin|scroll|pita|naan|crumpet/], ['Deli', /ham|salami|deli|hummus|dip|olive|prosciutto|chorizo/], ['Meat & seafood', /chicken|beef|mince|pork|lamb|sausage|bacon|steak|fish|salmon|prawn|turkey|thigh|breast|fillet/], ['Dairy & eggs', /milk|cheese|yogh?urt|butter|cream|egg|custard|feta|parmesan|mozzarella/], ['Breakfast', /cereal|weet[- ]?bix|oats|muesli|granola|porridge|vegemite|jam|honey|peanut butter|nutella/], ['Snacks', /chip|crisp|cracker|biscuit|cookie|chocolate|lolly|popcorn|bar\b|roll[- ]?up|pretzel|rice cake|shapes/], ['Drinks', /juice|soft drink|water|cordial|coffee|tea\b|kombucha|soda|beer|wine/], ['Baby', /nappy|nappies|wipes|formula|baby/], ['Health & beauty', /shampoo|conditioner|toothpaste|toothbrush|soap|deodorant|panadol|nurofen|vitamin|sunscreen|razor|tampon|pad\b/], ['Household', /paper towel|toilet paper|tissue|detergent|dishwash|spray|bin bag|foil|cling|baking paper|sponge|bleach|laundry|battery|batteries/], ['Pantry', /rice|pasta|noodle|flour|sugar|oil|vinegar|sauce|stock|tin|can\b|beans|lentil|spice|salt|pepper|paprika|cumin|curry|soy|mayo|mustard|tuna|coconut|nut|seed|breadcrumb|cornflour|baking|yeast/]];
