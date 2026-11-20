@@ -217,6 +217,7 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .shoprow .st{flex:1;min-width:0}.shoprow .sp2{color:var(--muted);font-size:14px}
 .shoprow.got .ck{background:var(--ocean-2);border-color:transparent}.shoprow.got .st{text-decoration:line-through;color:var(--muted)}
 .trolley ul{opacity:.75}
+.fbmine{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid rgba(0,0,0,.06);font-size:14.5px}.fbmine .mb{flex:none}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -637,7 +638,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1950'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-2000'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -750,7 +751,7 @@ function restoreSnap() {
 /* ============ crash recovery ============ */
 let errTimes = [];
 function onAppError(e) {
-  console.error(e);
+  console.error(e); try { S._lastErr = String((e && (e.message || e)) || '').slice(0, 300); } catch {}
   const now = Date.now(); errTimes = errTimes.filter(t => now - t < 120000); errTimes.push(now);
   if (errTimes.length >= 5) {
     const r = LS.get('reloads', []).filter(t => now - t < 600000);
@@ -1600,6 +1601,21 @@ V.sitter = () => {
 
 /* ----- settings ----- */
 const STABS = [['household','Household'],['family','Family'],['kids','Kids'],['kitchen','Kitchen'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['photos','Photos'],['admin','Devices']];
+const FB_MODULES = [['family', 'Home screen'], ['calendar', 'Calendar'], ['lists', 'Lists & groceries'], ['meals', 'Meals & lunches'], ['pantry', 'Fridge & pantry'], ['kids', 'Kids'], ['notes', 'Notes'], ['photos', 'Photos & idle screen'], ['sitter', 'Sitter'], ['setup', 'Setup & settings'], ['other', 'Other']];
+const FB_KINDS = [['bug', '🐞 Something\'s wrong'], ['idea', '💡 Idea'], ['confusing', '🤔 Confusing'], ['love', '❤️ Love this']];
+function feedbackSheet() {
+  const f = S._fb = S._fb || {module: ({focus: 'family', planner: 'family', settings: 'setup'})[S.view] || (FB_MODULES.some(m => m[0] === S.view) ? S.view : 'other'), kind: 'idea', body: '', shot: null};
+  const chip = (g, v, l) => `<button type="button" class="ptag ${f[g] === v ? 'on' : ''}" data-act="fb-pick" data-g="${g}" data-v="${v}">${esc(l)}</button>`;
+  sheet(`<h2>Send feedback</h2><p class="help">Bugs, ideas, anything that felt clunky. Every note is read.</p>
+    <div class="pblock"><div class="kt">What kind?</div><div class="ptags">${FB_KINDS.map(([v, l]) => chip('kind', v, l)).join('')}</div></div>
+    <div class="pblock"><div class="kt">Which part?</div><div class="ptags">${FB_MODULES.map(([v, l]) => chip('module', v, l)).join('')}</div></div>
+    <form data-form="feedback"><div class="lbl">${f.kind === 'bug' ? 'What happened, and what did you expect?' : f.kind === 'love' ? 'What do you love about it?' : 'Tell us more'}</div>
+      <textarea class="input" id="fb-body" name="body" rows="4" maxlength="2000" required placeholder="${f.kind === 'bug' ? 'e.g. Tapped Scan, the camera opened, then nothing was added' : 'e.g. It would help if…'}">${esc(f.body)}</textarea>
+      <div class="row" style="margin-top:10px"><label class="btn ghost">${icon('photo')} ${f.shot ? 'Screenshot added ✓' : 'Add a screenshot'}<input type="file" accept="image/*" data-change="fb-shot" hidden></label>${f.shot ? '<button type="button" class="btn ghost" data-act="fb-noshot">Remove</button>' : ''}</div>
+      <p class="help">Sent with the screen you were on, the app version and your device type, to help track it down.</p>
+      <button class="btn" style="margin-top:6px">Send</button></form>
+    ${(S._fbMine || []).length ? `<div class="pblock"><div class="kt">You've sent</div>${S._fbMine.slice(0, 5).map(x => `<div class="fbmine"><span>${esc(x.body.slice(0, 70))}${x.body.length > 70 ? '…' : ''}</span><span class="mb">${esc(({new: 'Sent', reviewed: 'Read', planned: 'Planned', done: 'Done ✓', wontfix: 'Not now'})[x.status] || x.status)}</span></div>`).join('')}</div>` : ''}`, {focus: false, keepScroll: true});
+}
 V.settings = () => {
   const t = S.settingsTab, st = settings(), hh = S.household || {};
   let body = '';
@@ -1702,7 +1718,7 @@ V.settings = () => {
       <p class="help" style="margin-top:10px">Each browser or home-screen app counts as its own device, so the same phone can show twice. Forget old ones here; anything unseen for 14 days is removed automatically.</p>
       <button class="btn" style="margin-top:14px" data-act="cmd" data-cmd="reload">${icon('refresh')}Refresh every screen</button></div>
     <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(ago((Date.now() - S.lastData) / 60e3)) : 'never'}.</p></div>`;
-  return `<div class="page">${isPhone() ? `<div class="quick-go">${[['kids','Kids','star'],['notes','Notes','note'],['sitter','Sitter','sitter']].map(([v, l, ic]) => `<button class="btn soft" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}</div>` : ''}<h1>Settings</h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  return `<div class="page">${isPhone() ? `<div class="quick-go">${[['kids','Kids','star'],['notes','Notes','note'],['sitter','Sitter','sitter']].map(([v, l, ic]) => `<button class="btn soft" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}</div>` : ''}<h1>Settings<span class="sp"></span><button class="btn soft" data-act="feedback">${icon('note')}Send feedback</button></h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
 };
 let BRIDGE_SRC = null;
 function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
@@ -1938,6 +1954,9 @@ const A = {
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
+  async feedback() { S._fb = null; feedbackSheet(); if (!DEMO) { const {data} = await sb.from('feedback').select('body,status,created_at').eq('household_id', S.hid).eq('user_id', S.session ? S.session.user.id : null).order('created_at', {ascending: false}).limit(5); S._fbMine = data || []; if (document.querySelector('#fb-body')) feedbackSheet(); } },
+  'fb-pick'(el) { const b = $('#fb-body'); if (b) S._fb.body = b.value; S._fb[el.dataset.g] = el.dataset.v; feedbackSheet(); },
+  'fb-noshot'() { const b = $('#fb-body'); if (b) S._fb.body = b.value; S._fb.shot = null; feedbackSheet(); },
   'go-groceries'() { const g = listByKind('grocery'); if (g) S.listId = g.id; S.view = 'lists'; render(); },
   async 'kitchen-missing'(el) { const m = mealOn(el.dataset.k); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
   async 'shop-mode'(el) { S.shop = el.dataset.list; render(); scrollTo(0, 0); try { S.wake = await navigator.wakeLock?.request('screen'); } catch {} },
@@ -2284,6 +2303,18 @@ const F = {
   },
   async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || '', days: [...f.querySelectorAll(`input[name="days_${k.id}"]:checked`)].map(i => +i.value)}; });
     await saveSettings({kitchen: {...kset(), lunchbox: lb}}); closeSheet(); toast('Lunchbox favourites saved'); if (S._plan && S._planReopen) { S._planReopen = 0; planSheet(true); } },
+  async feedback(f) {
+    const fb = S._fb, body = f.body.value.trim(); if (!body) return;
+    const btn = f.querySelector('button:not([type])'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+    const context = {version: APP_VERSION, view: S.view, device: isPhone() ? 'phone' : 'tablet', screen: innerWidth + 'x' + innerHeight, ua: navigator.userAgent.slice(0, 160), standalone: matchMedia('(display-mode: standalone)').matches, lastError: S._lastErr || null};
+    if (DEMO) { closeSheet(); return toast('Feedback is off in the sample.'); }
+    let shot = null;
+    if (fb.shot) { try { const path = `${S.hid}/feedback/${uid()}.jpg`; const up = await sb.storage.from('photos').upload(path, fb.shot, {contentType: 'image/jpeg'}); if (!up.error) shot = path; } catch {} }
+    const me = meMember();
+    const {error} = await sb.from('feedback').insert({household_id: S.hid, member_id: me ? me.id : null, module: fb.module, kind: fb.kind, body: body.slice(0, 2000), screenshot: shot, context});
+    if (error) { if (btn) { btn.disabled = false; btn.textContent = 'Send'; } return toast("Couldn't send that. Check your connection and try again.", 4500); }
+    S._fb = null; closeSheet(); toast('Thanks! Your feedback has been sent.', 3500);
+  },
   async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
@@ -2474,6 +2505,7 @@ document.addEventListener('change', async e => {
     files.forEach(f => { SS.chain = SS.chain.then(() => photoToBase64(f).then(d => SS.imgs.push(d)).catch(() => { SS.failed++; toast("Couldn't open one of the photos. Try taking it again.", 4000); })); });
     scanMoreSheet();
   }
+  if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
     else S.uploadAlbum = el.value;
