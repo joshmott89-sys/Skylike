@@ -591,7 +591,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1530'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1545'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1333,7 +1333,7 @@ V.lists = () => {
     <div class="tabs">${tabs}</div>
     <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
       ${(sug => sug.length ? `<div class="quick" aria-label="Quick add">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : '')(suggestionsFor(l))}
-      ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Dump it all</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">Total about <b>$${Math.round(listItems(l.id, false).reduce((a, it) => a + (priceOf(it) || 0), 0) || b.total)}</b> · prices per item below · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
+      ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">Total about <b>$${Math.round(listItems(l.id, false).reduce((a, it) => a + (priceOf(it) || 0), 0) || b.total)}</b> · prices per item below · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
       <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
       ${l.kind === 'custom' ? `<div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button></div>` : ''}
@@ -1852,7 +1852,7 @@ const A = {
   async 'pantry-low'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; p.low = !p.low; render(); await db(sb.from('pantry').update({low: p.low}).eq('id', p.id)); },
   async 'pantry-shop'() { const low = S.pantry.filter(p => p.low); const n = await groceryAdd(low.map(p => p.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
   'brain-dump'(el) {
-    sheet(`<h2>Dump it all</h2><p class="help">Type or use your keyboard's mic and say everything at once: "milk, two loaves of bread, something for school lunches, nappies size five, bananas". It becomes a tidy list.</p>
+    sheet(`<h2>Add lots at once</h2><p class="help">Type or use your keyboard's mic and say everything at once: "milk, two loaves of bread, something for school lunches, nappies size five, bananas". It becomes a tidy list.</p>
       <form data-form="brain-dump" data-list="${el.dataset.list}"><textarea class="input" name="text" rows="5" required placeholder="milk bread eggs, mince for spag bol, apples for lunches…"></textarea><button class="btn" style="margin-top:12px">${icon('sparkle')}Sort it</button></form><div id="bd-out"></div>`);
   },
   async 'bd-add'(el) {
