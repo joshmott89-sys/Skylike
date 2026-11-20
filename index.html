@@ -233,6 +233,22 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .calmcol .fsub{margin-left:auto;margin-right:10px;font-weight:600;color:var(--muted);font-size:14.5px}
 .calmcol .pchips{padding:6px 0 4px 30px}
 .calm .pgrid{display:block}
+.focus2{max-width:640px;margin:0 auto;display:grid;gap:18px;padding-bottom:40px}
+.fhead{display:flex;justify-content:space-between;align-items:baseline;font-size:20px;font-weight:700;color:var(--ink-2);padding-top:4px}
+.fq{display:flex;gap:8px}.fq .input{flex:1;min-height:58px;font-size:19px;border-radius:16px}.fq .btn{min-width:58px;min-height:58px;border-radius:16px;justify-content:center;padding:0}
+.fmic{min-width:58px;min-height:58px;border-radius:16px;border:1px solid var(--line,rgba(0,0,0,.1));background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}.fmic svg{width:24px;height:24px}.fmic.on{background:var(--apricot);color:#fff;border-color:transparent}
+.fqhint{font-size:14px;color:var(--muted);margin-top:-8px}.fqdone{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:15.5px;margin-top:-8px}
+.fnow{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:26px 26px 24px;border-left:8px solid var(--c,var(--ocean-2))}
+button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7FB59A}
+.fk{font-size:14px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.fbig{font-size:56px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:4px}
+.ft{font-size:26px;font-weight:750;line-height:1.2;margin-top:6px}.fs{font-size:16px;color:var(--muted);margin-top:6px}
+.fsec{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
+.fsec h2{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px}
+.fl{list-style:none;margin:0;padding:0}.fl li{display:flex;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--line,rgba(0,0,0,.06));font-size:18.5px;line-height:1.3}.fl li:first-child{border-top:0}
+.fl .fw{flex:none;min-width:70px;color:var(--ink-2);font-weight:700}.fl small{color:var(--muted);font-size:14px}
+.focus2 .items .item{min-height:60px}.fempty{color:var(--muted);font-size:17px;margin:6px 0}
+@media (min-width:900px){.focus2{max-width:1000px;grid-template-columns:1fr 1fr;align-items:start}.focus2 .fhead,.focus2 .fq,.focus2 .fqhint,.focus2 .fqdone{grid-column:1/-1}}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -607,7 +623,7 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><path d="m3.8 6.4 1.3 1.3 2.4-2.6M3.8 11.9l1.3 1.3 2.4-2.6M4.2 17.5h2.6"/></symbol>
   <symbol id="i-meal" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16.5 21V3c-2.2 1.2-3.5 3.6-3.5 6.5V13h3.5"/></symbol>
-  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9zM18.5 15.5l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></symbol>
   <symbol id="i-sitter" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z"/></symbol>
@@ -653,7 +669,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-2200'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-2230'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1315,28 +1331,46 @@ function chipsHTML() {
 const V = {};
 V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}${kitchenHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
+/* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
+const guessKind = t => /^(buy|get|pick up|grab|need)\b/i.test(t) || (t.split(/,| and /).every(x => aisleOf(x.trim()) !== 'Other') && t.split(' ').length <= 6) ? 'grocery' : 'todo';
+function focusNow(now, k) {
+  const st = settings(), evs = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now), chips = chipsFor(k, now);
+  const soon = evs.find(e => (new Date(e.starts_at) - now) / 60e3 <= 120);
+  const firstChip = chips.find(c => c.first) || null;
+  if (soon) return {ev: soon, rest: evs.filter(e => e !== soon), chips};
+  if (firstChip) return {chip: firstChip, rest: evs, chips: chips.filter(c => c !== firstChip)};
+  if (evs[0]) return {ev: evs[0], rest: evs.slice(1), chips};
+  return {rest: [], chips};
+}
 V.focus = () => {
-  const me = meMember(), now = new Date(), k = dayKey(now), st = settings();
-  const brief = chipsHTML();
-  const today = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now);
-  const next = today[0];
+  const me = meMember(), now = new Date(), k = dayKey(now), st = settings(), hr = now.getHours();
+  const N = focusNow(now, k);
   let hero;
-  if (next) {
-    const start = new Date(next.starts_at), mins = (start - now) / 60e3, live = mins <= 0;
-    const buffer = next.location ? st.leaveBuffer : 0, leaveIn = mins - buffer;
-    const pctLeft = Math.max(0, Math.min(100, 100 - (leaveIn / 120) * 100));
-    hero = `<div class="hero"><div class="big">${esc(next.title || 'Busy')}</div>
-      <div class="lead num">${esc(fmtTime(start))} – ${esc(fmtTime(new Date(next.ends_at)))}${next.location ? ' · ' + esc(next.location) : ''}</div>
-      ${live ? '<div class="leave">Happening now</div>' : buffer ? `<div class="leave">${leaveIn <= 0 ? 'Time to leave' : `Leave in <span class="num">${esc(relMins(leaveIn))}</span>`}</div><div class="meter"><i style="width:${pctLeft}%"></i></div>`
-        : `<div class="leave">Starts in <span class="num">${esc(relMins(mins))}</span></div><div class="meter"><i style="width:${Math.max(0, Math.min(100, 100 - mins / 120 * 100))}%"></i></div>`}</div>`;
-  } else hero = `<div class="hero"><div class="big">Nothing else on today</div><div class="lead">Enjoy the gap.</div></div>`;
-  const later = today.slice(1, 4).map(e => `<div class="ev" style="--c:${eventColour(e)}"><div class="when num">${esc(fmtTime(new Date(e.starts_at)))}${untilHTML(e)}</div><div><div class="what">${esc(e.title)}</div></div></div>`).join('');
-  const t = listByKind('todo'), top = t ? listItems(t.id, false).slice(0, 5) : [];
-  return `${skyHTML(true)}${brief}<div class="focus">${hero}
-    <div style="display:flex;flex-direction:column;gap:18px;min-height:0">
-      <div class="zone"><h2>Later today</h2>${later || '<div class="empty">Nothing after that.</div>'}</div>
-      <div class="zone" style="flex:1"><h2>Top 5${me ? ' for ' + esc(me.name) : ''}<button class="more" data-act="go" data-view="lists">All</button></h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="empty">Clear. Nice.</li>'}</ul></div>
-    </div></div><button class="capture" data-act="capture">${icon('plus')}Add</button>`;
+  if (N.ev) {
+    const e = N.ev, start = new Date(e.starts_at), mins = (start - now) / 60e3, live = mins <= 0, buffer = e.location ? st.leaveBuffer : 0, leaveIn = mins - buffer;
+    hero = `<div class="fnow" style="--c:${eventColour(e)}"><div class="fk">${live ? 'Happening now' : buffer ? (leaveIn <= 0 ? 'Time to leave' : 'Leave in') : 'Starts in'}</div>
+      ${!live && !(buffer && leaveIn <= 0) ? `<div class="fbig num">${esc(relMins(buffer ? leaveIn : mins))}</div>` : ''}
+      <div class="ft">${esc(e.title || 'Busy')}</div><div class="fs num">${esc(fmtTime(start))}${e.location ? ' · ' + esc(e.location) : ''}</div></div>`;
+  } else if (N.chip) {
+    const c = N.chip;
+    hero = `<${c.act ? `button data-act="${c.act}" data-k="${c.k}"` : 'div'} class="fnow chipnow"><div class="fk">${esc(c.sub || 'Now')}</div><div class="ft">${esc(c.text)}</div>${c.act ? '<div class="fs">Tap to see it</div>' : ''}</${c.act ? 'button' : 'div'}>`;
+  } else hero = `<div class="fnow calmnow"><div class="fk">Right now</div><div class="ft">Nothing urgent.</div><div class="fs">${hr >= 20 ? 'Rest up.' : 'Breathe. The rest can wait.'}</div></div>`;
+  // the rest of today, five lines at most
+  const lines = [];
+  N.rest.forEach(e => lines.push(`<li><span class="fw num">${esc(fmtTime(new Date(e.starts_at)))}</span><span>${esc(e.title)}</span></li>`));
+  const din = mealOn(k); if (din && hr < 21) lines.push(`<li><span class="fw">${esc(din.emoji || '🍽️')}</span><span>Dinner: ${esc(din.leftovers_of ? 'leftovers' : din.title)}</span></li>`);
+  N.chips.forEach(c => lines.push(`<li><span class="fw">${c.bins ? '🗑️' : c.icon === 'meal' ? '🍱' : c.icon === 'list' ? '🛒' : c.icon === 'bag' ? '🎒' : '•'}</span><span>${esc(c.text)}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</span></li>`));
+  const showAll = isOpen('ftoday'), shown = showAll ? lines : lines.slice(0, 5);
+  const t = listByKind('todo'), openT = t ? listItems(t.id, false) : [], top = openT.slice(0, 5);
+  const last = S._fqLast;
+  return `<div class="page focus2">
+    <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="num">${esc(fmtTime(now))}</span></div>
+    <form class="fq" data-form="fquick"><input class="input" id="fq" name="text" placeholder="Add anything…" autocomplete="off" maxlength="200" enterkeyhint="done" aria-label="Add a to-do or grocery">${window.webkitSpeechRecognition || window.SpeechRecognition ? `<button type="button" class="fmic" data-act="fq-mic" aria-label="Say it">${icon('mic')}</button>` : ''}<button class="btn" aria-label="Add">${icon('plus')}</button></form>
+    ${last && Date.now() - last.at < 15000 ? `<div class="fqdone">✓ ${esc(last.text)} → <b>${last.kind === 'grocery' ? 'Groceries' : 'To do'}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>` : '<div class="fqhint">Goes to To do, or Groceries if it\'s food. You can move it after.</div>'}
+    ${hero}
+    <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : '<p class="fempty">Nothing else today.</p>'}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
+    <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul></section>
+  </div>`;
 };
 
 V.planner = () => {
@@ -1989,6 +2023,11 @@ const A = {
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
+  async 'fq-move'() { const L = S._fqLast; if (!L) return; const to = L.kind === 'grocery' ? 'todo' : 'grocery', l = listByKind(to); if (!l) return;
+    S.items.filter(i => L.ids.includes(i.id)).forEach(i => i.list_id = l.id); L.kind = to; L.at = Date.now(); render(); if (!DEMO) await db(sb.from('list_items').update({list_id: l.id}).in('id', L.ids)); },
+  'fq-mic'(el) { const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return; const r = new R(); r.lang = 'en-AU'; r.interimResults = false; el.classList.add('on');
+    r.onresult = ev => { const t = ev.results[0][0].transcript; const f = document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } };
+    r.onend = () => el.classList.remove('on'); r.onerror = () => { el.classList.remove('on'); toast('Didn\'t catch that. Try again, or use the keyboard mic.'); }; r.start(); },
   'calm-set'(el) { LS.set('calm', el.dataset.v); render(); },
   fold(el) { S.fold = S.fold || {}; S.fold[el.dataset.k] = !S.fold[el.dataset.k]; render(); },
   async feedback() { S._fb = null; feedbackSheet(); if (!DEMO) { const {data} = await sb.from('feedback').select('body,status,created_at').eq('household_id', S.hid).eq('user_id', S.session ? S.session.user.id : null).order('created_at', {ascending: false}).limit(5); S._fbMine = data || []; if (document.querySelector('#fb-body')) feedbackSheet(); } },
@@ -2351,6 +2390,14 @@ const F = {
     const {error} = await sb.from('feedback').insert({household_id: S.hid, member_id: me ? me.id : null, module: fb.module, kind: fb.kind, body: body.slice(0, 2000), screenshot: shot, context});
     if (error) { if (btn) { btn.disabled = false; btn.textContent = 'Send'; } return toast("Couldn't send that. Check your connection and try again.", 4500); }
     S._fb = null; closeSheet(); toast('Thanks! Your feedback has been sent.', 3500);
+  },
+  async fquick(f) {
+    const raw = f.text.value.trim(); if (!raw) return; const kind = guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
+    const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
+    const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
+    S.items.push(...rows); S._fqLast = {ids: rows.map(r => r.id), text: rows.map(r => r.text).join(', '), kind, at: Date.now()}; f.text.value = ''; render();
+    const inp = $('#fq'); if (inp) inp.focus(); setTimeout(() => { if (S._fqLast && Date.now() - S._fqLast.at >= 15000 && S.view === 'focus') render(); }, 15500);
+    if (!DEMO) await db(sb.from('list_items').insert(rows));
   },
   async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
   async 'meal-set'(f) {
