@@ -48,12 +48,55 @@ async function gemini(key: string, prompt: string, image?: { data: string; mime:
   };
   let r: Response;
   try { r = await call(true); if (r.status === 400) { const peek = await r.clone().text(); if (/thinking/i.test(peek)) r = await call(false); } }
-  catch { throw new Error("The AI took too long. Try again, or try a smaller photo."); }
+  catch { throw new Error(image ? "The AI took too long to read that photo. Try again, or take it a little further back." : "The AI took too long to answer. Try again in a moment."); }
   const d = await r.json();
   if (r.status === 429) throw new Error("The free AI limit is used up for now. Try again in a minute.");
   if (!r.ok) throw new Error(d?.error?.message || "AI request failed");
   const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
   try { return { model, out: JSON.parse(text.replace(/^```json\s*|```$/g, "")) }; } catch { throw new Error("The AI reply couldn't be read. Try again."); }
+}
+
+// ---- Real recipes: look each planned dinner up on RecipeTin Eats and use its actual ingredient card ----
+const RTE = "https://www.recipetineats.com/wp-json/wp/v2/posts";
+const STOP = new Set(["the","a","an","and","with","of","in","my","easy","best","recipe","nagi","s","recipetin","eats"]);
+const ent = (t: string) => t.replace(/&#8217;|&#039;|&apos;/g, "'").replace(/&#8211;|&#8212;/g, "-").replace(/&#8220;|&#8221;|&quot;/g, '"').replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#\d+;/g, "");
+const strip = (h: string) => ent(String(h || "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+const toks = (t: string) => strip(t).toLowerCase().replace(/[^a-z0-9 ]+/g, " ").split(/\s+/).filter(w => w && !STOP.has(w)).map(w => w.length > 3 ? w.replace(/s$/, "") : w);
+function score(a: string, b: string) {
+  const A = toks(a), B = toks(b); if (!A.length || !B.length) return 0;
+  const inter = A.filter(w => B.includes(w)).length, union = A.length + B.length - inter;
+  return Math.min(1, inter / union + (inter === Math.min(A.length, B.length) && inter >= 2 ? 0.25 : 0));
+}
+async function getJSON(url: string) {
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 12000);
+  try { const r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "Skylike family planner" } }); if (!r.ok) throw new Error("http " + r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+function parseCard(html: string) {
+  const lines: any[] = []; let group = "";
+  const re = /wprm-recipe-group-name[^>]*>([\s\S]*?)<\/(?:h\d|div|span)>|<li class="wprm-recipe-ingredient"[^>]*>([\s\S]*?)<\/li>/g;
+  let m: RegExpExecArray | null;
+  const span = (li: string, cls: string) => { const x = li.match(new RegExp('class="wprm-recipe-ingredient-' + cls + '[^"]*"[^>]*>([\\s\\S]*?)</span>')); return x ? strip(x[1]) : ""; };
+  while ((m = re.exec(html))) {
+    if (m[1] !== undefined) { group = strip(m[1]).replace(/:$/, ""); continue; }
+    const li = m[2], name = span(li, "name").replace(/\(\s*note[^)]*\)/ig, "").trim();
+    if (!/[a-z]/i.test(name)) continue;
+    lines.push({ name, qty: [span(li, "amount"), span(li, "unit")].filter(Boolean).join(" "), notes: span(li, "notes").replace(/\(?\s*note \d+\s*\)?/ig, "").replace(/^[\s,(]+|[\s,)]+$/g, "").trim(), group });
+  }
+  const serv = html.match(/wprm-recipe-servings\b(?!-)[^>]*>\s*(\d+)/), print = html.match(/href="(https:\/\/www\.recipetineats\.com\/wprm_print\/[^"]+)"/);
+  return { lines, servings: serv ? serv[1] : "", print: print ? print[1] : "" };
+}
+async function realRecipe(title: string) {
+  try {
+    const hits = await getJSON(`${RTE}?search=${encodeURIComponent(toks(title).join(" "))}&orderby=relevance&per_page=8&_fields=id,link,title`);
+    let best: any = null, bs = 0;
+    for (const h of Array.isArray(hits) ? hits : []) { const sc = score(title, h?.title?.rendered || ""); if (sc > bs) { bs = sc; best = h; } }
+    if (!best || bs < 0.5) return null;
+    const post = await getJSON(`${RTE}/${best.id}?_fields=id,link,title,content`);
+    const card = parseCard(post?.content?.rendered || "");
+    if (card.lines.length < 2) return null;
+    return { title: strip(post.title.rendered), url: card.print || post.link, servings: card.servings, ingredients: card.lines };
+  } catch { return null; }
 }
 
 const AISLES = "Fruit & veg, Meat & seafood, Deli, Dairy & eggs, Bakery, Pantry, Frozen, Drinks, Snacks, Baby, Household, Health & beauty, Other";
@@ -92,21 +135,32 @@ Brain-dump: """${text}"""`);
       const { out } = await gemini(key, `This is a photo of a family's ${body.place || "fridge or pantry"}. List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
 Use short, plain Australian names (e.g. "Milk", "Tinned tuna", "Jalapenos"), no brand unless it is the product's common name. Mark items that look nearly finished as low. Skip anything you can't identify confidently. List each item once.
 Already recorded (if an item is the same thing, use EXACTLY this name): ${JSON.stringify(body.existing || []).slice(0, 2500)}.
-Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" });
+If you can see cooked leftovers (food in containers or covered bowls) and can reasonably tell what they are, list them as "Leftover <dish>" with leftover:true and a guess at portions (whole number). If you can't tell what a container holds, skip it.
+Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},{"name":"Leftover spaghetti bolognese","place":"fridge","leftover":true,"portions":2}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" });
       return json({ items: (out.items || []).slice(0, 80) });
     }
 
     if (a === "plan") {
-      const { out } = await gemini(key, `Plan family dinners for these dates: ${JSON.stringify(body.days || [])}.
-Family: ${body.servings || 4} people including young kids. Preferences: ${String(body.prefs || "none given").slice(0, 600)}. Weekly food budget: ${body.budget ? "$" + body.budget + " AUD" : "keep it sensible"}.
-Use recipes that exist on RecipeTin Eats (recipetineats.com) and give the recipe's real name as it appears there. Favour quick weeknight meals, use up what's already in: ${JSON.stringify(body.pantry || []).slice(0, 1500)}.
+      const dates = (body.dates || []).slice(0, 7);
+      const { out } = await gemini(key, `Plan family dinners. Cook on these dates (double=true means cook a DOUBLE batch so the next night is leftovers): ${JSON.stringify(dates)}.
+Feeding: ${body.people || 4} people (young kids included). Cooking skill: ${body.skill || "home cook"}. Vibe and effort: ${body.vibe || "standard family dinners"}.
+${(body.focus || []).length ? "Focus: " + body.focus.join(", ") + ".\n" : ""}${(body.cuisines || []).length ? "Lean toward these cuisines: " + body.cuisines.join(", ") + ".\n" : ""}Tastes and things to avoid: ${String(body.notes || "none given").slice(0, 600)}. Weekly dinner budget: ${body.budget ? "$" + body.budget + " AUD" : "keep it sensible"}.
+${(body.leftovers || []).length ? "LEFTOVERS to use first (work them into a meal or a lunch-style dinner early in the week): " + JSON.stringify(body.leftovers).slice(0, 600) + ".\n" : ""}Use up what's already in the fridge and pantry where it makes sense: ${JSON.stringify(body.pantry || []).slice(0, 1500)}.
 Avoid repeating these recent meals: ${JSON.stringify(body.recent || []).slice(0, 600)}.
-For each, list the main ingredients with quantities for the family, and estimate the cost in AUD at Woolworths or Coles of the ingredients they'd need to buy.
-Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Chicken Chow Mein","emoji":"🍜","ingredients":[{"name":"Chicken thigh","qty":"500 g"}],"est_cost":18}]}`);
-      return json({ meals: out.meals || [] });
+ONLY choose recipes that really exist on RecipeTin Eats (recipetineats.com) and give the exact recipe title as published there, so it can be looked up.
+For each, list the main ingredients with quantities for the family (double for double batches), prep time, difficulty (Easy/Medium/Hard), a fitting food emoji, and the estimated AUD cost at Woolworths or Coles of what they'd need to buy.
+Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Tuna Mornay (Tuna Casserole Pasta Bake)","emoji":"🐟","prep_time":"35 min","difficulty":"Easy","double":false,"ingredients":[{"name":"Tinned tuna","qty":"425 g"}],"est_cost":14}]}`);
+      const meals = (out.meals || []).slice(0, 7);
+      // swap in the real recipe card where RecipeTin Eats has it
+      const real = await Promise.all(meals.map((m: any) => realRecipe(String(m.title || ""))));
+      meals.forEach((m: any, i: number) => { const r = real[i]; if (r) Object.assign(m, { title: r.title, url: r.url, servings: r.servings, ingredients: r.ingredients, real: true }); else m.real = false; });
+      return json({ meals });
     }
+    if (a === "real_recipe") return json(await realRecipe(String(body.title || "")) || { none: true });
 
     if (a === "recipe") {
+      const r = await realRecipe(String(body.title || ""));
+      if (r) return json(Object.assign({ emoji: null, est_cost: null, real: true }, r));
       const { out } = await gemini(key, `Give the main ingredients, with quantities for ${body.servings || 4} people, for the dish "${String(body.title || "").slice(0, 120)}" as made on RecipeTin Eats if it exists there, plus a fitting food emoji and an estimated AUD cost at Woolworths or Coles.
 Return JSON: {"title":"...","emoji":"🍝","ingredients":[{"name":"...","qty":"..."}],"est_cost":15}`);
       return json(out);
@@ -115,6 +169,7 @@ Return JSON: {"title":"...","emoji":"🍝","ingredients":[{"name":"...","qty":".
     if (a === "budget") {
       const { out } = await gemini(key, `Estimate what these groceries would cost at Woolworths or Coles in Perth, Australia right now, using typical everyday (non-special) prices for a normal pack size, in AUD.
 Items: ${JSON.stringify(body.items || []).slice(0, 4000)}
+Return one entry per item, in the same order, using each item's name exactly as given.
 Return JSON: {"total":85.5,"items":[{"name":"Milk","est":3.1}]}`);
       return json(out);
     }
