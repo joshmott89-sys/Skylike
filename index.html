@@ -252,6 +252,22 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .item .who{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;cursor:pointer;color:var(--muted);opacity:.55}.item .who svg{width:20px;height:20px}.item .who.set{opacity:1}.item .who .face{width:30px;height:30px;font-size:14px}
 .whopick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}.whopick button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:16px;border:2px solid transparent;background:var(--surface-2,#f4f1ea);font:inherit;font-weight:700;cursor:pointer}.whopick button.on{border-color:var(--ocean-2)}.whopick .face{width:44px;height:44px;font-size:20px}
 .fgave{margin:10px 0 0;font-size:14.5px;color:var(--muted)}
+.strack{display:flex;align-items:center;gap:8px;min-width:0}.strack .sfill{display:flex;flex-wrap:wrap;gap:2px;line-height:1}
+.strack i{font-style:normal;font-size:22px;color:transparent;-webkit-text-stroke:1.6px #D9A21B;text-stroke:1.6px #D9A21B}.strack i.on{color:#F5B71F;-webkit-text-stroke:1.6px #D9A21B}
+.strack .sgoal{font-size:24px;margin-left:2px}.strack .sleft{font-size:13.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.strack.lg i{font-size:32px}.strack.lg .sgoal{font-size:34px}.strack.lg .sleft{font-size:15px}
+.kstars{display:block;width:100%;border:0;background:color-mix(in srgb,#F5B71F 10%,transparent);border-radius:16px;padding:10px 14px;margin:4px 0 6px;cursor:pointer;text-align:left}
+.goalname{font-size:15px;font-weight:700;color:var(--ink-2)}
+.kstrip{flex:none;display:grid;gap:6px;margin:14px var(--pad) 0;padding:12px 18px;border:0;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.ksrow{display:flex;align-items:center;gap:10px;min-width:0}.ksrow .face{width:34px;height:34px;font-size:17px;flex:none}.ksrow>b{min-width:64px;font-size:17px}
+@media (min-width:900px){#glance.on{flex-direction:row;gap:40px}#glance:has(.gl-right) .clock{font-size:clamp(90px,12.5vw,170px)}.gl-right{display:flex;flex-direction:column;align-items:stretch;width:min(540px,48vw)}.gl-right .gcds{flex-wrap:nowrap;justify-content:stretch}.gl-right .gcd{flex:1}}
+#glance .gl-left{display:flex;flex-direction:column;align-items:center;gap:6px}
+.gstars{margin-top:22px;display:grid;gap:10px;justify-items:start}.gsrow{display:flex;align-items:center;gap:12px;background:rgba(6,30,48,.26);padding:10px 18px;border-radius:20px}.gsrow .face{width:44px;height:44px;font-size:22px;flex:none}.gsrow>b{font-size:22px;min-width:84px}
+.gsrow{width:100%;box-sizing:border-box}.gsrow .strack{flex:1}.strack.xl .sfill{flex-wrap:nowrap}.strack.xl i{font-size:min(34px,calc(290px / var(--n,10)));-webkit-text-stroke:2px #FFD873}.strack.xl i.on{color:#FFC93C}.strack.xl .sgoal{font-size:44px}
+.gcds{display:flex;gap:16px;margin-top:22px;flex-wrap:wrap;justify-content:center}
+.gcd{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:12px;background:rgba(6,30,48,.26);padding:14px 24px;border-radius:24px}
+.gcd .ge{grid-row:span 2;font-size:64px;line-height:1}.gcd .gn{font-size:72px;font-weight:800;line-height:1}.gcd .gw{font-size:22px;font-weight:700;opacity:.9;grid-column:2}
+.gcd .gm{grid-column:1/-1;font-size:26px;letter-spacing:2px;margin-top:6px}.gcd .gt{grid-column:1/-1;font-size:17px;font-weight:600;opacity:.85;margin-top:4px}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -672,7 +688,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-2300'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-2330'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1102,6 +1118,12 @@ function touch() {
   $('#glance').classList.remove('on');
 }
 ['pointerdown','keydown','wheel'].forEach(ev => document.addEventListener(ev, touch, {passive: true}));
+// For little ones: just the two nearest countdowns, a big number, the event's emoji, and moons to count when it's close.
+function glanceCountdowns(k) {
+  const list = S.countdowns.map(c => [c, daysBetween(k, c.date)]).filter(([, d]) => d >= 0 && d <= 60).sort((a, b) => a[1] - b[1]).slice(0, 2);
+  if (!list.length) return '';
+  return `<div class="gcds">${list.map(([c, d]) => `<div class="gcd"><span class="ge">${esc(c.emoji || '🎉')}</span>${d === 0 ? '<b class="gn">Today!</b>' : `<b class="gn num">${d}</b><span class="gw">${d === 1 ? 'sleep' : 'sleeps'}</span>`}${d > 0 && d <= 7 ? `<span class="gm" aria-hidden="true">${'🌙'.repeat(d)}</span>` : ''}<span class="gt">${esc(c.title)}</span></div>`).join('')}</div>`;
+}
 function glanceHTML(now) {
   const k = dayKey(now);
   const live = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now);
@@ -1110,10 +1132,11 @@ function glanceHTML(now) {
   const key = e ? `<div class="key" style="--c:${eventColour(e)}"><i></i><div style="text-align:left"><div class="lbl2">${new Date(e.starts_at) <= now ? 'Now' : 'Next'}</div><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span> ${esc(e.title || 'Busy')}</div></div>`
     : allDay.length ? `<div class="key" style="--c:${eventColour(allDay[0])}"><i></i><div style="text-align:left"><div class="lbl2">Today</div>${esc(allDay[0].title)}</div></div>`
     : `<div class="key" style="--c:rgba(255,255,255,.7)"><i></i><div style="text-align:left"><div class="lbl2">Today</div>Nothing else on</div></div>`;
-  return `<div class="clock num">${clockHTML(now)}</div>
+  const right = glanceCountdowns(k) + (kids().length && S.rewards.length ? `<div class="gstars">${kids().map(kd => `<div class="gsrow">${avatar(kd)}<b>${esc(kd.name)}</b>${starTrack(kd, 'xl')}</div>`).join('')}</div>` : '');
+  return `<div class="gl-left"><div class="clock num">${clockHTML(now)}</div>
     <div class="date">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}</div>
     ${wx ? `<div class="gwx">${Math.round(wx.current.temperature_2m)}° · ${esc(wxWords(wx.current.weather_code))}${(r => r ? ' · ' + esc(r) : '')(rainNote(wx))}</div>` : ''}
-    ${key}${(br => br.length ? `<div class="cds">${br.map(x => `<span class="cd">${icon(x.icon)} ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.icon === 'bag'))}${(bins => bins.length ? `<div class="cds">${bins.map(x => `<span class="cd"><span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span> ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.bins))}${countdownsHTML(k)}`;
+    ${key}${(br => br.length ? `<div class="cds">${br.map(x => `<span class="cd">${icon(x.icon)} ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.icon === 'bag'))}${(bins => bins.length ? `<div class="cds">${bins.map(x => `<span class="cd"><span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span> ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.bins))}</div>${right ? `<div class="gl-right">${right}</div>` : ''}`;
 }
 function idleTick() {
   if (!S.household) return;
@@ -1332,7 +1355,7 @@ function chipsHTML() {
 
 /* ----- views ----- */
 const V = {};
-V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}${kitchenHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
@@ -1588,6 +1611,17 @@ function bringFor(k) {
   return Object.values(out);
 }
 const starsOf = kid => S.balances[kid.id] || 0;
+// A row of stars toward the next reward: earned ones filled, the rest hollow outlines. Big goals squeeze into 10 stars.
+function starTrack(kid, size = '') {
+  const stars = starsOf(kid), goal = S.rewards.filter(w => w.cost > stars).sort((a, b) => a.cost - b.cost)[0] || S.rewards.slice().sort((a, b) => b.cost - a.cost)[0];
+  if (!goal) return `<div class="strack ${size}"><span class="sfill">${'<i class="on">★</i>'.repeat(Math.min(stars, 10))}</span></div>`;
+  const n = goal.cost <= 15 ? goal.cost : 10, per = goal.cost / n, have = Math.min(n, Math.floor(stars / per)), left = Math.max(0, goal.cost - stars);
+  return `<div class="strack ${size}" style="--n:${n}" role="img" aria-label="${esc(kid.name)}: ${Math.min(stars, goal.cost)} of ${goal.cost} stars for ${esc(goal.title)}"><span class="sfill">${[...Array(n)].map((_, i) => `<i class="${i < have ? 'on' : ''}">★</i>`).join('')}</span><span class="sgoal">${esc(goal.emoji || '🎁')}</span>${size === 'xl' ? '' : `<span class="sleft">${left ? `${left} to go` : 'Got it!'}</span>`}</div>`;
+}
+function kidsStripHTML() {
+  const ks = kids(); if (isPhone() || !ks.length || !S.rewards.length && !ks.some(k => starsOf(k))) return '';
+  return `<button class="kstrip" data-act="go" data-view="kids" aria-label="Open the kids screen">${ks.map(k => `<span class="ksrow" style="--c:${esc(k.color)}">${avatar(k)}<b>${esc(k.name)}</b>${starTrack(k)}</span>`).join('')}</button>`;
+}
 function moneyOf(kid) { const p = settings().pocket || {}; return p.on ? '$' + (starsOf(kid) * (+p.perStar || 0)).toFixed(2) : ''; }
 function kidColumn(kid, k, now) {
   const h = hoursFloat(now), {now: r, next} = currentRoutine(kid, k, h);
@@ -1598,8 +1632,9 @@ function kidColumn(kid, k, now) {
   const stars = starsOf(kid), goal = S.rewards.filter(w => w.cost > stars).sort((a, b) => a.cost - b.cost)[0] || S.rewards[S.rewards.length - 1];
   const tile = (done, act, data, emoji, label, extra = '') => `<button class="ktile ${done ? 'done' : ''}" data-act="${act}" ${data} aria-pressed="${done}"><span class="em">${esc(emoji || '⭐')}</span><span class="lb">${esc(label)}</span>${extra}${done ? `<span class="ok">${icon('check')}</span>` : ''}</button>`;
   return `<section class="kid" style="--c:${esc(kid.color)}">
-    <header class="kh">${avatar(kid, 'lg')}<div class="grow"><h2>${esc(kid.name)}</h2>${goal ? `<div class="goal"><span>${esc(goal.emoji || '🎁')} ${esc(goal.title)}</span><span class="bar"><i style="width:${Math.min(100, stars / goal.cost * 100)}%"></i></span><span class="num">${Math.min(stars, goal.cost)}/${goal.cost}</span></div>` : ''}</div>
+    <header class="kh">${avatar(kid, 'lg')}<div class="grow"><h2>${esc(kid.name)}</h2>${goal ? `<div class="goalname">${esc(goal.emoji || '🎁')} ${esc(goal.title)}</div>` : ''}</div>
       <button class="jar" data-act="kid-rewards" data-id="${kid.id}" aria-label="${esc(kid.name)} has ${stars} stars"><span class="st">${icon('star')}</span><b class="num">${stars}</b>${moneyOf(kid) ? `<small class="num">${moneyOf(kid)}</small>` : ''}</button></header>
+    ${goal ? `<button class="kstars" data-act="kid-rewards" data-id="${kid.id}">${starTrack(kid, 'lg')}</button>` : ''}
     ${r ? `<div class="kblock"><div class="kt">${esc(r.emoji || '')} ${esc(routineName(r))}<span class="num">${doneSteps}/${steps.length}</span></div>
       ${allDone ? `<div class="kdone">${icon('star')} All done! Great job, ${esc(kid.name)}.</div>` : ''}
       <div class="ktiles">${steps.map(st => tile(tickOf(kid, 'step', r.id + ':' + st.id, k), 'kid-step', `data-kid="${kid.id}" data-r="${r.id}" data-s="${esc(st.id)}"`, st.emoji, st.label)).join('')}</div></div>`
