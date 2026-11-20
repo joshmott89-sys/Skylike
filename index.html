@@ -199,6 +199,8 @@ body.night .ptag{background:transparent}
 .mday .mt.muted{color:var(--ink-3);font-weight:650}
 .mday .mm{margin-top:auto;font-size:13.5px;font-weight:650;color:var(--ink-2)}
 .mtotal{margin:14px 0 18px;font-weight:600;color:var(--ink-2)}
+.leftz{margin:4px 0 18px;padding:14px 16px;border-radius:16px;background:color-mix(in srgb,#8A6BC2 9%,transparent)}
+.leftz .kt{margin:0 0 10px;white-space:nowrap}.leftz .kt .num{margin-left:auto;letter-spacing:0;text-transform:none;font-weight:650}
 .pgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .pchips{display:flex;flex-wrap:wrap;gap:6px}
 .pchip{display:inline-flex;align-items:center;border-radius:99px;background:color-mix(in srgb,var(--ink) 5%,transparent);font-size:15px;font-weight:650}
@@ -591,7 +593,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1545'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1615'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1475,9 +1477,11 @@ V.meals = () => {
     <div class="row mtotal"><span>Dinners this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
     <div class="panel pantry-p"><h2>What's in<span class="sp"></span>${S.scanning ? `<span class="scanning">${icon('camera')}${esc(S.scanning)}</span>` : ''}</h2>
       <p class="help">Tap <b>Scan</b> on the fridge, freezer or pantry to read it from a photo (you can pick several). It also updates when groceries are ticked off and when you cook. Tap an item to mark it running low.</p>
-      <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl);
+      <div class="leftz"><div class="kt">🍱 Leftovers<span class="num">${S.pantry.filter(p => p.leftover).reduce((a, p) => a + (p.portions || 1), 0)} portions</span><button class="scanbtn" data-act="left-new">${icon('plus')}Add</button></div>
+        <div class="pchips">${S.pantry.filter(p => p.leftover).map(p => `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Eat one portion of ${esc(p.name)}">${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">None right now. Add them after dinner, or answer "Any leftovers?" when you tick a meal as cooked.</span>'}</div>
+        ${S.pantry.some(p => p.leftover) ? '<p class="help" style="margin:8px 0 0">Tap one when it gets eaten. Planning uses them first.</p>' : ''}</div>
+      <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl && !p.leftover);
         return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span><label class="scanbtn ${S.scanning ? 'off' : ''}" aria-label="Scan the ${name.toLowerCase()} with the camera">${icon('camera')}Scan<input type="file" accept="image/*" multiple data-change="pantry-photo" data-place="${pl}" ${S.scanning ? 'disabled' : ''} hidden></label>${items.length ? `<button class="clearbtn" data-act="pantry-clear" data-place="${pl}">Clear</button>` : ''}</div><div class="pchips">${items.map(p => p.leftover ? `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Use one portion of ${esc(p.name)}">🍱 ${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>` : `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
-      <div class="row" style="margin-top:12px"><button class="btn soft" data-act="left-new">🍱 Add leftovers</button><span class="lbl">Tap a leftover to use a portion.</span></div>
       <form data-form="pantry-add" class="row" style="margin-top:10px"><input class="input grow" name="name" placeholder="Add what's in, e.g. eggs, rice, frozen peas" maxlength="200"><select class="input" name="place" style="width:auto"><option value="">Auto</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option><option value="pantry">Pantry</option></select><button class="btn">Add</button></form>
       ${low.length ? `<div class="row" style="margin-top:12px"><span class="lbl">Running low: ${low.map(p => esc(p.name)).join(', ')}</span><span class="grow"></span><button class="btn soft" data-act="pantry-shop">Add to groceries</button></div>` : ''}</div></div>`;
 };
@@ -1981,7 +1985,7 @@ async function callFn(body) {
   } catch { return {error: 'No connection'}; }
 }
 
-const PLAN_STAGES = [[0, 'Looking in the fridge…'], [5, 'Thinking what\'s good…'], [14, 'Planning it out…'], [26, 'Finding the real recipes on RecipeTin Eats…'], [45, 'Nearly there…']];
+const PLAN_STAGES = [[0, 'Looking in the fridge…'], [5, 'Thinking what\'s good…'], [14, 'Planning it out…'], [26, 'Consulting Nagi at RecipeTin Eats…'], [45, 'Nearly there…']];
 let planT = 0;
 function planTicker() { clearInterval(planT); planT = setInterval(() => { if (!S.planning) return clearInterval(planT); const el = $('#plan-stage'); if (el) el.textContent = planStage(); else if (S.view === 'meals') render(); }, 1500); }
 const planStage = () => { const t = (Date.now() - (S.planning || {}).at) / 1000; return PLAN_STAGES.filter(([s]) => t >= s).pop()[1]; };
@@ -1992,7 +1996,7 @@ function planSheet(keep) {
   const tag = (g, v, label) => { const on = Array.isArray(P[g]) ? P[g].includes(v) : P[g] === v; return `<button type="button" class="ptag ${on ? 'on' : ''}" data-act="plan-tag" data-g="${g}" data-v="${esc(v)}" aria-pressed="${on}">${esc(label || v)}</button>`; };
   const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));
   sheet(`<h2>Plan dinners</h2>
-    <div class="pblock"><div class="kt">Which nights</div><div class="ptags">${days.map(k => { const past = k < today, on = P.days.includes(k), has = mealOn(k); return `<button type="button" class="ptag day ${on ? 'on' : ''}" data-act="plan-day" data-k="${k}" ${past ? 'disabled' : ''}>${esc(fmtDay(k, {weekday: 'short'}))}${has && !on ? ' ✓' : ''}</button>`; }).join('')}</div><p class="help">Ticked nights get new dinners (replacing any already there).</p></div>
+    <div class="pblock"><div class="kt">Which nights</div><div class="ptags">${days.map(k => { const past = k < today, on = P.days.includes(k), has = mealOn(k); return `<button type="button" class="ptag day ${on ? 'on' : ''}" data-act="plan-day" data-k="${k}" ${past ? 'disabled' : ''} aria-pressed="${on}">${esc(fmtDay(k, {weekday: 'short'}))}</button>`; }).join('')}</div><p class="help">Highlighted nights get new dinners${days.some(k => mealOn(k) && k >= today) ? ' (replacing any already planned)' : ''}.</p></div>
     <div class="pblock row" style="justify-content:space-between"><div class="kt" style="margin:0">Feeding</div><div class="row stepper"><button class="icon-btn" type="button" data-act="plan-people" data-d="-1" aria-label="Fewer">−</button><b class="num">${P.people}</b><button class="icon-btn" type="button" data-act="plan-people" data-d="1" aria-label="More">+</button></div></div>
     <div class="pblock"><div class="kt">Cook once, eat twice</div><div class="ptags">${tag('double', '0', 'No')}${tag('double', '1', '1 night')}${tag('double', '2', '2 nights')}</div><p class="help">Makes a double batch so the next night is leftovers.</p></div>
     <div class="pblock"><div class="kt">Vibe and effort</div><div class="ptags">${[['Standard family dinners', 'Standard'], ['Quick and easy, under 30 minutes', 'Quick'], ['Something new and exciting', 'Something new'], ['A weekend cooking project', 'Challenge me']].map(([v, l]) => tag('vibe', v, l)).join('')}</div></div>

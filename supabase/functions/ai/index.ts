@@ -32,28 +32,38 @@ async function pickModel(key: string): Promise<string> {
   return name;
 }
 
-async function gemini(key: string, prompt: string, image?: { data: string; mime: string }) {
-  const model = await pickModel(key);
+// Free-tier Gemini: the "Lite" model answers in about a second and has the most generous free limit,
+// so it does everything first; if it's busy or over its limit, try the full Flash model, then give a clear message.
+async function gemini(key: string, prompt: string, image?: { data: string; mime: string }, opts: { timeout?: number; level?: string } = {}) {
+  const models = ["gemini-flash-lite-latest", await pickModel(key)].filter((m, i, a) => a.indexOf(m) === i);
   const parts: any[] = [{ text: prompt }];
   if (image) parts.push({ inline_data: { mime_type: image.mime || "image/jpeg", data: image.data } });
-  // Keep "thinking" short: these are quick sorting jobs, and long thinking made photo scans take over a minute.
-  const call = (thinking: boolean) => {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 50000);
-    const generationConfig: any = { responseMimeType: "application/json", temperature: 0.4 };
-    if (thinking) generationConfig.thinkingConfig = { thinkingLevel: "low" };
-    return fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
-      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig }),
-    }).finally(() => clearTimeout(t));
-  };
-  let r: Response;
-  try { r = await call(true); if (r.status === 400) { const peek = await r.clone().text(); if (/thinking/i.test(peek)) r = await call(false); } }
-  catch { throw new Error(image ? "The AI took too long to read that photo. Try again, or take it a little further back." : "The AI took too long to answer. Try again in a moment."); }
-  const d = await r.json();
-  if (r.status === 429) throw new Error("The free AI limit is used up for now. Try again in a minute.");
-  if (!r.ok) throw new Error(d?.error?.message || "AI request failed");
-  const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
-  try { return { model, out: JSON.parse(text.replace(/^```json\s*|```$/g, "")) }; } catch { throw new Error("The AI reply couldn't be read. Try again."); }
+  let lastErr = "";
+  for (const model of models) {
+    const t0 = Date.now();
+    const call = (thinking: boolean) => {
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), model.includes("lite") ? 45000 : (opts.timeout || 60000));
+      const generationConfig: any = { responseMimeType: "application/json", temperature: 0.4 };
+      if (thinking) generationConfig.thinkingConfig = { thinkingLevel: model.includes("lite") ? "minimal" : (opts.level || "minimal") };
+      return fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig }),
+      }).finally(() => clearTimeout(t));
+    };
+    let r: Response;
+    try { r = await call(true); if (r.status === 400) { const peek = await r.clone().text(); if (/thinking/i.test(peek)) r = await call(false); } }
+    catch { console.log(JSON.stringify({ model, ms: Date.now() - t0, timeout: true })); lastErr = "slow"; continue; }
+    const d = await r.json().catch(() => ({}));
+    console.log(JSON.stringify({ model, ms: Date.now() - t0, status: r.status, usage: d?.usageMetadata, err: d?.error?.message }));
+    if (r.status === 429) { lastErr = "limit"; continue; }
+    if (r.status === 404 || r.status >= 500) { lastErr = d?.error?.message || "busy"; continue; }
+    if (!r.ok) throw new Error(d?.error?.message || "AI request failed");
+    const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
+    try { return { model, out: JSON.parse(text.replace(/^```json\s*|```$/g, "")) }; } catch { lastErr = "unreadable"; continue; }
+  }
+  throw new Error(lastErr === "limit" ? "Today's free AI limit is used up for now. Try again in a few minutes."
+    : lastErr === "slow" ? (image ? "The AI took too long to read that photo. Try again, or take it a little further back." : "The AI took too long to answer. Try again in a moment.")
+    : lastErr === "unreadable" ? "The AI reply couldn't be read. Try again." : "Google's AI is busy right now. Try again in a minute.");
 }
 
 // ---- Real recipes: look each planned dinner up on RecipeTin Eats and use its actual ingredient card ----
@@ -104,6 +114,18 @@ const AISLES = "Fruit & veg, Meat & seafood, Deli, Dairy & eggs, Bakery, Pantry,
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   const body = await req.json().catch(() => ({}));
+  const cron = req.headers.get("x-cron-secret");
+  if (cron && body.action === "diag") {
+    const { data: ap } = await admin.from("app_private").select("cron_secret").eq("id", 1).single();
+    if (!ap || ap.cron_secret !== cron) return json({ error: "unauthorised" }, 401);
+    const { data: hp2 } = await admin.from("household_private").select("ai_key").not("ai_key", "is", null).limit(1).maybeSingle();
+    const k = hp2?.ai_key; const out: any = { picked: await pickModel(k) };
+    const prompt = "Estimate AUD prices at Woolworths for: milk, bread, bananas, weet-bix, nappies size 5. Return JSON {\"items\":[{\"name\":\"\",\"est\":0}]}";
+    for (const [label, o] of [["default", {}]] as any) {
+      const t = Date.now(); try { await gemini(k, prompt, undefined, o); out[label] = Date.now() - t; } catch (e) { out[label] = "fail " + (Date.now() - t) + " " + (e as Error).message; }
+    }
+    return json(out);
+  }
   const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   const { data: u } = await admin.auth.getUser(jwt);
   if (!u?.user) return json({ error: "Please sign in again" }, 401);
@@ -136,7 +158,7 @@ Brain-dump: """${text}"""`);
 Use short, plain Australian names (e.g. "Milk", "Tinned tuna", "Jalapenos"), no brand unless it is the product's common name. Mark items that look nearly finished as low. Skip anything you can't identify confidently. List each item once.
 Already recorded (if an item is the same thing, use EXACTLY this name): ${JSON.stringify(body.existing || []).slice(0, 2500)}.
 If you can see cooked leftovers (food in containers or covered bowls) and can reasonably tell what they are, list them as "Leftover <dish>" with leftover:true and a guess at portions (whole number). If you can't tell what a container holds, skip it.
-Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},{"name":"Leftover spaghetti bolognese","place":"fridge","leftover":true,"portions":2}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" });
+Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},{"name":"Leftover spaghetti bolognese","place":"fridge","leftover":true,"portions":2}]} where place is one of fridge, freezer, pantry.`, { data: img, mime: body.mime || "image/jpeg" }, { timeout: 90000 });
       return json({ items: (out.items || []).slice(0, 80) });
     }
 
@@ -149,7 +171,7 @@ ${(body.leftovers || []).length ? "LEFTOVERS to use first (work them into a meal
 Avoid repeating these recent meals: ${JSON.stringify(body.recent || []).slice(0, 600)}.
 ONLY choose recipes that really exist on RecipeTin Eats (recipetineats.com) and give the exact recipe title as published there, so it can be looked up.
 For each, list the main ingredients with quantities for the family (double for double batches), prep time, difficulty (Easy/Medium/Hard), a fitting food emoji, and the estimated AUD cost at Woolworths or Coles of what they'd need to buy.
-Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Tuna Mornay (Tuna Casserole Pasta Bake)","emoji":"🐟","prep_time":"35 min","difficulty":"Easy","double":false,"ingredients":[{"name":"Tinned tuna","qty":"425 g"}],"est_cost":14}]}`);
+Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Tuna Mornay (Tuna Casserole Pasta Bake)","emoji":"🐟","prep_time":"35 min","difficulty":"Easy","double":false,"ingredients":[{"name":"Tinned tuna","qty":"425 g"}],"est_cost":14}]}`, undefined, { timeout: 110000, level: "low" });
       const meals = (out.meals || []).slice(0, 7);
       // swap in the real recipe card where RecipeTin Eats has it
       const real = await Promise.all(meals.map((m: any) => realRecipe(String(m.title || ""))));
