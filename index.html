@@ -194,6 +194,7 @@ body.night .ptag{background:transparent}
 .lboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.lbox{background:var(--card-2,#f4f1ea);border-radius:14px;padding:12px}.lbh{font-weight:800;margin-bottom:6px}
 .lit{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(0,0,0,.06)}.lit:first-of-type{border-top:0}.ls{font-size:12px;color:var(--muted);width:78px;flex:none}.ln{flex:1;min-width:0}.lr{display:flex;gap:2px;flex:none}.ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
+.scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
 .linkbtn{background:none;border:0;color:var(--accent,#0E4C6E);font:inherit;font-weight:700;text-decoration:underline;padding:0;cursor:pointer}
 .mday.lunch.empty{background:transparent;box-shadow:none}
 .mday.past:not(.cooked){opacity:.55}
@@ -218,6 +219,7 @@ body.night .ptag{background:transparent}
 .pchip.low button:first-child::after{content:' · low';color:var(--apricot-ink);font-size:13px}
 .filebtn{cursor:pointer;margin-left:auto}
 .scanbtn{margin-left:10px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:color-mix(in srgb,var(--ocean-2) 10%,transparent);color:var(--ocean-2);font-size:13.5px;font-weight:750;letter-spacing:0;text-transform:none;cursor:pointer}
+.scanbtn{border:0;font-family:inherit}
 .scanbtn svg{width:16px;height:16px}.scanbtn.off{opacity:.4;pointer-events:none}
 .kt .scanbtn{margin-left:10px}.pcol .kt .num{margin-left:auto}
 .scanning{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:650;color:var(--ocean-2);animation:pulse 1.4s ease-in-out infinite}
@@ -601,7 +603,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1730'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1740'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1493,7 +1495,7 @@ V.meals = () => {
         <div class="pchips">${S.pantry.filter(p => p.leftover).map(p => `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Eat one portion of ${esc(p.name)}">${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">None right now. Add them after dinner, or answer "Any leftovers?" when you tick a meal as cooked.</span>'}</div>
         ${S.pantry.some(p => p.leftover) ? '<p class="help" style="margin:8px 0 0">Tap one when it gets eaten. Planning uses them first.</p>' : ''}</div>
       <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl && !p.leftover);
-        return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span><label class="scanbtn ${S.scanning ? 'off' : ''}" aria-label="Scan the ${name.toLowerCase()} with the camera">${icon('camera')}Scan<input type="file" accept="image/*" multiple data-change="pantry-photo" data-place="${pl}" ${S.scanning ? 'disabled' : ''} hidden></label>${items.length ? `<button class="clearbtn" data-act="pantry-clear" data-place="${pl}">Clear</button>` : ''}</div><div class="pchips">${items.map(p => p.leftover ? `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Use one portion of ${esc(p.name)}">🍱 ${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>` : `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
+        return `<div class="pcol"><div class="kt">${e} ${name}<span class="num">${items.length}</span><button class="scanbtn ${S.scanning ? 'off' : ''}" data-act="scan-pick" data-place="${pl}" ${S.scanning ? 'disabled' : ''} aria-label="Scan the ${name.toLowerCase()}">${icon('camera')}Scan</button>${items.length ? `<button class="clearbtn" data-act="pantry-clear" data-place="${pl}">Clear</button>` : ''}</div><div class="pchips">${items.map(p => p.leftover ? `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Use one portion of ${esc(p.name)}">🍱 ${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>` : `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
       <form data-form="pantry-add" class="row" style="margin-top:10px"><input class="input grow" name="name" placeholder="Add what's in, e.g. eggs, rice, frozen peas" maxlength="200"><select class="input" name="place" style="width:auto"><option value="">Auto</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option><option value="pantry">Pantry</option></select><button class="btn">Add</button></form>
       ${low.length ? `<div class="row" style="margin-top:12px"><span class="lbl">Running low: ${low.map(p => esc(p.name)).join(', ')}</span><span class="grow"></span><button class="btn soft" data-act="pantry-shop">Add to groceries</button></div>` : ''}</div></div>`;
 };
@@ -1880,6 +1882,10 @@ const A = {
   async 'left-add'(el) { const n = +el.dataset.n; closeSheet(); if (!n) return; await pantryAdd([{name: 'Leftover ' + el.dataset.t.replace(/\s*\(.*?\)\s*/g, ' ').trim(), place: 'fridge', leftover: true, portions: n}]); toast('Added to the fridge as leftovers'); },
   'left-new'() { sheet(`<h2>Add leftovers</h2><form data-form="left-new"><input class="input" name="name" placeholder="e.g. Spag bol, fried rice" required maxlength="60"><div class="row" style="margin-top:12px"><span class="lbl">Portions</span>${[1, 2, 3, 4, 6].map(n => `<label class="daychk"><input type="radio" name="n" value="${n}" ${n === 2 ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div><button class="btn" style="margin-top:12px">Add to fridge</button></form>`); },
   async 'left-use'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; p.portions = (p.portions || 1) - 1; if (p.portions <= 0) { S.pantry = S.pantry.filter(x => x !== p); render(); await db(sb.from('pantry').delete().eq('id', p.id)); toast('All eaten'); } else { render(); await db(sb.from('pantry').update({portions: p.portions}).eq('id', p.id)); } },
+  'scan-pick'(el) { const pl = el.dataset.place;
+    sheet(`<h2>Scan the ${pl}</h2><p class="help">Stand back so the whole shelf fits. Doors open, lights on.</p>
+      <div class="scanpick"><label class="btn">${icon('camera')} Take a photo<input type="file" accept="image/*" capture="environment" data-change="pantry-photo" data-place="${pl}" hidden></label>
+      <label class="btn ghost">Choose from photos<input type="file" accept="image/*" multiple data-change="pantry-photo" data-place="${pl}" hidden></label></div>`, {focus: false}); },
   'pantry-clear'(el) { const pl = el.dataset.place, n = S.pantry.filter(p => p.place === pl).length; if (!n) return; sheet(`<h2>Clear the ${pl}?</h2><p class="help">Removes all ${n} item${n === 1 ? '' : 's'} listed in the ${pl}, e.g. after a clean-out. You can scan it again after.</p><div class="row"><button class="btn" data-act="pantry-clear-yes" data-place="${pl}">Clear ${pl}</button><button class="btn ghost" data-act="close-sheet">Cancel</button></div>`); },
   async 'pantry-clear-yes'(el) { const pl = el.dataset.place, ids = S.pantry.filter(p => p.place === pl).map(p => p.id); S.pantry = S.pantry.filter(p => p.place !== pl); closeSheet(); render(); await db(sb.from('pantry').delete().in('id', ids)); toast(`Cleared the ${pl}`); },
   async 'snap-remove'() { const ids = [...document.querySelectorAll('#snap-miss input:checked')].map(i => i.value); closeSheet(); if (!ids.length) return; S.pantry = S.pantry.filter(p => !ids.includes(p.id)); render(); await db(sb.from('pantry').delete().in('id', ids)); toast(`Removed ${ids.length}`); },
@@ -2277,7 +2283,7 @@ document.addEventListener('change', async e => {
   if (el.dataset.act === 'cal-member') { const c = S.calendars.find(x => x.id === el.dataset.id); c.member_id = el.value || null; render(); await db(sb.from('calendars').update({member_id: c.member_id}).eq('id', c.id)); }
   if (el.dataset.act === 'upload') uploadPhotos(el.files);
   if (el.dataset.change === 'pantry-photo' && el.files && el.files.length) {
-    const files = [...el.files], place = el.dataset.place; el.value = '';
+    const files = [...el.files], place = el.dataset.place; el.value = ''; if (el.closest('.sheet')) closeSheet();
     if (!S.aiOn) return toast('Add a free Gemini key in Settings → Kitchen first.', 4000);
     if (S.scanning) return;
     // One photo at a time, in order, with a status that stays on screen until it's done.
