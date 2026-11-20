@@ -228,6 +228,9 @@ body.night .ptag{background:transparent}
 @media (max-width:1100px){.mweek{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:760px){.mweek{grid-template-columns:repeat(2,minmax(0,1fr))}.pgrid{grid-template-columns:1fr}}
 .kids-page h1{margin-bottom:14px}
+.knext{margin-top:14px;padding:12px 14px 14px;border-radius:16px;background:color-mix(in srgb,var(--c) 7%,transparent)}
+.knext .kt{margin:0 0 6px}
+.kpreview{display:flex;flex-wrap:wrap;gap:10px;font-size:28px;opacity:.6}
 .kbring{display:flex;flex-wrap:wrap;gap:8px}
 .kbring span{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:99px;background:color-mix(in srgb,var(--c) 10%,var(--surface));border:1.5px solid color-mix(in srgb,var(--c) 30%,transparent);font-weight:700;font-size:16px}
 .kbring b{font-size:24px;font-weight:400}
@@ -587,7 +590,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1510'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1520'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1391,6 +1394,7 @@ function currentRoutine(kid, k, h) {
   const rs = S.routines.filter(r => forKid(r, kid) && onDay(r, k));
   return {now: rs.find(r => h >= hm(r.starts) && h < hm(r.ends)), next: rs.filter(r => hm(r.starts) > h).sort((a, b) => hm(a.starts) - hm(b.starts))[0]};
 }
+const routineName = r => /routine/i.test(r.name) ? r.name : r.name + ' routine';
 const fmtHM = t => { const x = hm(t), H = Math.floor(x), M = Math.round((x - H) * 60); return ((H + 11) % 12 + 1) + (M ? ':' + String(M).padStart(2, '0') : '') + (H < 12 ? 'am' : 'pm'); };
 // Bring-today: rules by weekday, or when one of the day's events mentions a word (e.g. "swim").
 function bringFor(k) {
@@ -1417,12 +1421,13 @@ function kidColumn(kid, k, now) {
   return `<section class="kid" style="--c:${esc(kid.color)}">
     <header class="kh">${avatar(kid, 'lg')}<div class="grow"><h2>${esc(kid.name)}</h2>${goal ? `<div class="goal"><span>${esc(goal.emoji || '🎁')} ${esc(goal.title)}</span><span class="bar"><i style="width:${Math.min(100, stars / goal.cost * 100)}%"></i></span><span class="num">${Math.min(stars, goal.cost)}/${goal.cost}</span></div>` : ''}</div>
       <button class="jar" data-act="kid-rewards" data-id="${kid.id}" aria-label="${esc(kid.name)} has ${stars} stars"><span class="st">${icon('star')}</span><b class="num">${stars}</b>${moneyOf(kid) ? `<small class="num">${moneyOf(kid)}</small>` : ''}</button></header>
-    ${r ? `<div class="kblock"><div class="kt">${esc(r.emoji || '')} ${esc(r.name)}<span class="num">${doneSteps}/${steps.length}</span></div>
+    ${r ? `<div class="kblock"><div class="kt">${esc(r.emoji || '')} ${esc(routineName(r))}<span class="num">${doneSteps}/${steps.length}</span></div>
       ${allDone ? `<div class="kdone">${icon('star')} All done! Great job, ${esc(kid.name)}.</div>` : ''}
       <div class="ktiles">${steps.map(st => tile(tickOf(kid, 'step', r.id + ':' + st.id, k), 'kid-step', `data-kid="${kid.id}" data-r="${r.id}" data-s="${esc(st.id)}"`, st.emoji, st.label)).join('')}</div></div>`
-      : `<div class="kblock quiet">${next ? `${esc(next.emoji || '')} ${esc(next.name)} at <b class="num">${esc(fmtHM(next.starts))}</b>` : 'No routine right now.'}</div>`}
+      : ''}
     ${(b => b ? `<div class="kblock"><div class="kt">${k === dayKey(now) && h < 15 ? 'Bring today' : 'Pack for tomorrow'}</div><div class="kbring">${b.items.map(r => `<span><b>${esc(r.emoji || '🎒')}</b>${esc(r.title)}</span>`).join('')}</div></div>` : '')(bringFor(h < 15 ? k : addDaysKey(k, 1)).find(x => x.m.id === kid.id))}
     ${chores.length ? `<div class="kblock"><div class="kt">Jobs</div><div class="ktiles">${chores.map(c => tile(tickOf(kid, 'chore', c.id, k), 'kid-chore', `data-kid="${kid.id}" data-c="${c.id}"`, c.emoji, c.title, `<span class="sv">${'★'.repeat(Math.min(c.stars, 3))}</span>`)).join('')}</div></div>` : ''}
+    ${!r ? `<div class="kblock knext"><div class="kt">${next ? `Later: ${esc(next.emoji || '')} ${esc(routineName(next))}<span class="num">from ${esc(fmtHM(next.starts))}</span>` : 'No more routines today'}</div>${next ? `<div class="kpreview">${(next.steps || []).map(st => `<span title="${esc(st.label)}">${esc(st.emoji || '⭐')}</span>`).join('')}</div>` : ''}</div>` : ''}
   </section>`;
 }
 V.kids = () => {
