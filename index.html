@@ -48,6 +48,7 @@ svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stro
 /* ---------- shell ---------- */
 #app{display:grid;grid-template-columns:var(--rail) 1fr;height:100dvh;height:100vh}
 @supports(height:100dvh){#app{height:100dvh}}
+#app{height:var(--app-h,100dvh)}
 .rail{background:var(--ocean);color:var(--ocean-ink);display:flex;flex-direction:column;align-items:center;padding:calc(18px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom));gap:8px;transition:background .6s}
 .faces{display:flex;flex-direction:column;gap:12px;padding-bottom:14px;margin-bottom:6px;border-bottom:1px solid rgba(230,242,247,.14)}
 .face{width:56px;height:56px;border-radius:50%;border:3px solid transparent;display:grid;place-items:center;font-weight:700;font-size:22px;color:#fff;background:var(--c,#2F7BB5);transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s}
@@ -509,9 +510,9 @@ body.night .hero .leave{color:var(--apricot)}
 .tabbar{display:none}
 @media (max-width:760px){
   body{font-size:17px}
-  #app{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  #app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
   .rail{display:none}
-  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);box-shadow:0 -1px 0 var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .tabbar{position:relative;z-index:5;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);box-shadow:0 -1px 0 var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
   .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:700;color:var(--ink-3);padding:6px 0}
   .tabbar button.on{color:var(--ocean-2)}
   body.night .tabbar button.on{color:var(--apricot)}
@@ -590,7 +591,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1520'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1530'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -713,6 +714,12 @@ function onAppError(e) {
 window.addEventListener('error', e => onAppError(e.error || e.message));
 window.addEventListener('unhandledrejection', e => onAppError(e.reason));
 const DEMO_PAGE = new URLSearchParams(location.search).has('demo');
+// Android Chrome can keep a stale 100dvh after switching apps, pushing the bottom bar off screen: size to the real window instead.
+function fitHeight() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); }
+fitHeight();
+['resize', 'orientationchange', 'pageshow', 'focus'].forEach(e => addEventListener(e, () => { fitHeight(); setTimeout(fitHeight, 300); }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { fitHeight(); setTimeout(fitHeight, 300); setTimeout(fitHeight, 1000); } });
+if (window.visualViewport) visualViewport.addEventListener('resize', fitHeight);
 const bootAt = Date.now();
 // Load the newest build, skipping the browser's cached copy (GitHub Pages lets phones keep one for ~10 min).
 function freshReload() {
