@@ -67,7 +67,7 @@ body.night .navbtn.on{color:var(--ocean-ink)}
 .syncdot i{width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid rgba(230,242,247,.5)}
 .syncdot.warn i{background:var(--warn)}
 .syncdot.bad i{background:var(--bad)}
-main{overflow:hidden;display:flex;flex-direction:column;min-width:0}
+main{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;display:flex;flex-direction:column;min-width:0;min-height:0}
 .scroll{overflow:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 .scroll::-webkit-scrollbar{width:10px}.scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px}
 
@@ -125,7 +125,7 @@ body.night .mark{border-color:#8A9BB4}
 .sky.compact .sun{width:30px;height:30px;margin-left:-15px}
 
 /* ---------- content ---------- */
-.board{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;padding:18px var(--pad) calc(22px + env(safe-area-inset-bottom));min-height:0;flex:1}
+.board{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;padding:18px var(--pad) calc(22px + env(safe-area-inset-bottom));min-height:0;flex:1 0 auto}
 .zone{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .zone h2{margin:0 0 12px;font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .zone h2 .h2link{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:4px 0;font:inherit;color:inherit;cursor:pointer}
@@ -638,7 +638,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-2000'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-2120'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
