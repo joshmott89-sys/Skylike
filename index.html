@@ -249,6 +249,9 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .fl .fw{flex:none;min-width:70px;color:var(--ink-2);font-weight:700}.fl small{color:var(--muted);font-size:14px}
 .focus2 .items .item{min-height:60px}.fempty{color:var(--muted);font-size:17px;margin:6px 0}
 @media (min-width:900px){.focus2{max-width:1000px;grid-template-columns:1fr 1fr;align-items:start}.focus2 .fhead,.focus2 .fq,.focus2 .fqhint,.focus2 .fqdone{grid-column:1/-1}}
+.item .who{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;cursor:pointer;color:var(--muted);opacity:.55}.item .who svg{width:20px;height:20px}.item .who.set{opacity:1}.item .who .face{width:30px;height:30px;font-size:14px}
+.whopick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}.whopick button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:16px;border:2px solid transparent;background:var(--surface-2,#f4f1ea);font:inherit;font-weight:700;cursor:pointer}.whopick button.on{border-color:var(--ocean-2)}.whopick .face{width:44px;height:44px;font-size:20px}
+.fgave{margin:10px 0 0;font-size:14.5px;color:var(--muted)}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -623,7 +626,7 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><path d="m3.8 6.4 1.3 1.3 2.4-2.6M3.8 11.9l1.3 1.3 2.4-2.6M4.2 17.5h2.6"/></symbol>
   <symbol id="i-meal" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16.5 21V3c-2.2 1.2-3.5 3.6-3.5 6.5V13h3.5"/></symbol>
-  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9zM18.5 15.5l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></symbol>
   <symbol id="i-sitter" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z"/></symbol>
@@ -669,7 +672,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-2230'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-2300'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1278,8 +1281,8 @@ function upNextHTML(limit = 4) {
 const priceBook = () => kset().prices || {};
 const priceOf = it => { const e = priceBook()[normFood(it.text)]; if (e) return e.est; const b = LS.get('gbudget:' + it.list_id, null); const v = b && b.items ? b.items[normFood(it.text)] : null; return v != null ? v : null; };
 function itemRow(it, showX = false) {
-  const pr = !it.done && showX ? priceOf(it) : null;
-  return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><span class="txt">${esc(it.text)}</span>${pr != null ? `<span class="price num">~$${pr < 10 ? pr.toFixed(2) : Math.round(pr)}</span>` : ''}${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
+  const pr = !it.done && showX ? priceOf(it) : null, isTodo = (S.lists.find(l => l.id === it.list_id) || {}).kind !== 'grocery', who = it.assignee && memberById(it.assignee);
+  return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><span class="txt">${esc(it.text)}</span>${isTodo && !it.done ? `<button class="who ${who ? 'set' : ''}" data-act="assign" data-id="${it.id}" aria-label="${who ? `For ${esc(who.name)}. Change` : 'Assign to someone'}">${who ? avatar(who) : icon('user')}</button>` : ''}${pr != null ? `<span class="price num">~$${pr < 10 ? pr.toFixed(2) : Math.round(pr)}</span>` : ''}${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
 }
 function listsZoneHTML() {
   // One list at a time, To do by default; the choice is remembered on this screen.
@@ -1332,6 +1335,15 @@ const V = {};
 V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${chipsHTML()}${kitchenHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
+// "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
+function parseAssignee(raw) {
+  const names = S.members.map(m => [m, m.name.toLowerCase()]).sort((a, b) => b[1].length - a[1].length), me = meMember();
+  const find = n => { n = String(n || '').toLowerCase().trim().replace(/^@/, ''); if (/^(me|myself)$/.test(n)) return me || null; const hit = names.find(([, nm]) => nm === n || nm.split(' ')[0] === n); return hit ? hit[0] : null; };
+  const pats = [/^@?([a-z][\w'-]*)\s*[:,–-]\s+(.+)$/i, /^(?:please\s+)?(?:ask|tell|remind|get)\s+([a-z][\w'-]*)\s+(?:to\s+)?(.+)$/i, /^([a-z][\w'-]*)\s+(?:to|needs to|should|has to|can)\s+(.+)$/i, /^(.+?)\s+(?:for|@)\s*([a-z][\w'-]*)$/i];
+  for (const [i, re] of pats.entries()) { const m = raw.match(re); if (!m) continue; const [n, t] = i === 3 ? [m[2], m[1]] : [m[1], m[2]]; const who = find(n); if (who && t.trim()) return {who, text: t.trim()}; }
+  const at = raw.match(/@([a-z][\w'-]*)/i); if (at && find(at[1])) return {who: find(at[1]), text: raw.replace(at[0], '').replace(/\s{2,}/g, ' ').trim()};
+  return {who: null, text: raw};
+}
 const guessKind = t => /^(buy|get|pick up|grab|need)\b/i.test(t) || (t.split(/,| and /).every(x => aisleOf(x.trim()) !== 'Other') && t.split(' ').length <= 6) ? 'grocery' : 'todo';
 function focusNow(now, k) {
   const st = settings(), evs = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now), chips = chipsFor(k, now);
@@ -1361,15 +1373,17 @@ V.focus = () => {
   const din = mealOn(k); if (din && hr < 21) lines.push(`<li><span class="fw">${esc(din.emoji || '🍽️')}</span><span>Dinner: ${esc(din.leftovers_of ? 'leftovers' : din.title)}</span></li>`);
   N.chips.forEach(c => lines.push(`<li><span class="fw">${c.bins ? '🗑️' : c.icon === 'meal' ? '🍱' : c.icon === 'list' ? '🛒' : c.icon === 'bag' ? '🎒' : '•'}</span><span>${esc(c.text)}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</span></li>`));
   const showAll = isOpen('ftoday'), shown = showAll ? lines : lines.slice(0, 5);
-  const t = listByKind('todo'), openT = t ? listItems(t.id, false) : [], top = openT.slice(0, 5);
+  const t = listByKind('todo'), allT = t ? listItems(t.id, false) : [], mineFirst = it => it.assignee && me && it.assignee === me.id ? 0 : !it.assignee ? 1 : 2;
+  const openT = allT.filter(i => !i.assignee || !me || i.assignee === me.id).sort((a, b) => mineFirst(a) - mineFirst(b)), top = openT.slice(0, 5);
+  const gave = me ? allT.filter(i => i.assignee && i.assignee !== me.id && i.added_by === me.id) : [];
   const last = S._fqLast;
   return `<div class="page focus2">
     <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="num">${esc(fmtTime(now))}</span></div>
     <form class="fq" data-form="fquick"><input class="input" id="fq" name="text" placeholder="Add anything…" autocomplete="off" maxlength="200" enterkeyhint="done" aria-label="Add a to-do or grocery">${window.webkitSpeechRecognition || window.SpeechRecognition ? `<button type="button" class="fmic" data-act="fq-mic" aria-label="Say it">${icon('mic')}</button>` : ''}<button class="btn" aria-label="Add">${icon('plus')}</button></form>
-    ${last && Date.now() - last.at < 15000 ? `<div class="fqdone">✓ ${esc(last.text)} → <b>${last.kind === 'grocery' ? 'Groceries' : 'To do'}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>` : '<div class="fqhint">Goes to To do, or Groceries if it\'s food. You can move it after.</div>'}
+    ${last && Date.now() - last.at < 15000 ? `<div class="fqdone">✓ ${esc(last.text)} → <b>${last.kind === 'grocery' ? 'Groceries' : 'To do'}${last.who ? ` for ${esc(last.who)}` : ''}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>` : `<div class="fqhint">Food goes to Groceries, the rest to To do. Start with a name to give it to someone: “${esc(((S.members.find(m => m.kind !== 'kid' && (!me || m.id !== me.id)) || {}).name) || 'Josh')}: book the car service”.</div>`}
     ${hero}
     <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : '<p class="fempty">Nothing else today.</p>'}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
-    <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul></section>
+    <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul>${gave.length ? `<p class="fgave">You've handed off ${gave.length}: ${[...new Set(gave.map(i => (memberById(i.assignee) || {}).name))].map(n => `${esc(n)} ${gave.filter(i => (memberById(i.assignee) || {}).name === n).length}`).join(', ')}</p>` : ''}</section>
   </div>`;
 };
 
@@ -2023,6 +2037,9 @@ const A = {
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
+  assign(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return;
+    sheet(`<h2>Who's this for?</h2><p class="help">${esc(it.text)}</p><div class="whopick">${S.members.map(m => `<button class="${it.assignee === m.id ? 'on' : ''}" data-act="assign-set" data-id="${it.id}" data-m="${m.id}">${avatar(m)}<span>${esc(m.name)}</span></button>`).join('')}<button class="${!it.assignee ? 'on' : ''}" data-act="assign-set" data-id="${it.id}" data-m=""><span class="face" style="background:var(--line)">${icon('user')}</span><span>Anyone</span></button></div>`, {focus: false}); },
+  async 'assign-set'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.assignee = el.dataset.m || null; closeSheet(); render(); if (!DEMO) await db(sb.from('list_items').update({assignee: it.assignee}).eq('id', it.id)); },
   async 'fq-move'() { const L = S._fqLast; if (!L) return; const to = L.kind === 'grocery' ? 'todo' : 'grocery', l = listByKind(to); if (!l) return;
     S.items.filter(i => L.ids.includes(i.id)).forEach(i => i.list_id = l.id); L.kind = to; L.at = Date.now(); render(); if (!DEMO) await db(sb.from('list_items').update({list_id: l.id}).in('id', L.ids)); },
   'fq-mic'(el) { const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return; const r = new R(); r.lang = 'en-AU'; r.interimResults = false; el.classList.add('on');
@@ -2392,10 +2409,10 @@ const F = {
     S._fb = null; closeSheet(); toast('Thanks! Your feedback has been sent.', 3500);
   },
   async fquick(f) {
-    const raw = f.text.value.trim(); if (!raw) return; const kind = guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
+    const raw0 = f.text.value.trim(); if (!raw0) return; const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
     const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
-    const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
-    S.items.push(...rows); S._fqLast = {ids: rows.map(r => r.id), text: rows.map(r => r.text).join(', '), kind, at: Date.now()}; f.text.value = ''; render();
+    const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, assignee: A2.who ? A2.who.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
+    S.items.push(...rows); S._fqLast = {ids: rows.map(r => r.id), text: rows.map(r => r.text).join(', '), kind, who: A2.who && (!me || A2.who.id !== me.id) ? A2.who.name : null, at: Date.now()}; f.text.value = ''; render();
     const inp = $('#fq'); if (inp) inp.focus(); setTimeout(() => { if (S._fqLast && Date.now() - S._fqLast.at >= 15000 && S.view === 'focus') render(); }, 15500);
     if (!DEMO) await db(sb.from('list_items').insert(rows));
   },
