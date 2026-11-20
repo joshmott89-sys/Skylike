@@ -189,6 +189,8 @@ body.night .ptag{background:transparent}
 .mday{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:178px;padding:14px;border:0;border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);text-align:left;color:var(--ink);font:inherit}
 .mday.today{outline:3px solid var(--apricot);outline-offset:-3px}
 .mday.cooked{opacity:.6}
+.mday.lunch{min-height:0;padding:12px;gap:4px}.mday.lunch .me{font-size:26px}.mday.lunch .mt{font-size:14.5px;font-weight:700}
+.mday.lunch.empty{background:transparent;box-shadow:none}
 .mday.past:not(.cooked){opacity:.55}
 .mday .dn{font-size:14px;font-weight:700;color:var(--ink-2);display:flex;gap:6px;width:100%}
 .mday .dn b{margin-left:auto;font-size:20px;color:var(--ink)}
@@ -593,7 +595,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-1615'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '20.11-1710'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1459,11 +1461,12 @@ const placeGuess = n => /frozen|ice cream|ice block|peas|chips|nuggets/i.test(n)
 const recipeLink = t => 'https://www.recipetineats.com/?s=' + encodeURIComponent(t);
 const kset = () => Object.assign({prefs: '', servings: 4, budget: 0}, settings().kitchen || {});
 function weekStart(off = 0) { const t = dayKey(new Date()); return addDaysKey(t, -((weekdayOfKey(t) + 6) % 7) + off * 7); }
-const mealOn = k => S.meals.find(m => m.day === k);
+const mealOn = (k, slot = 'dinner') => S.meals.find(m => m.day === k && (m.slot || 'dinner') === slot);
+const schoolDay = k => weekdayOfKey(k) % 6 !== 0 && !WA_HOLIDAYS[k] && (!settings().school || WA_TERMS.some(([a, b]) => a <= k && k <= b));
 V.meals = () => {
   const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date());
   const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));
-  const total = days.reduce((a, k) => a + (+(mealOn(k) || {}).est_cost || 0), 0), budget = +kset().budget || 0;
+  const total = days.reduce((a, k) => a + (+(mealOn(k) || {}).est_cost || 0) + (+(mealOn(k, 'lunch') || {}).est_cost || 0), 0), budget = +kset().budget || 0;
   const cards = days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const m = mealOn(k), need = m ? (m.ingredients || []).filter(x => !haveIt(x.name)).length : 0;
     return `<button class="mday ${k === today ? 'today' : ''} ${k < today ? 'past' : ''} ${m && m.cooked ? 'cooked' : ''}" data-act="meal-open" data-k="${k}"><span class="dn">${esc(fmtDay(k, {weekday: 'short'}))} <b class="num">${keyToDate(k).getUTCDate()}</b></span>
       ${m ? `<span class="me">${esc(m.emoji || '🍽️')}</span><span class="mt">${esc(m.leftovers_of ? 'Leftovers night' : m.title)}</span><span class="mm">${m.cooked ? 'Cooked' : m.leftovers_of ? 'Nothing to buy' : need ? `${need} to buy` : 'All in'}${m.double_batch ? ' · ×2' : ''}${m.est_cost ? ` · <span class="num">$${Math.round(m.est_cost)}</span>` : ''}</span>` : `<span class="me add">${icon('plus')}</span><span class="mt muted">Add dinner</span>`}</button>`; }).join('');
@@ -1474,7 +1477,8 @@ V.meals = () => {
       ${S.planning ? `<span class="btn planning" aria-live="polite"><span class="spin"></span><span id="plan-stage">${planStage()}</span></span>` : `<button class="btn" data-act="meal-plan">${icon('sparkle')}Plan this week</button>`}</h1>
     ${!S.aiOn && !DEMO ? `<p class="help" style="color:var(--ink-2)">Planning, pantry photos and the grocery brain-dump need a free Gemini key. <button class="linkbtn" data-act="go" data-view="settings" data-tab="kitchen">Set it up</button></p>` : ''}
     <div class="mweek">${cards}</div>
-    <div class="row mtotal"><span>Dinners this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
+    ${(lun => lun ? `<div class="kt" style="margin:16px 0 8px">Lunches</div><div class="mweek lunchrow">${days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const l = mealOn(k, 'lunch'); return l ? `<button class="mday lunch ${k < today ? 'past' : ''}" data-act="lunch-open" data-k="${k}"><span class="me">${esc(l.emoji || '🥪')}</span><span class="mt">${esc(l.title)}</span>${l.leftovers_of ? '<span class="mm">🍱 leftovers</span>' : ''}</button>` : `<span class="mday lunch empty"></span>`; }).join('')}</div>` : '')(days.some(k => mealOn(k, 'lunch')))}
+    <div class="row mtotal"><span>Food this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add the week's missing to groceries</button></div>
     <div class="panel pantry-p"><h2>What's in<span class="sp"></span>${S.scanning ? `<span class="scanning">${icon('camera')}${esc(S.scanning)}</span>` : ''}</h2>
       <p class="help">Tap <b>Scan</b> on the fridge, freezer or pantry to read it from a photo (you can pick several). It also updates when groceries are ticked off and when you cook. Tap an item to mark it running low.</p>
       <div class="leftz"><div class="kt">🍱 Leftovers<span class="num">${S.pantry.filter(p => p.leftover).reduce((a, p) => a + (p.portions || 1), 0)} portions</span><button class="scanbtn" data-act="left-new">${icon('plus')}Add</button></div>
@@ -1801,36 +1805,45 @@ const A = {
   'meal-week'(el) { const n = +el.dataset.n; S.mealOffset = n === 0 ? 0 : (S.mealOffset || 0) + n; render(); },
   'meal-open'(el) { mealSheet(el.dataset.k); },
   'meal-plan'() { planSheet(); },
-  'plan-tag'(el) { const g = el.dataset.g, v = el.dataset.v, P = S._plan; if (['vibe', 'skill', 'double'].includes(g)) P[g] = v; else { const a = P[g] || (P[g] = []); const i = a.indexOf(v); i >= 0 ? a.splice(i, 1) : a.push(v); } planSheet(true); },
+  'plan-tag'(el) { const g = el.dataset.g, v = el.dataset.v, P = S._plan; if (['vibe', 'skill', 'double', 'lunch'].includes(g)) P[g] = v; else { const a = P[g] || (P[g] = []); const i = a.indexOf(v); i >= 0 ? a.splice(i, 1) : a.push(v); } planSheet(true); },
   'plan-day'(el) { const P = S._plan, k = el.dataset.k, i = P.days.indexOf(k); i >= 0 ? P.days.splice(i, 1) : P.days.push(k); P.days.sort(); planSheet(true); },
   'plan-people'(el) { S._plan.people = Math.max(1, Math.min(12, S._plan.people + +el.dataset.d)); planSheet(true); },
   async 'plan-go'() {
     const P = S._plan; P.notes = ($('#plan-notes') || {}).value || P.notes || '';
-    if (!P.days.length) return toast('Pick at least one night.');
-    // which nights are cooked, and which are leftovers of the night before
-    const dates = [], leftNights = {}; let dbl = +P.double || 0;
-    P.days.forEach((k, i) => { if (leftNights[k]) return; const next = P.days[i + 1]; const d = dbl > 0 && next === addDaysKey(k, 1); if (d) { leftNights[next] = k; dbl--; } dates.push({day: k, double: d}); });
-    await saveSettings({kitchen: Object.assign({}, kset(), {servings: P.people, prefs: P.notes, plan: {vibe: P.vibe, skill: P.skill, double: P.double, focus: P.focus, cuisines: P.cuisines}})});
+    if (!P.days.length) return toast('Pick at least one day.');
+    // Leftovers: a dish with enough portions for everyone becomes a leftovers night; smaller amounts go to lunches.
+    const lefts = S.pantry.filter(p => p.leftover), bigLeft = lefts.filter(p => (p.portions || 1) >= P.people), smallLeft = lefts.filter(p => (p.portions || 1) < P.people);
+    const dates = [], leftNights = {}, rows = []; let dbl = +P.double || 0;
+    const days = P.days.slice();
+    bigLeft.forEach(lo => { const k = days.find(d => !leftNights[d] && !rows.some(r => r.day === d)); if (!k) return; rows.push({household_id: S.hid, day: k, slot: 'dinner', title: 'Leftovers: ' + lo.name.replace(/^leftovers?\s*/i, ''), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: String(lo.portions), real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: lo.name.replace(/^leftovers?\s*/i, '')}); });
+    days.filter(k => !rows.some(r => r.day === k)).forEach((k, i, arr) => { if (leftNights[k]) return; const next = arr[i + 1]; const d = dbl > 0 && next === addDaysKey(k, 1); if (d) { leftNights[next] = k; dbl--; } dates.push({day: k, double: d}); });
+    const lunchDays = P.lunch === 'kids' ? days.filter(schoolDay) : P.lunch === 'all' ? days : [];
+    await saveSettings({kitchen: Object.assign({}, kset(), {servings: P.people, prefs: P.notes, plan: {vibe: P.vibe, skill: P.skill, double: P.double, focus: P.focus, cuisines: P.cuisines, lunch: P.lunch}})});
     closeSheet(); S.planning = {at: Date.now()}; render(); planTicker();
-    const leftovers = S.pantry.filter(p => p.leftover).map(p => `${p.name}${p.portions ? ` (${p.portions} portions)` : ''}`);
-    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: P.notes, budget: kset().budget, leftovers, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title)});
+    const leftTxt = smallLeft.map(p => `${p.name.replace(/^leftovers?\s*/i, '')} (${p.portions || 1} portion${(p.portions || 1) > 1 ? 's' : ''})`);
+    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: P.notes, budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
+      lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt} : null});
     S.planning = null; clearInterval(planT);
     if (r.error) { render(); return toast(r.error, 5000); }
     const byDay = {}; (r.meals || []).forEach(m => { if (m && m.title) byDay[m.day] = m; });
-    const rows = [];
     dates.forEach(({day, double}) => { const m = byDay[day]; if (!m) return;
-      rows.push({household_id: S.hid, day, title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null});
+      rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null});
       const ln = Object.keys(leftNights).find(k => leftNights[k] === day);
-      if (ln) rows.push({household_id: S.hid, day: ln, title: 'Leftovers: ' + String(m.title).slice(0, 70), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: null, real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: String(m.title).slice(0, 90)}); });
-    if (!rows.length) { render(); return toast("The AI didn't come back with dinners. Try again."); }
-    const {data, error} = await sb.from('meals').upsert(rows, {onConflict: 'household_id,day'}).select(); if (error) { render(); return toast("Couldn't save the plan."); }
-    data.forEach(m => { const i = S.meals.findIndex(x => x.id === m.id || x.day === m.day); if (i >= 0) S.meals[i] = m; else S.meals.push(m); });
-    const real = data.filter(m => m.real).length, cooked = data.filter(m => !m.leftovers_of).length;
-    render(); toast(`Planned ${data.length} nights. ${real} of ${cooked} are real RecipeTin Eats recipes${real < cooked ? '; the rest are AI estimates' : ''}.`, 5000);
+      if (ln) rows.push({household_id: S.hid, day: ln, slot: 'dinner', title: 'Leftovers: ' + String(m.title).slice(0, 70), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: null, real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: String(m.title).slice(0, 90)}); });
+    (r.lunches || []).forEach(l => { if (!l || !l.title || !lunchDays.includes(l.day)) return;
+      rows.push({household_id: S.hid, day: l.day, slot: 'lunch', for_who: P.lunch, title: String(l.title).slice(0, 90), emoji: l.emoji || '🥪', ingredients: (l.items || []).slice(0, 15), est_cost: +l.est_cost || null, url: null, servings: null, real: false, double_batch: false, prep_time: null, difficulty: null, cooked: false, leftovers_of: l.uses_leftover || null}); });
+    if (!rows.length) { render(); return toast("The AI didn't come back with a plan. Try again."); }
+    const {data, error} = await sb.from('meals').upsert(rows, {onConflict: 'household_id,day,slot'}).select(); if (error) { render(); return toast("Couldn't save the plan."); }
+    data.forEach(m => { const i = S.meals.findIndex(x => x.id === m.id || (x.day === m.day && (x.slot || 'dinner') === m.slot)); if (i >= 0) S.meals[i] = m; else S.meals.push(m); });
+    const din = data.filter(m => m.slot === 'dinner'), real = din.filter(m => m.real).length, cooked = din.filter(m => !m.leftovers_of).length, lun = data.filter(m => m.slot === 'lunch').length;
+    render(); toast(`Planned ${din.length} dinner${din.length === 1 ? '' : 's'}${lun ? ` and ${lun} lunch${lun === 1 ? '' : 'es'}` : ''}. ${real} of ${cooked} dinners are real RecipeTin Eats recipes.${bigLeft.length ? ' Leftovers big enough for everyone became a leftovers night.' : ''}`, 6000);
   },
+  'lunch-open'(el) { lunchSheet(el.dataset.k); },
+  async 'lunch-need'(el) { const m = mealOn(el.dataset.k, 'lunch'); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
+  async 'lunch-del'(el) { const m = mealOn(el.dataset.k, 'lunch'); if (!m) return; S.meals = S.meals.filter(x => x.id !== m.id); closeSheet(); render(); await db(sb.from('meals').delete().eq('id', m.id)); },
   async 'meal-shop'() {
     const mon = weekStart(S.mealOffset || 0), today = dayKey(new Date());
-    const need = []; [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today).forEach(k => { const m = mealOn(k); if (m && !m.cooked) (m.ingredients || []).forEach(x => { if (!haveIt(x.name)) need.push(x); }); });
+    const need = []; [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today).forEach(k => { ['dinner', 'lunch'].forEach(sl => { const m = mealOn(k, sl); if (m && !m.cooked) (m.ingredients || []).forEach(x => { if (!haveIt(x.name)) need.push(x); }); }); });
     const n = await groceryAdd(need.map(x => x.name)); toast(n ? `Added ${n} to Groceries` : 'Nothing missing. You have it all.', 3000);
   },
   async 'meal-need'(el) { const m = mealOn(el.dataset.k); if (!m) return; const n = await groceryAdd((m.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); closeSheet(); toast(n ? `Added ${n} to Groceries` : 'You have everything for this one.'); },
@@ -1991,21 +2004,30 @@ function planTicker() { clearInterval(planT); planT = setInterval(() => { if (!S
 const planStage = () => { const t = (Date.now() - (S.planning || {}).at) / 1000; return PLAN_STAGES.filter(([s]) => t >= s).pop()[1]; };
 function planSheet(keep) {
   const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date()), ks = kset(), pp = ks.plan || {};
-  if (!keep || !S._plan) S._plan = {days: [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today && !mealOn(k)), people: ks.servings || 4, vibe: pp.vibe || 'Standard family dinners', skill: pp.skill || 'Home cook', double: pp.double || '0', focus: pp.focus || [], cuisines: pp.cuisines || [], notes: ks.prefs || ''};
+  if (!keep || !S._plan) S._plan = {days: [...Array(7)].map((_, i) => addDaysKey(mon, i)).filter(k => k >= today && !mealOn(k)), people: ks.servings || 4, vibe: pp.vibe || 'Standard family dinners', skill: pp.skill || 'Home cook', double: pp.double || '0', lunch: pp.lunch || 'none', focus: pp.focus || [], cuisines: pp.cuisines || [], notes: ks.prefs || ''};
   const P = S._plan; if (keep) P.notes = ($('#plan-notes') || {}).value ?? P.notes;
   const tag = (g, v, label) => { const on = Array.isArray(P[g]) ? P[g].includes(v) : P[g] === v; return `<button type="button" class="ptag ${on ? 'on' : ''}" data-act="plan-tag" data-g="${g}" data-v="${esc(v)}" aria-pressed="${on}">${esc(label || v)}</button>`; };
   const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));
   sheet(`<h2>Plan dinners</h2>
-    <div class="pblock"><div class="kt">Which nights</div><div class="ptags">${days.map(k => { const past = k < today, on = P.days.includes(k), has = mealOn(k); return `<button type="button" class="ptag day ${on ? 'on' : ''}" data-act="plan-day" data-k="${k}" ${past ? 'disabled' : ''} aria-pressed="${on}">${esc(fmtDay(k, {weekday: 'short'}))}</button>`; }).join('')}</div><p class="help">Highlighted nights get new dinners${days.some(k => mealOn(k) && k >= today) ? ' (replacing any already planned)' : ''}.</p></div>
+    <div class="pblock"><div class="kt">Which days</div><div class="ptags">${days.map(k => { const past = k < today, on = P.days.includes(k), has = mealOn(k); return `<button type="button" class="ptag day ${on ? 'on' : ''}" data-act="plan-day" data-k="${k}" ${past ? 'disabled' : ''} aria-pressed="${on}">${esc(fmtDay(k, {weekday: 'short'}))}</button>`; }).join('')}</div><p class="help">Highlighted nights get new dinners${days.some(k => mealOn(k) && k >= today) ? ' (replacing any already planned)' : ''}.</p></div>
     <div class="pblock row" style="justify-content:space-between"><div class="kt" style="margin:0">Feeding</div><div class="row stepper"><button class="icon-btn" type="button" data-act="plan-people" data-d="-1" aria-label="Fewer">−</button><b class="num">${P.people}</b><button class="icon-btn" type="button" data-act="plan-people" data-d="1" aria-label="More">+</button></div></div>
     <div class="pblock"><div class="kt">Cook once, eat twice</div><div class="ptags">${tag('double', '0', 'No')}${tag('double', '1', '1 night')}${tag('double', '2', '2 nights')}</div><p class="help">Makes a double batch so the next night is leftovers.</p></div>
+    <div class="pblock"><div class="kt">Lunches too?</div><div class="ptags">${tag('lunch', 'none', 'No')}${tag('lunch', 'kids', "Kids' school lunches")}${tag('lunch', 'all', 'Everyone')}</div><p class="help">${P.lunch === 'kids' ? 'Nut-free lunchboxes on school days (weekdays in term).' : P.lunch === 'all' ? 'A lunch for everyone on each highlighted day.' : 'Leftovers too small for a family dinner go into lunches when this is on.'}</p></div>
     <div class="pblock"><div class="kt">Vibe and effort</div><div class="ptags">${[['Standard family dinners', 'Standard'], ['Quick and easy, under 30 minutes', 'Quick'], ['Something new and exciting', 'Something new'], ['A weekend cooking project', 'Challenge me']].map(([v, l]) => tag('vibe', v, l)).join('')}</div></div>
     <div class="pblock"><div class="kt">Cooking skill</div><div class="ptags">${['Beginner', 'Home cook', 'Confident'].map(v => tag('skill', v)).join('')}</div></div>
     <div class="pblock"><div class="kt">Focus</div><div class="ptags">${['High protein', 'Hidden veggies', 'Budget friendly', 'Low carb', 'Kid favourites'].map(v => tag('focus', v)).join('')}</div></div>
     <div class="pblock"><div class="kt">Cuisines</div><div class="ptags">${['Asian', 'Italian', 'Mexican', 'Indian', 'Thai', 'Middle Eastern', 'Classic Aussie'].map(v => tag('cuisines', v)).join('')}</div></div>
     <div class="pblock"><div class="kt">Tastes and things to avoid</div><textarea class="input" id="plan-notes" rows="2" placeholder="e.g. mild spice, no mushrooms, fish once a week">${esc(P.notes)}</textarea></div>
-    ${S.pantry.some(p => p.leftover) ? `<p class="help">🍱 Leftovers in the fridge get used first: ${S.pantry.filter(p => p.leftover).map(p => esc(p.name)).join(', ')}.</p>` : ''}
-    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" data-act="plan-go" ${P.days.length ? '' : 'disabled'}>${icon('sparkle')}${P.days.length ? `Plan ${P.days.length} night${P.days.length === 1 ? '' : 's'}` : 'Pick some nights'}</button>`, {focus: false, keepScroll: keep});
+    ${S.pantry.some(p => p.leftover) ? `<p class="help">🍱 Leftovers: ${S.pantry.filter(p => p.leftover).map(p => `${esc(p.name.replace(/^leftovers?\s*/i, ''))} (${p.portions || 1}) → ${(p.portions || 1) >= P.people ? 'a leftovers night' : P.lunch !== 'none' ? 'lunches' : 'not enough for dinner; turn on lunches to use it'}`).join('; ')}.</p>` : ''}
+    <button class="btn" style="width:100%;justify-content:center;margin-top:6px" data-act="plan-go" ${P.days.length ? '' : 'disabled'}>${icon('sparkle')}${P.days.length ? `Plan ${P.days.length} day${P.days.length === 1 ? '' : 's'}` : 'Pick some days'}</button>`, {focus: false, keepScroll: keep});
+}
+function lunchSheet(k) {
+  const m = mealOn(k, 'lunch'); if (!m) return;
+  const ing = m.ingredients || [], need = ing.filter(x => !haveIt(x.name));
+  sheet(`<h2>${esc(m.emoji || '🥪')} ${esc(m.title)}</h2><div class="mbadges"><span class="mb">${m.for_who === 'kids' ? "Kids' lunchboxes" : 'Lunch for everyone'}</span>${m.leftovers_of ? `<span class="mb dbl">🍱 Uses leftover ${esc(m.leftovers_of)}</span>` : ''}${m.est_cost ? `<span class="mb">~$${Math.round(m.est_cost)} to buy</span>` : ''}</div>
+    <p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}</p>
+    <ul class="ing">${ing.map(x => { const h = haveIt(x.name); return `<li class="${h ? 'have' : ''}"><span><b class="num">${esc(x.qty || '')}</b> ${esc(x.name)}</span><span class="tag">${h ? 'Have' : 'Buy'}</span></li>`; }).join('') || '<li class="help">Nothing to list.</li>'}</ul>
+    <div class="row" style="margin-top:14px">${need.length ? `<button class="btn" data-act="lunch-need" data-k="${k}">Add ${need.length} to groceries</button>` : ''}<button class="btn ghost" data-act="lunch-del" data-k="${k}">Remove</button></div>`);
 }
 function mealSheet(k) {
   const m = mealOn(k);
@@ -2094,10 +2116,10 @@ const F = {
   async kitchen(f) { await saveSettings({kitchen: {prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
-    let row = {household_id: S.hid, day: k, title, url: recipeLink(title), ingredients: []};
+    let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: recipeLink(title), ingredients: []};
     if (S.aiOn) { const r = await callAI({action: 'recipe', title, servings: kset().servings}); if (!r.error) row = Object.assign(row, {emoji: r.emoji || null, ingredients: (r.ingredients || []).slice(0, 25), est_cost: +r.est_cost || null}); }
-    const {data, error} = await sb.from('meals').upsert(row, {onConflict: 'household_id,day'}).select().single(); if (error) return toast("Couldn't save that dinner.");
-    S.meals = S.meals.filter(m => m.day !== k).concat(data); closeSheet(); render(); mealSheet(k);
+    const {data, error} = await sb.from('meals').upsert(row, {onConflict: 'household_id,day,slot'}).select().single(); if (error) return toast("Couldn't save that dinner.");
+    S.meals = S.meals.filter(m => !(m.day === k && (m.slot || 'dinner') === 'dinner')).concat(data); closeSheet(); render(); mealSheet(k);
   },
   async 'left-new'(f) { const n = +(f.querySelector('input[name=n]:checked') || {}).value || 2, t = f.name.value.trim(); closeSheet(); await pantryAdd([{name: /^leftover/i.test(t) ? t : 'Leftover ' + t, place: 'fridge', leftover: true, portions: n}]); },
   async 'pantry-add'(f) {
@@ -2344,6 +2366,7 @@ function startDemo() {
     {id: 'ml3', day: addDaysKey(k, 2), title: 'Crispy Baked Fish', emoji: '🐟', est_cost: 22, ingredients: ing(['White fish fillets', '600 g'], ['Panko', '1 cup'], ['Potatoes', '800 g'], ['Lemon', '1'])}];
   S.pantry = [['Milk', 'fridge', 'half', false], ['Eggs', 'fridge', '6', false], ['Cheese', 'fridge', '', true], ['Carrot', 'fridge', '3', false], ['Frozen peas', 'freezer', '', false], ['Spaghetti', 'pantry', '', false], ['Rice', 'pantry', '', false], ['Soy sauce', 'pantry', '', false], ['Weet-Bix', 'pantry', '', true]].map(([n, pl, q, lo], i) => ({id: 'p' + i, name: n, place: pl, qty: q || null, low: lo}));
   S.pantry.push({id: 'pl1', name: 'Leftover fried rice', place: 'fridge', leftover: true, portions: 2});
+  [['🥪', 'Cheese & vegemite scrolls, apple, yoghurt', null], ['🍙', 'Fried rice cup, cucumber, crackers', 'fried rice'], ['🌯', 'Ham & cheese wrap, grapes, cheese stick', null]].forEach(([e, t, lo], i) => S.meals.push({id: 'lu' + i, slot: 'lunch', for_who: 'kids', day: addDaysKey(k, i === 0 ? 0 : i + 2), title: t, emoji: e, leftovers_of: lo, ingredients: [{name: 'Cheese slices', qty: '4'}, {name: 'Apples', qty: '2'}], est_cost: 4}));
   S.aiOn = true;
   S.bringRules = [{id: 'b1', emoji: '🧢', title: 'Hat', days: [1,2,3,4,5], member_id: null}, {id: 'b2', emoji: '🩱', title: 'Swimmers + towel', days: [], match: 'swim', member_id: null}, {id: 'b3', emoji: '📚', title: 'Library bag', days: [5], member_id: 'm3'}];
   const v = new URLSearchParams(location.search).get('view'); if (v) { S.view = v; if (v === 'focus') S.activeMember = 'm1'; if (v === 'planner') S.activeMember = 'm2'; }

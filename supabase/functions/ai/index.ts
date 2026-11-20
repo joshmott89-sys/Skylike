@@ -164,10 +164,18 @@ Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},
 
     if (a === "plan") {
       const dates = (body.dates || []).slice(0, 7);
+      const L = body.lunches;
+      // lunches run alongside dinners (quick, Lite model), so they don't slow the plan down
+      const lunchP = L && (L.dates || []).length ? gemini(key, `Plan simple lunches for these dates: ${JSON.stringify(L.dates.slice(0, 7))}.
+Who: ${L.who === "kids" ? "the kids' school/kindy lunchboxes (young kids, under 6). Nut-free (Australian school rules), no reheating, easy for small hands: a main plus fruit and a snack." : "the whole family (" + (body.people || 4) + " people), packed or at home."}
+${(L.leftovers || []).length ? "Use these leftovers first; each portion feeds ONE person's lunch, so spread them across days and people and note it in uses_leftover: " + JSON.stringify(L.leftovers).slice(0, 600) + ".\n" : ""}Use what's already in where it makes sense: ${JSON.stringify(body.pantry || []).slice(0, 1200)}. Tastes and things to avoid: ${String(body.notes || "none").slice(0, 400)}.
+Keep shopping small: reuse ingredients across days. Estimate the AUD cost of anything to buy.
+Return JSON: {"lunches":[{"day":"YYYY-MM-DD","title":"Cheese and vegemite scrolls, apple, yoghurt pouch","emoji":"🥪","uses_leftover":null,"items":[{"name":"Cheese","qty":"2 slices"}],"est_cost":4}]}`).then(r => r.out.lunches || []).catch(() => []) : Promise.resolve([]);
+      if (!dates.length) return json({ meals: [], lunches: await lunchP });
       const { out } = await gemini(key, `Plan family dinners. Cook on these dates (double=true means cook a DOUBLE batch so the next night is leftovers): ${JSON.stringify(dates)}.
 Feeding: ${body.people || 4} people (young kids included). Cooking skill: ${body.skill || "home cook"}. Vibe and effort: ${body.vibe || "standard family dinners"}.
 ${(body.focus || []).length ? "Focus: " + body.focus.join(", ") + ".\n" : ""}${(body.cuisines || []).length ? "Lean toward these cuisines: " + body.cuisines.join(", ") + ".\n" : ""}Tastes and things to avoid: ${String(body.notes || "none given").slice(0, 600)}. Weekly dinner budget: ${body.budget ? "$" + body.budget + " AUD" : "keep it sensible"}.
-${(body.leftovers || []).length ? "LEFTOVERS to use first (work them into a meal or a lunch-style dinner early in the week): " + JSON.stringify(body.leftovers).slice(0, 600) + ".\n" : ""}Use up what's already in the fridge and pantry where it makes sense: ${JSON.stringify(body.pantry || []).slice(0, 1500)}.
+${(body.leftovers || []).length ? "Leftovers in the fridge (too few portions for a family dinner, so don't plan a dinner around them; they're for lunches): " + JSON.stringify(body.leftovers).slice(0, 600) + ".\n" : ""}Use up what's already in the fridge and pantry where it makes sense: ${JSON.stringify(body.pantry || []).slice(0, 1500)}.
 Avoid repeating these recent meals: ${JSON.stringify(body.recent || []).slice(0, 600)}.
 ONLY choose recipes that really exist on RecipeTin Eats (recipetineats.com) and give the exact recipe title as published there, so it can be looked up.
 For each, list the main ingredients with quantities for the family (double for double batches), prep time, difficulty (Easy/Medium/Hard), a fitting food emoji, and the estimated AUD cost at Woolworths or Coles of what they'd need to buy.
@@ -176,7 +184,7 @@ Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Tuna Mornay (Tuna Casserole 
       // swap in the real recipe card where RecipeTin Eats has it
       const real = await Promise.all(meals.map((m: any) => realRecipe(String(m.title || ""))));
       meals.forEach((m: any, i: number) => { const r = real[i]; if (r) Object.assign(m, { title: r.title, url: r.url, servings: r.servings, ingredients: r.ingredients, real: true }); else m.real = false; });
-      return json({ meals });
+      return json({ meals, lunches: await lunchP });
     }
     if (a === "real_recipe") return json(await realRecipe(String(body.title || "")) || { none: true });
 
