@@ -1,6 +1,6 @@
 // Skylike AI helper (Gemini, the household's own free key, kept server-side).
 // Signed-in member: { household_id, action, ... }
-// actions: test | groceries | pantry_photo | plan | budget | recipe | brief | event_parse
+// actions: test | groceries | pantry_photo | plan | budget | recipe | brief | event_parse | speak
 // Backup: if Gemini is out (limit, busy, slow) and the household saved a free OpenRouter key, the same request goes to a free OpenRouter model.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -143,6 +143,67 @@ async function askAI(keys: { g?: string; o?: string }, prompt: string, image?: a
   throw new Error("Add a free Gemini key in Settings → Kitchen first.");
 }
 
+
+// ---- Natural voice: Gemini's speech models read the morning brief. Free tier is small (about 10 a day),
+// so each brief is made once and saved; every screen in the family plays the same file. ----
+const ttsCache = new Map<string, { list: string[]; at: number }>();
+async function ttsModels(key: string): Promise<string[]> {
+  const c = ttsCache.get(key); if (c && Date.now() - c.at < 6 * 3600e3) return c.list;
+  const r = await fetch(`${API}/models?pageSize=200&key=${encodeURIComponent(key)}`); const d = await r.json();
+  const ver = (n: string) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0");
+  const list = (d.models || []).map((m: any) => String(m.name).replace(/^models\//, "")).filter((n: string) => /tts/.test(n) && !/pro/.test(n))
+    .sort((a: string, b: string) => (Number(/lite/.test(a)) - Number(/lite/.test(b))) || ver(b) - ver(a));
+  ttsCache.set(key, { list, at: Date.now() }); return list;
+}
+function wav(pcm: Uint8Array, rate = 24000) {
+  const h = new ArrayBuffer(44), v = new DataView(h), w = (o: number, t: string) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + pcm.length, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, pcm.length, true);
+  const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h), 0); out.set(pcm, 44); return out;
+}
+const VOICES: Record<string, [string, string]> = {
+  bubbly: ["Zephyr", "Read this like a cheerful, upbeat friend with a warm Australian accent, smiling as you speak"],
+  sassy: ["Kore", "Read this with dry, cheeky Australian humour and a little attitude, warm underneath"],
+  plain: ["Charon", "Read this clearly and briskly, like a friendly Australian radio newsreader"],
+  calm: ["Sulafat", "Read this slowly, gently and calmly, with a soft, warm Australian voice"],
+};
+async function speak(key: string, hid: string, text: string, tone: string) {
+  const [voice, style] = VOICES[tone] || VOICES.bubbly;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + text));
+  const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
+  const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
+  const signed = async () => (await store.createSignedUrl(path, 12 * 3600)).data?.signedUrl;
+  const { data: have } = await store.list(`${hid}/brief`, { search: hash + ".wav" });
+  if (have && have.length) return { url: await signed(), cached: true };
+  let lastErr = "";
+  for (const model of (await ttsModels(key)).slice(0, 3)) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 45000);
+    try {
+      const r = await fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+        method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: `${style}:\n\n${text}` }] }],
+          generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
+      });
+      const d = await r.json().catch(() => ({}));
+      console.log(JSON.stringify({ tts: model, status: r.status, err: d?.error?.message?.slice(0, 120) }));
+      if (!r.ok) { lastErr = r.status === 429 ? "limit" : "busy"; continue; }
+      const part = (d?.candidates?.[0]?.content?.parts || []).find((p: any) => p.inlineData || p.inline_data);
+      const b64 = (part?.inlineData || part?.inline_data)?.data; if (!b64) { lastErr = "busy"; continue; }
+      const mime = String((part.inlineData || part.inline_data).mimeType || ""), rate = +((mime.match(/rate=(\d+)/) || [])[1] || 24000);
+      const bin = atob(b64), pcm = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
+      const up = await store.upload(path, wav(pcm, rate), { contentType: "audio/wav", upsert: true });
+      if (up.error) throw new Error("couldn't save the audio");
+      // tidy: keep only the last few days of briefs
+      const { data: old } = await store.list(`${hid}/brief`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
+      const stale = (old || []).filter((f: any) => f.created_at && Date.now() - new Date(f.created_at).getTime() > 3 * 864e5).map((f: any) => `${hid}/brief/${f.name}`);
+      if (stale.length) await store.remove(stale);
+      return { url: await signed(), cached: false };
+    } catch (e) { lastErr = (e as Error).name === "AbortError" ? "slow" : String((e as Error).message || "busy"); }
+    finally { clearTimeout(t); }
+  }
+  throw new Error(lastErr === "limit" ? "voice-limit" : "voice-busy");
+}
+
 // ---- Real recipes: look each planned dinner up on RecipeTin Eats and use its actual ingredient card ----
 const RTE = "https://www.recipetineats.com/wp-json/wp/v2/posts";
 const STOP = new Set(["the","a","an","and","with","of","in","my","easy","best","recipe","nagi","s","recipetin","eats"]);
@@ -229,6 +290,13 @@ It will be read aloud, so: plain sentences, no lists, no emoji, no markdown, tim
 Lead with what needs doing first (leave times, lunches to pack, defrosting), then the rest of the day, then one nice thing to look forward to. Only use these facts, don't invent any: ${JSON.stringify(body.facts || {}).slice(0, 3500)}
 Return JSON: {"text":"..."}`);
       return json({ text: String(out.text || "").slice(0, 1200) });
+    }
+    if (a === "speak") {
+      if (!keys.g) return json({ error: "voice-nokey" }, 400);
+      const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 1400);
+      if (!text) return json({ error: "Nothing to read." }, 400);
+      try { return json(await speak(keys.g, hid, text, String(body.tone || "bubbly"))); }
+      catch (e) { return json({ error: String((e as Error).message) }, 502); }
     }
     if (a === "event_parse") {
       const imgs = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 4).map((d: string) => ({ data: String(d), mime: "image/jpeg" }));
