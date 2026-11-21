@@ -401,6 +401,11 @@ ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1
 .daychk input:checked + span{background:var(--ocean);border-color:var(--ocean);color:#fff}
 body.night .kid{border-top-color:var(--c)}
 @media (max-width:760px){.goal{flex-wrap:wrap}.goal>span:first-child{flex-basis:100%}.kidsgrid{grid-template-columns:minmax(0,1fr)}.ktiles{grid-template-columns:repeat(3,minmax(0,1fr))}.kid{padding:16px 14px 18px}.ktile{min-height:100px}.ktile .em{font-size:40px}}
+.face.ph{padding:0;overflow:hidden}.face.ph img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;pointer-events:none}
+.mini.ph{overflow:hidden;padding:0}.mini.ph img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.avrow{align-items:center;gap:12px;flex-wrap:wrap}.face.lg{width:72px;height:72px;font-size:30px}
+.cropbox{width:min(100%,320px);margin:10px auto 0;aspect-ratio:1;border-radius:20px;overflow:hidden;touch-action:none;background:#000}.cropbox canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+.cropzl{display:flex;align-items:center;gap:10px;max-width:320px;margin:12px auto 0}.cropzl input{flex:1;accent-color:var(--ocean-2);min-height:44px;background:none;border:0;box-shadow:none;padding:0}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -737,7 +742,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2340'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2355'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1372,8 +1377,10 @@ function clockHTML(d) {
   const p = tzParts(d), h12 = ((p.h + 11) % 12) + 1;
   return `${h12}:${String(p.min).padStart(2, '0')}<span class="ampm">${p.h < 12 ? 'am' : 'pm'}</span>`;
 }
+const miniFace = m => m && m.photo ? `<span class="mini ph" style="--c:${esc(m.color)}"><img src="${esc(m.photo)}" alt=""></span>` : m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>';
 function avatar(m, size = '') {
   if (!m) return '';
+  if (m.photo) return `<span class="face ${size} ph" style="--c:${esc(m.color)}"><img src="${esc(m.photo)}" alt="" draggable="false"></span>`;
   const raw = m.emoji ? String(m.emoji).trim() : (m.name || '?').trim().charAt(0).toUpperCase();
   // a letter plus an emoji (e.g. "V🪻") is fine: keep it on one line and shrink to fit the circle
   const parts = window.Intl && Intl.Segmenter ? [...new Intl.Segmenter().segment(raw)].map(x => x.segment) : [...raw];
@@ -1435,7 +1442,7 @@ function upNextHTML(limit = 4) {
     const m = eventMember(e), st = new Date(e.starts_at), live = st <= now;
     return `<div class="ev ${i === 0 && label === 'Up next' ? 'next' : ''}" style="--c:${eventColour(e)}">
       <div class="when num">${live ? 'Now' : esc(fmtTime(st))}${untilHTML(e)}</div>
-      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
+      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${miniFace(m)}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
   }).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
     ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
@@ -1497,6 +1504,31 @@ function chipsHTML() {
 
 /* ----- views ----- */
 const V = {};
+/* Photo faces: pick a photo, drag and zoom it into the circle, saved small (about 15 KB) on the member. */
+function cropSheet(file, id) {
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    const C = {img, id, z: 1, x: 0, y: 0, base: 0};
+    sheet(`<h2>Fit the photo</h2><p class="help">Drag to move it, slide to zoom. The circle is what everyone sees.</p>
+      <div class="cropbox"><canvas id="cropc" width="560" height="560" aria-label="Photo crop preview"></canvas></div>
+      <label class="cropzl"><span class="lbl">Zoom</span><input type="range" id="cropz" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+      <div class="row" style="margin-top:12px"><button class="btn" data-act="crop-save">Use this photo</button><button class="btn ghost" data-act="crop-cancel" data-id="${id}">Cancel</button></div>`, {focus: false});
+    const cv = $('#cropc'), ctx = cv.getContext('2d'), N = cv.width; C.base = Math.max(N / img.width, N / img.height); S._crop = C;
+    const clamp = () => { const w = img.width * C.base * C.z, h = img.height * C.base * C.z, mx = Math.max(0, (w - N) / 2), my = Math.max(0, (h - N) / 2); C.x = Math.max(-mx, Math.min(mx, C.x)); C.y = Math.max(-my, Math.min(my, C.y)); };
+    const draw = () => { clamp(); const sc = C.base * C.z; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, N, N); ctx.drawImage(img, N / 2 - img.width * sc / 2 + C.x, N / 2 - img.height * sc / 2 + C.y, img.width * sc, img.height * sc);
+      ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.rect(0, 0, N, N); ctx.arc(N / 2, N / 2, N / 2 - 6, 0, Math.PI * 2, true); ctx.fill('evenodd'); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(N / 2, N / 2, N / 2 - 6, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); };
+    C.draw = draw; draw();
+    let drag = null; const k = () => N / cv.getBoundingClientRect().width;
+    cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, ox: C.x, oy: C.y}; cv.setPointerCapture(e.pointerId); });
+    cv.addEventListener('pointermove', e => { if (!drag) return; C.x = drag.ox + (e.clientX - drag.x) * k(); C.y = drag.oy + (e.clientY - drag.y) * k(); draw(); });
+    cv.addEventListener('pointerup', () => { drag = null; }); cv.addEventListener('pointercancel', () => { drag = null; });
+    cv.addEventListener('wheel', e => { e.preventDefault(); C.z = Math.max(1, Math.min(4, C.z * (e.deltaY < 0 ? 1.08 : 0.93))); $('#cropz').value = C.z; draw(); }, {passive: false});
+    $('#cropz').addEventListener('input', e => { C.z = +e.target.value; draw(); });
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = () => toast("Couldn't open that photo. Try another.", 4000);
+  img.src = url;
+}
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 const micBtn = (target, submit) => canListen() ? `<button type="button" class="icon-btn micbtn" data-act="mic" data-target="${target}" ${submit ? 'data-submit="1"' : ''} aria-label="Say it instead of typing">${icon('mic')}</button>` : '';
@@ -1720,7 +1752,7 @@ const bandOf = e => { const h = hoursFloat(new Date(e.starts_at)); return BANDS.
 function evRow(e, big) {
   const m = eventMember(e), st = new Date(e.starts_at);
   return `<button class="ev evbtn" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${e.all_day ? 'All day' : esc(fmtTime(st)) + untilHTML(e)}</div>
-    <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>'}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
+    <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${miniFace(m)}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
 }
 V.calendar = () => {
   const today = dayKey(new Date()), mode = S.calMode;
@@ -2288,7 +2320,8 @@ function memberSheet(id) {
   const m = id ? memberById(id) : {name: '', color: FAMILY_COLOURS[S.members.length % FAMILY_COLOURS.length][1], kind: 'adult', home_view: 'family', emoji: ''};
   sheet(`<h2>${id ? 'Edit ' + esc(m.name) : 'Add someone'}</h2><form data-form="member" data-id="${id || ''}">
     <div class="field"><label for="mn">Name</label><input class="input" id="mn" name="name" value="${esc(m.name)}" required maxlength="40"></div>
-    <div class="field"><label for="me">Picture (optional, one emoji)</label><input class="input" id="me" name="emoji" value="${esc(m.emoji || '')}" maxlength="4" style="width:120px;font-size:26px"></div>
+    ${id ? `<div class="field"><div class="lbl">Photo</div><div class="row avrow">${avatar(m, 'lg')}<label class="btn soft">${icon('camera')} ${m.photo ? 'Change photo' : 'Add a photo'}<input type="file" accept="image/*" data-change="avatar-pick" data-id="${id}" hidden></label>${m.photo ? `<button type="button" class="btn ghost" data-act="avatar-del" data-id="${id}">Remove</button>` : ''}</div><p class="help">A face is easier than a letter, especially for little ones. It's kept in your family's private space.</p></div>` : ''}
+    <div class="field"><label for="me">${id ? 'Or an emoji' : 'Picture (optional, one emoji)'}</label><input class="input" id="me" name="emoji" value="${esc(m.emoji || '')}" maxlength="4" style="width:120px;font-size:26px"></div>
     <div class="lbl">Colour</div><div class="swatches" style="margin:8px 0 14px">${FAMILY_COLOURS.map(([n, c]) => `<button type="button" class="sw ${m.color === c ? 'on' : ''}" style="--c:${c}" data-act="pick-colour" data-c="${c}" aria-label="${n}"></button>`).join('')}</div>
     <input type="hidden" name="color" value="${esc(m.color)}">
     <div class="row"><div class="grow"><div class="lbl">Who</div><select class="input" name="kind"><option value="adult" ${m.kind === 'adult' ? 'selected' : ''}>Adult</option><option value="kid" ${m.kind === 'kid' ? 'selected' : ''}>Kid</option></select></div>
@@ -2425,6 +2458,16 @@ const A = {
     pinDots('bad'); try { navigator.vibrate && navigator.vibrate(120); } catch {} setTimeout(() => { S._pin = ''; pinDots(); }, 600);
   },
   async 'lock-off'() { await saveSettings({lock: null}); S.unlockUntil = 0; toast('Grown-up lock is off'); },
+  async 'crop-save'() {
+    const C = S._crop; if (!C) return; const out = document.createElement('canvas'), O = 200; out.width = out.height = O; const c2 = out.getContext('2d'), N = 560, f = O / N, sc = C.base * C.z * f;
+    c2.fillStyle = '#fff'; c2.fillRect(0, 0, O, O); c2.drawImage(C.img, O / 2 - C.img.width * sc / 2 + C.x * f, O / 2 - C.img.height * sc / 2 + C.y * f, C.img.width * sc, C.img.height * sc);
+    let q = .85, photo = out.toDataURL('image/jpeg', q); while (photo.length > 70000 && q > .4) { q -= .1; photo = out.toDataURL('image/jpeg', q); }
+    const m = memberById(C.id); S._crop = null; if (!m) return closeSheet(); const old = m.photo; m.photo = photo; render(); memberSheet(C.id);
+    if (DEMO) return toast('Sample data: nothing here is saved');
+    const {error} = await sb.from('members').update({photo}).eq('id', C.id); if (error) { m.photo = old; render(); memberSheet(C.id); return toast("Couldn't save the photo. Try again.", 4000); } toast('Photo saved ✓');
+  },
+  'crop-cancel'(el) { S._crop = null; memberSheet(el.dataset.id); },
+  async 'avatar-del'(el) { const m = memberById(el.dataset.id); if (!m) return; const old = m.photo; m.photo = null; render(); memberSheet(m.id); if (DEMO) return; const {error} = await sb.from('members').update({photo: null}).eq('id', m.id); if (error) { m.photo = old; render(); toast("Couldn't remove it."); } },
   'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
   'ev-import'() { eventImportSheet(); },
   'ev-voice'(el) { listen(t => readEvents({text: t}, t), el); toast('Listening… say what\'s on, e.g. “Swimming Saturday 9am at Craigie”', 3500); },
@@ -3132,6 +3175,7 @@ document.addEventListener('change', async e => {
   }
   if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
+  if (el.dataset.change === 'avatar-pick' && el.files && el.files[0]) { const f0 = el.files[0]; el.value = ''; return cropSheet(f0, el.dataset.id); }
   if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
   if (el.dataset.change === 'lock-here') { LS.set('lockHere', el.checked); toast(el.checked ? 'This screen will ask for the PIN' : 'This screen won\'t ask for the PIN'); return; }
