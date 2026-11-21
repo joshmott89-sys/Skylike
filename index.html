@@ -700,7 +700,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1145'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1200'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1206,8 +1206,10 @@ function idleTick() {
   const nightEl = $('#night');
   if (night && deviceKind() === 'tablet' && idle >= 2) {
     if (!nightEl.classList.contains('on')) nightEl.classList.add('on');
-    nightEl.innerHTML = `<div class="clock num">${clockHTML(now)}</div><div class="date">${esc(fmtDay(dayKey(now), {weekday:'long', day:'numeric', month:'long'}))}</div>${countdownsHTML(dayKey(now))}`;
+    const nh = `<div class="clock num">${clockHTML(now)}</div><div class="date">${esc(fmtDay(dayKey(now), {weekday:'long', day:'numeric', month:'long'}))}</div>${countdownsHTML(dayKey(now))}`;
+    if (nightEl._h !== nh) { nightEl.innerHTML = nh; nightEl._h = nh; }
   } else nightEl.classList.remove('on');
+  if (deviceKind() === 'tablet') { if (night && st.night.sleep && idle >= 2) { if (wakeLock) { try { wakeLock.release(); } catch {} wakeLock = null; } } else if (!wakeLock && document.visibilityState === 'visible') keepAwake(); }
   // Daytime idle: clock (with today's key event and countdowns) for clockMins, then photos for photoMins, repeat.
   const glanceEl = $('#glance');
   if (!night && deviceKind() === 'tablet' && idle >= st.saver.after && !$('#timer').classList.contains('on')) {
@@ -1218,7 +1220,7 @@ function idleTick() {
     else {
       if ($('#saver').classList.contains('on')) stopSaver(true);
       const [t, b] = skyAt(h); glanceEl.style.setProperty('--g-top', t); glanceEl.style.setProperty('--g-bot', b);
-      glanceEl.innerHTML = glanceHTML(now); glanceEl.classList.add('on');
+      const gh = glanceHTML(now); if (glanceEl._h !== gh) { glanceEl.innerHTML = gh; glanceEl._h = gh; } glanceEl.classList.add('on');
     }
   } else glanceEl.classList.remove('on');
   if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= (S.view === 'kid' ? Math.max(10, st.idleReturn) : st.idleReturn) && !document.querySelector('.sheet-bg') && !['settings', 'kids'].includes(S.view)) {
@@ -1279,7 +1281,8 @@ function stopSaver(quiet) { clearInterval(saverT); const el = $('#saver'); el.cl
 let wakeLock = null;
 async function keepAwake() {
   if (deviceKind() !== 'tablet' || !('wakeLock' in navigator)) return;
-  try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+  if (wakeLock) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } catch {}
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { keepAwake(); if (S.hid) loadAll().then(render).catch(() => {}); } });
 window.addEventListener('online', () => { S.online = true; renderRail(); if (S.hid) loadAll().then(render); });
@@ -1907,7 +1910,8 @@ V.settings = () => {
       <form data-form="device"><div class="row"><div class="grow"><div class="lbl">Name</div><input class="input" name="name" value="${esc(LS.get('deviceName', deviceKind() === 'tablet' ? 'Family screen' : 'Phone'))}"></div>
       <div><div class="lbl">Acts as</div><select class="input" name="kind"><option value="tablet" ${deviceKind() === 'tablet' ? 'selected' : ''}>Family screen (stays on)</option><option value="phone" ${deviceKind() === 'phone' ? 'selected' : ''}>Phone</option></select></div></div><button class="btn" style="margin-top:12px">Save</button></form></div>
     <div class="panel"><h2>Night</h2><p class="help">The whole screen dims to dusk tones, then fades to a dim clock after 2 minutes untouched.</p>
-      <form data-form="night" class="row"><label class="lbl">From <input class="input" type="time" name="start" value="${esc(st.night.start)}"></label><label class="lbl">Until <input class="input" type="time" name="end" value="${esc(st.night.end)}"></label><button class="btn">Save</button></form></div>
+      <form data-form="night" class="row"><label class="lbl">From <input class="input" type="time" name="start" value="${esc(st.night.start)}"></label><label class="lbl">Until <input class="input" type="time" name="end" value="${esc(st.night.end)}"></label>
+        <label class="ntype" style="flex-basis:100%"><input type="checkbox" name="sleep" ${st.night.sleep ? 'checked' : ''}><span><b>Let the screen sleep overnight</b><small>Saves battery and lets a slow charger catch up. Set the tablet’s Auto-Lock to 5 or 10 minutes (not Never); Skylike keeps it awake by day and lets it sleep during these hours. Tap to wake it.</small></span></label><button class="btn">Save</button></form></div>
     <div class="panel"><h2>Daytime</h2><form data-form="daytime">
       <div class="row"><label class="lbl">Idle screen after <input class="input" type="number" min="1" max="60" name="after" value="${st.saver.after}" style="width:90px"> min</label>
       <label class="lbl">Back to Family view after <input class="input" type="number" min="1" max="30" name="idle" value="${st.idleReturn}" style="width:90px"> min</label>
@@ -2673,7 +2677,7 @@ const F = {
     await saveSettings({sitter: {contacts, bedtimes, wifi: {name: f.wifiName.value.trim(), password: f.wifiPass.value}, notes: f.notes.value.trim()}});
   },
   async device(f) { LS.set('deviceName', f.name.value.trim() || 'Screen'); LS.set('deviceKind', f.kind.value); heartbeat(); keepAwake(); toast('Saved'); render(); },
-  async night(f) { await saveSettings({night: {start: f.start.value || '20:30', end: f.end.value || '06:00'}}); },
+  async night(f) { await saveSettings({night: {start: f.start.value || '20:30', end: f.end.value || '06:00', sleep: !!(f.sleep && f.sleep.checked)}}); toast('Saved'); },
   async daytime(f) { const s = settings(); await saveSettings({saver: Object.assign({}, s.saver, {after: +f.after.value || 5, clockMins: +f.clockMins.value || 10, photoMins: +f.photoMins.value || 5}), idleReturn: +f.idle.value || 3, leaveBuffer: +f.buffer.value || 0}); }
 };
 
@@ -2828,7 +2832,9 @@ let lastMinute = -1;
 setInterval(() => {
   if (!S.household) return;
   const m = new Date().getMinutes();
-  if (m !== lastMinute) { lastMinute = m; if (['family','focus','planner'].includes(S.view) && !document.querySelector('.sheet-bg')) render(); else renderSkyOnly(); }
+  const covered = document.querySelector('#glance.on, #saver.on, #night.on');
+  if (m !== lastMinute) { lastMinute = m; if (covered) S._staleUnder = true; else if (['family','focus','planner'].includes(S.view) && !document.querySelector('.sheet-bg')) render(); else renderSkyOnly(); }
+  if (!covered && S._staleUnder) { S._staleUnder = false; render(); }
   idleTick();
 }, 5000);
 setInterval(() => { if (S.household) { heartbeat(); } }, 5 * 60e3);
