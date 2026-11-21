@@ -59,7 +59,7 @@ function reminderOn(r: any, k: string) {
   return ((w % r.every_weeks) + r.every_weeks) % r.every_weeks === 0;
 }
 const fmtTime = (iso: string, tz: string) => new Intl.DateTimeFormat("en-AU", { timeZone: tz, hour: "numeric", minute: "2-digit" }).format(new Date(iso)).replace(" ", "").toLowerCase();
-const norm = (t: string) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+const norm = (t: string) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 const thaw = (n: string) => /chicken|beef|mince|pork|lamb|sausage|bacon|steak|fish|salmon|prawn|turkey|thigh|breast|fillet|stock|pastry|bread|soup|sauce|bolognese|curry|casserole|leftover/.test(norm(n));
 const same = (a: string, b: string) => { const A = norm(a).split(" "), B = norm(b).split(" "); const [s, l] = A.length <= B.length ? [A, B] : [B, A]; return s.length > 0 && s.every(w => l.some(x => x === w || x.replace(/s$/, "") === w.replace(/s$/, ""))); };
 
@@ -122,7 +122,11 @@ async function tick() {
     const now = Date.now(), home = st.location && st.location.lat ? st.location : { lat: -31.9523, lon: 115.8613 };
     const { data: evs } = await admin.from("events_cache").select("event_id,calendar_id,title,starts_at,location,all_day").eq("household_id", hid).eq("all_day", false)
       .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString()).order("starts_at");
-    const withPlace = (evs || []).filter((e: any) => e.location && String(e.location).trim());
+    // Skylike-only events (added on the screen, not in Google) get the same reminders.
+    const { data: lev } = await admin.from("local_events").select("id,title,starts_at,location,member_id").eq("household_id", hid).eq("all_day", false)
+      .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString());
+    const all = (evs || []).concat((lev || []).map((r: any) => ({ event_id: "L-" + r.id, calendar_id: "skylike", member_id: r.member_id, title: r.title, starts_at: r.starts_at, location: r.location, all_day: false })));
+    const withPlace = all.filter((e: any) => e.location && String(e.location).trim());
     if (withPlace.length) {
       const { data: cals } = await admin.from("calendars").select("id,google_id,member_id").eq("household_id", hid);
       const { data: known } = await admin.from("event_travel").select("event_id,location,minutes,status,computed_at").eq("household_id", hid).in("event_id", withPlace.map((e: any) => e.event_id));
@@ -135,7 +139,9 @@ async function tick() {
         const leaveAt = new Date(e.starts_at).getTime() - ((drive != null ? drive + 5 : buffer) * 60e3);
         const toLeave = Math.round((leaveAt - now) / 60e3);
         const cal = (cals || []).find((c: any) => c.google_id === e.calendar_id || c.id === e.calendar_id);
-        const who = cal && cal.member_id ? [cal.member_id] : adults;
+        // Kids don't have phones: their events go to the grown-ups.
+        const mid = e.member_id || (cal && cal.member_id), mem = mid && (members || []).find((m: any) => m.id === mid);
+        const who = mem && mem.kind !== "kid" ? [mid] : adults;
         const how = drive != null ? ` · ${drive} min drive` : "";
         if (toLeave <= 32 && toLeave >= 18 && await once(`soon:${hid}:${e.event_id}:${e.starts_at}`, hid))
           sent += await send(await subsFor(hid, "leave", who), { title: `Leave at ${fmtTime(new Date(leaveAt).toISOString(), tz)}`, body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
@@ -172,8 +178,10 @@ async function tick() {
       if (binsToday.length) lines.push(`🗑️ ${binsToday.map((r: any) => r.title).join(" + ")} today`);
       const dayEnd = new Date(now + (24 * 60 - L.mins) * 60e3).toISOString();
       const { data: first } = await admin.from("events_cache").select("title,starts_at").eq("household_id", hid).eq("all_day", false).gte("starts_at", new Date(now).toISOString()).lte("starts_at", dayEnd).order("starts_at").limit(1);
-      if (first && first[0]) lines.push(`📅 First up: ${first[0].title} at ${fmtTime(first[0].starts_at, tz)}`);
-      if (lines.length && await once(`morning:${hid}:${L.key}`, hid)) sent += await send(await subsFor(hid, "morning", adults), { title: "Today", body: lines.join("\n"), tag: "morning", url: "./" });
+      const { data: firstL } = await admin.from("local_events").select("title,starts_at").eq("household_id", hid).eq("all_day", false).gte("starts_at", new Date(now).toISOString()).lte("starts_at", dayEnd).order("starts_at").limit(1);
+      const f0 = [...(first || []), ...(firstL || [])].sort((a: any, b: any) => String(a.starts_at).localeCompare(String(b.starts_at)))[0];
+      if (f0) lines.push(`📅 First up: ${f0.title} at ${fmtTime(f0.starts_at, tz)}`);
+      if (lines.length && await once(`morning:${hid}:${L.key}`, hid)) sent += await send(await subsFor(hid, "morning", adults), { title: "Today · tap to hear your brief", body: lines.join("\n"), tag: "morning", url: "./?brief=1" });
     }
   }
   // tidy the log

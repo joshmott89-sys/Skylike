@@ -401,6 +401,16 @@ ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1
 .daychk input:checked + span{background:var(--ocean);border-color:var(--ocean);color:#fff}
 body.night .kid{border-top-color:var(--c)}
 @media (max-width:760px){.goal{flex-wrap:wrap}.goal>span:first-child{flex-basis:100%}.kidsgrid{grid-template-columns:minmax(0,1fr)}.ktiles{grid-template-columns:repeat(3,minmax(0,1fr))}.kid{padding:16px 14px 18px}.ktile{min-height:100px}.ktile .em{font-size:40px}}
+.micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
+.evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
+.evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.evpick{display:flex;gap:12px;align-items:flex-start;flex:1;min-width:0;cursor:pointer}.evpick input{width:22px;height:22px;margin-top:3px;flex:none}.evpick span{display:grid;gap:2px;min-width:0}.evpick small{color:var(--ink-2);font-size:14px}.evpick .evn{font-style:italic}
+.reading{text-align:center;padding:20px 0}.reading .spin{width:42px;height:42px;margin:0 auto 10px;border-width:4px;border-color:color-mix(in srgb,var(--ink) 12%,transparent);border-top-color:var(--ocean-2);animation-duration:.9s}
+@media (prefers-reduced-motion:reduce){.micbtn.on,.reading .spin{animation:none}}
+.pinbox{max-width:340px;margin:0 auto}.pindots{display:flex;justify-content:center;gap:16px;margin:18px 0}.pindots i{width:18px;height:18px;border-radius:50%;border:2px solid var(--ink-2)}.pindots i.on{background:var(--ink)}
+.pindots.bad i{border-color:#C9473A;animation:pinshake .4s}.pindots.ok i{background:#2E8B57;border-color:#2E8B57}@keyframes pinshake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.pinpad button{min-height:64px;border-radius:18px;border:0;background:var(--raise,var(--surface));box-shadow:var(--shadow);font:inherit;font-size:26px;font-weight:700;color:var(--ink);display:grid;place-items:center;cursor:pointer}.pinpad button:active{transform:scale(.96)}
+@media (prefers-reduced-motion:reduce){.pindots.bad i{animation:none}}
 .brief{flex:none;margin:14px var(--pad) 0;background:linear-gradient(135deg,color-mix(in srgb,#F2B33D 16%,var(--surface)),var(--surface) 60%);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px 16px}
 .brief.insheet{margin:8px 0 0;box-shadow:none;border:1px solid var(--line)}
 .brief .bhead{display:flex;align-items:center;gap:8px}.brief .bk{font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
@@ -727,7 +737,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2250'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2340'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -812,7 +822,7 @@ const WA_HOLIDAYS = {
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon = (n, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36));
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 const LS = {
   get(k, d) { try { const v = localStorage.getItem('skylike:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('skylike:' + k, JSON.stringify(v)); } catch {} }
@@ -855,7 +865,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {pers
 const S = {
   session: null, hid: LS.get('hid', null), household: null, members: [], lists: [], items: [], notes: [], events: [],
   calendars: [], countdowns: [], reminders: [], photos: [], devices: [],
-  routines: [], chores: [], ticks: [], ledger: [], rewards: [], bringRules: [], balances: {}, meals: [], pantry: [], aiOn: false,
+  routines: [], chores: [], ticks: [], ledger: [], rewards: [], bringRules: [], balances: {}, meals: [], pantry: [], localEvents: [], aiOn: false,
   view: 'family', activeMember: null, listId: null, calMode: LS.get('calMode', 'week'), calOffset: 0,
   weather: null, realtime: 'connecting', lastData: null, calStatus: null, online: navigator.onLine,
   deviceId: LS.get('device', null), lastTouch: Date.now(), nightWake: 0, settingsTab: 'household'
@@ -937,8 +947,8 @@ setInterval(() => { // quiet nightly refresh on the family screen
 }, 60e3);
 
 /* ============ data ============ */
-const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules','meals','pantry'];
-const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules', meals:'meals', pantry:'pantry'};
+const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules','meals','pantry','local_events'];
+const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules', meals:'meals', pantry:'pantry', local_events:'localEvents'};
 
 async function loadAll() {
   const hid = S.hid;
@@ -949,7 +959,7 @@ async function loadAll() {
     q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}),
     q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}), q('devices'),
     q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules'),
-    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name')
+    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').gte('starts_at', since).order('starts_at')
   ]);
   if (hh.error) throw hh.error;
   if (!hh.data) { S.hid = null; LS.set('hid', null); return false; }
@@ -972,7 +982,7 @@ async function computeTravel() {
   if (DEMO || travelBusy || !S.hid || !navigator.onLine) return; travelBusy = true;
   try {
     const st = settings(), home = st.location || {lat: -31.9523, lon: 115.8613}, now = Date.now();
-    const todo = S.events.filter(e => !e.all_day && e.location && String(e.location).trim() && new Date(e.starts_at) > now && new Date(e.starts_at) - now < 2 * 864e5)
+    const todo = S.events.concat(localEvs()).filter(e => !e.all_day && e.location && String(e.location).trim() && new Date(e.starts_at) > now && new Date(e.starts_at) - now < 2 * 864e5)
       .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && t.status === 'ok') && !travelTried.has(e.event_id + '|' + e.location))
       .slice(0, 4);
     for (const e of todo) {
@@ -1131,15 +1141,24 @@ function wxWords(code) {
 
 /* ============ derived data ============ */
 const memberById = id => S.members.find(m => m.id === id);
+/* Skylike-only events (no Google needed): stored in local_events, shown alongside calendar events. */
+function localToEv(r) {
+  const ad = !!r.all_day, s0 = ad ? String(r.starts_at).slice(0, 10) + 'T00:00:00Z' : r.starts_at;
+  const e0 = r.ends_at ? (ad ? String(r.ends_at).slice(0, 10) + 'T00:00:00Z' : r.ends_at) : (ad ? addDaysKey(s0.slice(0, 10), 1) + 'T00:00:00Z' : new Date(new Date(s0).getTime() + 3600e3).toISOString());
+  return {id: 'L-' + r.id, local: true, row: r, household_id: r.household_id, calendar_id: 'skylike', event_id: 'L-' + r.id, title: r.title, starts_at: s0, ends_at: e0, all_day: ad, location: r.location, member_id: r.member_id, notes: r.notes};
+}
+const localEvs = () => (S.localEvents || []).map(localToEv);
+const evById = id => S.events.find(x => x.id === id) || localEvs().find(x => x.id === id);
 function eventColour(ev) {
+  if (ev.local) { const m = ev.member_id && memberById(ev.member_id); return (m && m.color) || '#C9772B'; }
   const cal = S.calendars.find(c => c.google_id === ev.calendar_id);
   const m = cal && cal.member_id && memberById(cal.member_id);
   return (m && m.color) || (cal && cal.color) || '#2F7BB5';
 }
-function eventMember(ev) { const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
+function eventMember(ev) { if (ev.local) return ev.member_id ? memberById(ev.member_id) || null : null; const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
 function visibleEvents() {
   const on = new Set(S.calendars.filter(c => c.enabled).map(c => c.google_id));
-  return S.events.filter(e => on.size === 0 || on.has(e.calendar_id));
+  return S.events.filter(e => on.size === 0 || on.has(e.calendar_id)).concat(localEvs()).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
 }
 function eventsOnKey(k) {
   return visibleEvents().filter(e => {
@@ -1478,6 +1497,73 @@ function chipsHTML() {
 
 /* ----- views ----- */
 const V = {};
+/* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
+const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+const micBtn = (target, submit) => canListen() ? `<button type="button" class="icon-btn micbtn" data-act="mic" data-target="${target}" ${submit ? 'data-submit="1"' : ''} aria-label="Say it instead of typing">${icon('mic')}</button>` : '';
+function listen(cb, el) {
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) { toast("Voice isn't available here. Use the mic on your keyboard instead.", 4000); return; }
+  const r = new R(); r.lang = 'en-AU'; r.interimResults = false; r.maxAlternatives = 1; if (el) el.classList.add('on');
+  r.onresult = ev => cb(ev.results[0][0].transcript);
+  r.onend = () => el && el.classList.remove('on');
+  r.onerror = ev => { if (el) el.classList.remove('on'); toast(ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'Allow the microphone for Skylike (and on iPhone, turn on Siri & Dictation).' : ev.error === 'no-speech' ? "Didn't hear anything. Tap the mic and talk." : ev.error === 'aborted' ? '' : "Didn't catch that. Try again.", 4500); };
+  try { r.start(); } catch { if (el) el.classList.remove('on'); }
+}
+const submitForm = f => { if (!f) return; if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); };
+
+/* Photo or words → calendar events: the AI reads a flyer, invite, school note or a sentence, then you check and add. */
+const looksLikeEvent = t => /\b(mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun)(day)?\b|\btomorrow\b|\btonight\b|\bnext (week|mon|tue|wed|thu|fri|sat|sun)|\b\d{1,2}(:\d\d)?\s?(am|pm)\b|\b\d{1,2}(st|nd|rd|th)\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}\b/i.test(t);
+async function readEvents(payload, fallbackText) {
+  if (!S.aiOn) { if (fallbackText) { S._evDraft = {title: fallbackText.slice(0, 120)}; return eventForm(null); } return toast('Turn on the AI helper first (Settings → Kitchen).', 4000); }
+  sheet(`<div class="reading"><div class="spin" aria-hidden="true"></div><h2>Reading it…</h2><p class="help">Looking for dates, times and places.</p></div>`, {focus: false});
+  const now = new Date(), k = dayKey(now);
+  const r = await callAI(Object.assign({action: 'event_parse', today: k, weekday: fmtDay(k, {weekday: 'long'}), people: S.members.map(m => m.name)}, payload));
+  if (r.error) { closeSheet(); return toast(r.error, 5000); }
+  const evs = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || ''));
+  if (!evs.length) { closeSheet(); if (fallbackText) { S._fqText = fallbackText; return sheet(`<h2>No date found</h2><p class="help">I couldn't find a date or time in “${esc(fallbackText)}”.</p><div class="row"><button class="btn" data-act="fq-as-todo">Add it as a to-do</button><button class="btn ghost" data-act="close-sheet">Cancel</button></div>`); } return toast("Couldn't find any dates in that. Try a clearer photo, or type it in.", 5000); }
+  S._evReview = evs.map(e => ({title: String(e.title).slice(0, 120), day: e.date, start: /^\d{2}:\d{2}$/.test(e.start || '') ? e.start : '', end: /^\d{2}:\d{2}$/.test(e.end || '') ? e.end : '', all_day: !!e.all_day || !/^\d{2}:\d{2}$/.test(e.start || ''), location: e.location || '', notes: e.notes || '', who: ((S.members.find(m => e.who && m.name.toLowerCase() === String(e.who).toLowerCase())) || {}).id || ''}));
+  S._evFallback = fallbackText || ''; reviewSheet();
+}
+function reviewSheet() {
+  const L = S._evReview || []; if (!L.length) return closeSheet();
+  const cals = twoWayCals(), me = meMember(), mine = cals.find(c => me && c.member_id === me.id) || cals[0];
+  sheet(`<h2>Found ${L.length} event${L.length === 1 ? '' : 's'}</h2><p class="help">Untick anything you don't want, tap Edit to fix details.</p>
+    <form data-form="ev-import-save"><ul class="evrev">${L.map((d, i) => `<li><label class="evpick"><input type="checkbox" name="pick" value="${i}" checked><span><b>${esc(d.title)}</b><small>${esc(fmtDay(d.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${d.all_day ? ' · all day' : ' · ' + esc(fmtTime(new Date(zonedISO(d.day, d.start))))}${d.location ? ' · ' + esc(d.location) : ''}</small>${d.notes ? `<small class="evn">${esc(d.notes)}</small>` : ''}</span></label><button type="button" class="btn soft sm" data-act="ev-draft-edit" data-i="${i}">Edit</button></li>`).join('')}</ul>
+    <label class="lbl">Add to <select class="input" name="calendar">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>
+    <div class="row" style="margin-top:12px"><button class="btn">Add to calendar</button>${S._evFallback ? '<button type="button" class="btn ghost" data-act="fq-as-todo">It\'s a to-do instead</button>' : '<button type="button" class="btn ghost" data-act="close-sheet">Cancel</button>'}</div></form>`, {focus: false});
+}
+function nextDraft() { if (S._evReview && S._evReview.length) reviewSheet(); }
+function eventImportSheet() {
+  sheet(`<h2>Add from a photo or words</h2><p class="help">Snap a party invite, school newsletter or flyer, or just say what's on. You check everything before it's added.</p>
+    <div class="scanpick"><label class="btn">${icon('camera')} Take a photo<input type="file" accept="image/*" capture="environment" data-change="ev-photo" hidden></label>
+    <label class="btn ghost">Choose photos or screenshots<input type="file" accept="image/*" multiple data-change="ev-photo" hidden></label>
+    ${canListen() ? `<button class="btn ghost" data-act="ev-voice">${icon('mic')} Say it</button>` : ''}</div>
+    <form data-form="ev-text" style="margin-top:14px"><textarea class="input" name="text" rows="3" maxlength="6000" placeholder="Or paste an email or message, e.g. “Mia's party Sat 14th 2-4pm at Bounce Malaga”"></textarea><button class="btn soft" style="margin-top:8px">Find the events</button></form>`, {focus: false});
+}
+/* Grown-up lock: a 4-digit PIN for changes on shared screens (calendar edits, settings, spending stars),
+   so little fingers can't delete real Google events. Phones are unlocked by default. */
+const lockCfg = () => settings().lock || null;
+const lockHere = () => !!(lockCfg() && lockCfg().hash) && LS.get('lockHere', !isPhone());
+const unlocked = () => !lockHere() || Date.now() < (S.unlockUntil || 0);
+const LOCKED_ACTS = new Set(['ev-add', 'ev-edit', 'ev-del', 'ev-del-go', 'ev-setup', 'del-list', 'star-adj', 'redeem']);
+const needsPin = (act, el) => !unlocked() && (LOCKED_ACTS.has(act) || (act === 'go' && el && el.dataset.view === 'settings'));
+async function pinHash(pin, salt) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function askPin(then) {
+  S._pinThen = then; S._pin = '';
+  sheet(`<div class="pinbox"><h2>Grown-ups only</h2><p class="help">Enter the PIN to change the calendar or settings.</p>
+    <div class="pindots" aria-live="polite">${'<i></i>'.repeat(4)}</div>
+    <div class="pinpad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'].map(k => k === '' ? '<span></span>' : `<button data-act="pin-key" data-k="${k}" aria-label="${k === 'del' ? 'Delete' : k}">${k === 'del' ? icon('left') : k}</button>`).join('')}</div>
+    <p class="help" style="text-align:center">Forgot it? On a grown-up's phone: Settings → Family → Grown-up lock.</p></div>`);
+}
+function pinDots(state) { const d = $('.pindots'); if (!d) return; d.className = 'pindots' + (state ? ' ' + state : ''); d.innerHTML = [0, 1, 2, 3].map(i => `<i class="${i < S._pin.length ? 'on' : ''}"></i>`).join(''); }
+function lockPanelHTML() {
+  const c = lockCfg(), on = !!(c && c.hash);
+  return `<div class="panel" id="lockpanel"><h2>Grown-up lock</h2><p class="help">A 4-digit PIN for changes on shared screens: adding, moving or deleting calendar events, opening Settings and spending stars. Ticking things off stays open for everyone. After the PIN, the screen stays unlocked for 5 minutes.</p>
+    <p><b>${on ? '🔒 On' : 'Off'}</b></p>
+    <form data-form="lock-set" class="row" style="flex-wrap:wrap"><input class="input" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${on ? 'New PIN' : 'Choose a PIN'}" required style="width:140px;letter-spacing:.3em;text-align:center">
+      <input class="input" name="pin2" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Again" required style="width:140px;letter-spacing:.3em;text-align:center"><button class="btn">${on ? 'Change PIN' : 'Turn on'}</button></form>
+    ${on ? `<label class="row" style="margin-top:12px;gap:10px"><input type="checkbox" data-change="lock-here" ${lockHere() ? 'checked' : ''} style="width:22px;height:22px"> Ask for the PIN on this ${isPhone() ? 'phone' : 'screen'}</label>
+    <button class="btn ghost" style="margin-top:8px" data-act="lock-off">Turn the lock off</button>` : ''}</div>`;
+}
 /* Morning briefing: a short spoken-style summary of today. Built instantly from the household's own data,
    then (if the AI helper is on) rewritten in the chosen tone. Read aloud with the device's own voice. */
 const BRIEF_TONES = [['bubbly', 'Bubbly', '🎉'], ['sassy', 'Sassy', '😏'], ['plain', 'Straight', '📋'], ['calm', 'Calm', '🌿']];
@@ -1710,7 +1796,7 @@ V.lists = () => {
   if (isCalm()) {
     const more = isOpen('ltools:' + l.id), showDone = isOpen('ldone:' + l.id), sug = suggestionsFor(l), b = l.kind === 'grocery' ? LS.get('gbudget:' + l.id, null) : null;
     return `<div class="page calm"><h1>Lists</h1><div class="tabs">${tabs}</div>
-      <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
+      <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200">${micBtn('#list-add', true)}<button class="btn">${icon('plus')}Add</button></form>
         ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops</button>` : ''}
         ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
         <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
@@ -1722,7 +1808,7 @@ V.lists = () => {
   }
   return `<div class="page"><h1>Lists<span class="sp"></span><button class="btn soft" data-act="new-list">${icon('plus')}New list</button></h1>
     <div class="tabs">${tabs}</div>
-    <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
+    <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200">${micBtn('#list-add', true)}<button class="btn">${icon('plus')}Add</button></form>
       ${(sug => sug.length ? `<div class="quick" aria-label="Quick add">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : '')(suggestionsFor(l))}
       ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops <small>${open.length} item${open.length === 1 ? '' : 's'}, in aisle order</small></button>` : ''}
       ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
@@ -2004,6 +2090,7 @@ V.settings = () => {
   if (t === 'family') body = `<div class="panel"><h2>Family</h2><p class="help">Adults get their own home view. Kids' colours show on their events.</p>
     ${S.members.map(m => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)">${avatar(m)}<div class="grow"><b>${esc(m.name)}</b><div class="lbl">${m.kind === 'kid' ? 'Kid' : 'Adult · ' + ({family:'Family view', focus:'Focus view', planner:'Planner view'})[m.home_view]}</div></div><button class="btn soft" data-act="edit-member" data-id="${m.id}">Edit</button></div>`).join('')}
     <button class="btn" style="margin-top:16px" data-act="edit-member">${icon('plus')}Add someone</button></div>`;
+  if (t === 'family') body += lockPanelHTML();
   if (t === 'calendar') body = calendarSettingsHTML();
   if (t === 'reminders') body = `
     <div class="panel"><h2>Bin days</h2><p class="help">Add each bin on its own. For bins that swap week to week (say yellow one week, green the next), set both to every 2 weeks and give each its next collection date. Enter the day the <b>truck comes</b>: the reminder shows from 3pm the night before (“out tonight”), and the next morning until midday.</p>
@@ -2328,6 +2415,21 @@ const A = {
   async 'assign-set'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; it.assignee = el.dataset.m || null; closeSheet(); render(); if (!DEMO) await db(sb.from('list_items').update({assignee: it.assignee}).eq('id', it.id)); },
   async 'fq-move'() { const L = S._fqLast; if (!L) return; const to = L.kind === 'grocery' ? 'todo' : 'grocery', l = listByKind(to); if (!l) return;
     S.items.filter(i => L.ids.includes(i.id)).forEach(i => i.list_id = l.id); L.kind = to; L.at = Date.now(); render(); if (!DEMO) await db(sb.from('list_items').update({list_id: l.id}).in('id', L.ids)); },
+  async 'pin-key'(el) {
+    if (S._pinWait && Date.now() < S._pinWait) return toast('Too many tries. Wait a moment.');
+    const k = el.dataset.k; if (k === 'del') { S._pin = S._pin.slice(0, -1); return pinDots(); }
+    if (S._pin.length >= 4) return; S._pin += k; pinDots(); if (S._pin.length < 4) return;
+    const c = lockCfg(), ok = c && (await pinHash(S._pin, c.salt)) === c.hash;
+    if (ok) { S.unlockUntil = Date.now() + 5 * 60e3; S._pinTries = 0; pinDots('ok'); const then = S._pinThen; S._pinThen = null; setTimeout(() => { closeSheet(); then && then(); }, 180); return; }
+    S._pinTries = (S._pinTries || 0) + 1; if (S._pinTries >= 5) { S._pinWait = Date.now() + 30e3; S._pinTries = 0; }
+    pinDots('bad'); try { navigator.vibrate && navigator.vibrate(120); } catch {} setTimeout(() => { S._pin = ''; pinDots(); }, 600);
+  },
+  async 'lock-off'() { await saveSettings({lock: null}); S.unlockUntil = 0; toast('Grown-up lock is off'); },
+  'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
+  'ev-import'() { eventImportSheet(); },
+  'ev-voice'(el) { listen(t => readEvents({text: t}, t), el); toast('Listening… say what\'s on, e.g. “Swimming Saturday 9am at Craigie”', 3500); },
+  'ev-draft-edit'(el) { const [d] = S._evReview.splice(+el.dataset.i, 1); if (!d) return; S._evDraft = d; eventForm(null); },
+  async 'fq-as-todo'() { const t = S._fqText || S._evFallback; S._evReview = null; S._evFallback = ''; closeSheet(); if (!t) return; const f = document.createElement('form'); const i = document.createElement('input'); i.name = 'text'; i.value = t; f.appendChild(i); f.text = i; S._fqForce = true; await F.fquick(f); S._fqForce = false; },
   'brief-say'() {
     if (S._speaking) { try { speechSynthesis.cancel(); } catch {} S._speaking = false; render(); return; }
     const t = ($('.brief .btxt') || {}).textContent || briefText();
@@ -2502,14 +2604,15 @@ const A = {
   'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; if (S.calMode === 'day') S.dayKey = dayKey(new Date()); LS.set('calMode', S.calMode); render(); },
   'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
-  'open-event'(el) { const e = S.events.find(x => x.id === el.dataset.id); if (!e) return; const m = eventMember(e);
-    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
+  'open-event'(el) { const e = evById(el.dataset.id); if (!e) return; const m = eventMember(e);
+    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
   'ev-add'(el) { eventForm(null, el.dataset.k); },
   'ev-setup'() { closeSheet(); A.go({dataset: {view: 'settings', tab: 'calendar'}}); },
-  'ev-edit'(el) { eventForm(S.events.find(x => x.id === el.dataset.id)); },
-  'ev-del'(el) { const e = S.events.find(x => x.id === el.dataset.id); if (!e) return;
-    sheet(`<h2>Delete “${esc(e.title || 'this event')}”?</h2><p class="help">It's removed from Google Calendar for everyone.</p><div class="row"><button class="btn danger" data-act="ev-del-go" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Keep it</button></div>`); },
-  'ev-del-go'(el) { const i = S.events.findIndex(x => x.id === el.dataset.id); if (i < 0) return; const [e] = S.events.splice(i, 1); closeSheet(); render(); calWrite({action: 'delete', id: e.id}, () => S.events.splice(i, 0, e)); },
+  'ev-edit'(el) { eventForm(evById(el.dataset.id)); },
+  'ev-del'(el) { const e = evById(el.dataset.id); if (!e) return;
+    sheet(`<h2>Delete “${esc(e.title || 'this event')}”?</h2><p class="help">${e.local ? 'It\'s removed from Skylike for everyone in the family.' : 'It\'s removed from Google Calendar for everyone.'}</p><div class="row"><button class="btn danger" data-act="ev-del-go" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Keep it</button></div>`); },
+  async 'ev-del-go'(el) { if (String(el.dataset.id).startsWith('L-')) { const rid = el.dataset.id.slice(2), row = S.localEvents.find(r => r.id === rid); S.localEvents = S.localEvents.filter(r => r.id !== rid); closeSheet(); render(); if (DEMO) return; const {error} = await sb.from('local_events').delete().eq('id', rid); if (error) { if (row) S.localEvents.push(row); render(); return toast("Couldn't delete it. Try again."); } return toast('Deleted'); }
+    const i = S.events.findIndex(x => x.id === el.dataset.id); if (i < 0) return; const [e] = S.events.splice(i, 1); closeSheet(); render(); calWrite({action: 'delete', id: e.id}, () => S.events.splice(i, 0, e)); },
   'edit-member'(el) { memberSheet(el.dataset.id); },
   async 'del-row'(el) { if (el.dataset.table === 'members' && !confirm('Remove this person?')) return; const t = el.dataset.table, key = KEY_OF[t]; S[key] = S[key].filter(r => r.id !== el.dataset.id); closeSheet(); render(); await db(sb.from(t).delete().eq('id', el.dataset.id)); },
   async 'toggle-setting'(el) { const k = el.dataset.key; await saveSettings({[k]: !settings()[k]}); },
@@ -2557,7 +2660,7 @@ async function refreshCalendar(loud) {
 /* ---- two-way calendar: add, edit, move and delete events through the household's Apps Script bridge ---- */
 const calOf = e => S.calendars.find(c => c.google_id === e.calendar_id);
 const twoWayCals = () => S.calendars.filter(c => !c.google_id.startsWith('ics:') && c.enabled);
-const canEdit = e => !!e && !DEMO_EDIT_BLOCK() && !!calOf(e) && !calOf(e).google_id.startsWith('ics:');
+const canEdit = e => !!e && (e.local || (!DEMO_EDIT_BLOCK() && !!calOf(e) && !calOf(e).google_id.startsWith('ics:')));
 const DEMO_EDIT_BLOCK = () => false;
 function zonedISO(k, hhmm) { // a wall-clock time in the household's zone → exact time
   const [y, m, d] = k.split('-').map(Number), [H, M] = String(hhmm || '09:00').split(':').map(Number), want = Date.UTC(y, m - 1, d, H, M); let t = want;
@@ -2568,21 +2671,33 @@ const hhmmOf = d => { const p = tzParts(d); return String(p.h).padStart(2, '0') 
 async function reloadEvents() { const since = new Date(Date.now() - 3 * 864e5).toISOString(); const {data} = await sb.from('events_cache').select('*').eq('household_id', S.hid).gte('ends_at', since).order('starts_at'); if (data) { S.events = data; render(); } }
 function eventForm(e, k) {
   const cals = twoWayCals(), me = meMember();
-  if (!e && !cals.length) return sheet(`<h2>Add an event</h2><p class="help">To add events from Skylike, connect two-way editing once (Settings → Calendar → Two-way editing). It takes about 5 minutes on a computer.</p><div class="row"><button class="btn" data-act="ev-setup">Set it up</button><button class="btn ghost" data-act="close-sheet">Not now</button></div>`);
-  const day = e ? (e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at))) : (k || S.dayKey || dayKey(new Date()));
-  const nowH = tzParts(new Date()).h, st = e && !e.all_day ? hhmmOf(new Date(e.starts_at)) : String(Math.min(22, nowH + 1)).padStart(2, '0') + ':00';
-  const en = e && !e.all_day ? hhmmOf(new Date(e.ends_at)) : String(Math.min(23, +st.slice(0, 2) + 1)).padStart(2, '0') + ':00';
-  const mine = cals.find(c => me && c.member_id === me.id) || cals[0];
+  const pre0 = S._evDraft || {};
+  const day = e ? (e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at))) : (pre0.day || k || S.dayKey || dayKey(new Date()));
+  const nowH = tzParts(new Date()).h, st = e && !e.all_day ? hhmmOf(new Date(e.starts_at)) : (pre0.start || String(Math.min(22, nowH + 1)).padStart(2, '0') + ':00');
+  const en = e && !e.all_day ? hhmmOf(new Date(e.ends_at)) : (pre0.end || String(Math.min(23, +st.slice(0, 2) + 1)).padStart(2, '0') + ':' + st.slice(3, 5));
+  const mine = cals.find(c => me && c.member_id === me.id) || cals[0], isLocal = e ? !!e.local : !mine, pre = S._evDraft || {}; S._evDraft = null;
+  const whoSel = `<div class="evwho" ${isLocal ? '' : 'hidden'}><label class="lbl">Who's it for <select class="input" name="who"><option value="">Everyone</option>${S.members.map(m => `<option value="${m.id}" ${(e ? e.member_id : pre.who) === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></label>
+      <textarea class="input" name="notes" rows="2" maxlength="600" placeholder="Notes (optional): bring a hat, RSVP by Friday…">${esc((e ? e.notes : pre.notes) || '')}</textarea></div>`;
   sheet(`<h2>${e ? 'Edit event' : 'Add an event'}</h2>
     <form data-form="ev-save" data-id="${e ? e.id : ''}" class="evform">
-      <input class="input" name="title" placeholder="What's on? e.g. Swimming" value="${esc(e ? e.title : '')}" maxlength="120" required>
-      ${e ? `<p class="help">In ${esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`}
-      <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${e && e.all_day ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
-      <div class="row evrow evtimes" ${e && e.all_day ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
-      <input class="input" name="location" placeholder="Where? (optional, used for leave reminders)" value="${esc(e && e.location ? e.location : '')}" maxlength="200">
+      ${e || pre0.title ? '' : `<div class="evimp"><button type="button" class="btn soft sm" data-act="ev-import">${icon('camera')} From a photo</button>${canListen() ? `<button type="button" class="btn soft sm" data-act="ev-voice">${icon('mic')} Say it</button>` : ''}<button type="button" class="btn soft sm" data-act="ev-import">Paste text</button></div>`}
+      <div class="row evtitle"><input class="input grow" id="ev-title" name="title" placeholder="What's on? e.g. Swimming" value="${esc(e ? e.title : (pre.title || ''))}" maxlength="120" required>${micBtn('#ev-title')}</div>
+      ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
+      ${whoSel}
+      <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
+      <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
+      <input class="input" name="location" placeholder="Where? (optional, used for leave reminders)" value="${esc(e ? (e.location || '') : (pre0.location || ''))}" maxlength="200">
       ${e && /@\\d+$/.test(e.event_id) && S.events.filter(x => x.event_id.replace(/@\\d+$/, '') === e.event_id.replace(/@\\d+$/, '')).length > 1 ? '<p class="help">This repeats: changes here only affect this one.</p>' : ''}
       <div class="row" style="margin-top:6px"><button class="btn">${e ? 'Save' : 'Add to calendar'}</button>${e ? `<button type="button" class="btn ghost danger" data-act="ev-del" data-id="${e.id}">Delete</button>` : ''}</div>
     </form>`, {focus: !e});
+}
+async function saveLocalEvent(r, undo) {
+  if (DEMO) return toast('Sample data: nothing here is saved');
+  const row = {household_id: S.hid, title: r.title, starts_at: r.starts_at, ends_at: r.ends_at, all_day: !!r.all_day, location: r.location || null, notes: r.notes || null, member_id: r.member_id || null, updated_at: new Date().toISOString()};
+  const q = r._new ? sb.from('local_events').insert(Object.assign({id: r.id}, row)) : sb.from('local_events').update(row).eq('id', r.id);
+  const {error} = await q; delete r._new;
+  if (error) { if (undo && undo.drop) S.localEvents = S.localEvents.filter(x => x !== r); else if (undo) Object.assign(r, {starts_at: undo.s, ends_at: undo.e2}); render(); return toast("Couldn't save the event. Try again.", 4000); }
+  toast('Saved', 1800);
 }
 async function calWrite(body, undo) {
   if (DEMO) { toast('Sample data: nothing is sent to Google.'); return; }
@@ -2591,7 +2706,12 @@ async function calWrite(body, undo) {
   toast(body.action === 'delete' ? 'Deleted from Google Calendar' : 'Saved to Google Calendar', 2500); reloadEvents();
 }
 function moveEventToDay(id, k) {
-  const e = S.events.find(x => x.id === id); if (!e || !canEdit(e)) return toast('That calendar is read-only here.');
+  if (!unlocked()) return askPin(() => moveEventToDay(id, k));
+  const e = evById(id); if (!e || !canEdit(e)) return toast('That calendar is read-only here.');
+  if (e.local) { const r = e.row, fromK = e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at)); if (fromK === k) return; const old = {s: r.starts_at, e2: r.ends_at};
+    if (e.all_day) { const len = Math.max(1, daysBetween(e.starts_at.slice(0, 10), e.ends_at.slice(0, 10))); r.starts_at = k + 'T00:00:00Z'; r.ends_at = addDaysKey(k, len) + 'T00:00:00Z'; }
+    else { const ns = zonedISO(k, hhmmOf(new Date(e.starts_at))); r.ends_at = new Date(new Date(ns).getTime() + (new Date(e.ends_at) - new Date(e.starts_at))).toISOString(); r.starts_at = ns; }
+    render(); saveLocalEvent(r, old); return; }
   const fromK = e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at)); if (fromK === k) return;
   const old = {s: e.starts_at, e2: e.ends_at}, shift = daysBetween(fromK, k) * 864e5;
   let body;
@@ -2749,6 +2869,28 @@ const F = {
     S.aiOn = true; S.aiGemini = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
     if (r.error) { toast(r.error, 6000); } else { S.aiModel = r.model; toast('Connected ✓ Meals, pantry photos and the brain-dump are ready.', 4000); } render();
   },
+  'ev-text'(f) { const t = f.text.value.trim(); if (!t) return; readEvents({text: t}); },
+  async 'ev-import-save'(f) {
+    const picks = [...f.querySelectorAll('input[name="pick"]:checked')].map(x => +x.value), L = S._evReview || [], cal = f.calendar.value;
+    const chosen = picks.map(i => L[i]).filter(Boolean); if (!chosen.length) return toast('Tick at least one event.');
+    S._evReview = null; S._evFallback = ''; closeSheet();
+    const times = d => { if (d.all_day) return {start: d.day, end: addDaysKey(d.day, 1), sa: d.day + 'T00:00:00Z', ea: addDaysKey(d.day, 1) + 'T00:00:00Z'}; const st = zonedISO(d.day, d.start); let en = d.end ? zonedISO(d.day, d.end) : new Date(new Date(st).getTime() + 3600e3).toISOString(); if (new Date(en) <= new Date(st)) en = new Date(new Date(st).getTime() + 3600e3).toISOString(); return {start: st, end: en, sa: st, ea: en}; };
+    if (cal === 'skylike') {
+      const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day, location: d.location || null, notes: d.notes || null, member_id: d.who || null}; });
+      S.localEvents.push(...rows); render(); if (DEMO) return toast('Sample data: nothing here is saved');
+      const {error} = await sb.from('local_events').insert(rows); if (error) { S.localEvents = S.localEvents.filter(r => !rows.includes(r)); render(); return toast("Couldn't add them. Try again.", 4000); }
+      return toast(`Added ${rows.length} event${rows.length === 1 ? '' : 's'} ✓`, 3000);
+    }
+    if (DEMO) return toast('Sample data: nothing is sent to Google.');
+    toast(`Adding ${chosen.length} to Google Calendar…`, 3000); let ok = 0, err = '';
+    for (const d of chosen) { const t = times(d); const r = await callFn({action: 'create', calendar: cal, title: d.title, start: t.start, end: t.end, allDay: d.all_day, location: d.location || '', description: d.notes || ''}); if (r.error) err = r.error; else ok++; }
+    reloadEvents(); toast(err ? `Added ${ok}. One didn't go in: ${err}` : `Added ${ok} event${ok === 1 ? '' : 's'} ✓`, 4500);
+  },
+  async 'lock-set'(f) {
+    const a = f.pin.value.trim(), b = f.pin2.value.trim();
+    if (!/^\d{4}$/.test(a)) return toast('The PIN needs 4 numbers.'); if (a !== b) return toast("Those two PINs don't match.");
+    const salt = uid(); await saveSettings({lock: {salt, hash: await pinHash(a, salt), at: new Date().toISOString()}}); S.unlockUntil = Date.now() + 5 * 60e3; toast('Grown-up lock on 🔒', 3000);
+  },
   async 'or-key'(f) {
     const k = f.key.value.trim(); if (!/^sk-or-/.test(k)) return toast('That doesn\'t look like an OpenRouter key. It starts with sk-or-.', 4000);
     const {error} = await sb.rpc('set_openrouter_key', {p_household: S.hid, p_key: k}); if (error) return toast("Couldn't save the key.");
@@ -2774,16 +2916,22 @@ const F = {
     let start, end;
     if (allDay) { start = day; end = addDaysKey(day, 1); }
     else { start = zonedISO(day, f.start.value || '09:00'); end = zonedISO(day, f.end.value || f.start.value || '10:00'); if (new Date(end) <= new Date(start)) end = new Date(new Date(start).getTime() + 3600e3).toISOString(); }
-    const location = f.location.value.trim();
+    const location = f.location.value.trim(), who = f.who ? f.who.value || null : null, notes = f.notes ? f.notes.value.trim() || null : null;
+    const sa = allDay ? start + 'T00:00:00Z' : start, ea = allDay ? end + 'T00:00:00Z' : end;
     closeSheet();
+    if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, notes}); render(); return saveLocalEvent(r, old); }
+    if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, notes, created_at: new Date().toISOString()};
+      S.localEvents.push(r); render(); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); return saveLocalEvent(r, {drop: true}); }
     if (id) { const e = S.events.find(x => x.id === id); if (!e) return; const old = Object.assign({}, e);
       Object.assign(e, {title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end}); render();
       calWrite({action: 'update', id, title, start, end, allDay, location}, () => Object.assign(e, old)); }
     else { const cal = S.calendars.find(c => c.id === f.calendar.value), tmp = {id: 'tmp-' + uid(), household_id: S.hid, calendar_id: cal ? cal.google_id : '', event_id: 'tmp', title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end};
-      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location}, () => { S.events = S.events.filter(x => x !== tmp); }); }
+      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location}, () => { S.events = S.events.filter(x => x !== tmp); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
   },
   async fquick(f) {
-    const raw0 = f.text.value.trim(); if (!raw0) return; const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
+    const raw0 = f.text.value.trim(); if (!raw0) return;
+    if (!S._fqForce && S.aiOn && !DEMO && looksLikeEvent(raw0) && !/^(buy|get|pick up|grab)\b/i.test(raw0)) { f.text.value = ''; return readEvents({text: raw0}, raw0); }
+    const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
     const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
     const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, assignee: A2.who ? A2.who.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
     S.items.push(...rows); S._fqLast = {ids: rows.map(r => r.id), text: rows.map(r => r.text).join(', '), kind, who: A2.who && (!me || A2.who.id !== me.id) ? A2.who.name : null, at: Date.now()}; f.text.value = ''; render();
@@ -2964,7 +3112,7 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('.mday[data
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
   if (Date.now() - dragEnd < 450 && el.closest('.mday, .wev')) return; // the tap that ended a drag
-  const fn = A[el.dataset.act]; if (fn) { if (el.tagName === 'BUTTON' && el.type !== 'submit') e.preventDefault(); fn(el, e); }
+  const fn = A[el.dataset.act]; if (fn) { if (el.tagName === 'BUTTON' && el.type !== 'submit') e.preventDefault(); if (needsPin(el.dataset.act, el)) return askPin(() => fn(el, e)); fn(el, e); }
 });
 document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); const fn = F[f.dataset.form]; if (fn) fn(f); });
 document.addEventListener('change', async e => {
@@ -2984,6 +3132,9 @@ document.addEventListener('change', async e => {
   }
   if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
+  if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
+  if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
+  if (el.dataset.change === 'lock-here') { LS.set('lockHere', el.checked); toast(el.checked ? 'This screen will ask for the PIN' : 'This screen won\'t ask for the PIN'); return; }
   if (el.dataset.change === 'ev-allday') { const t = el.closest('form').querySelector('.evtimes'); if (t) t.hidden = el.checked; }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
