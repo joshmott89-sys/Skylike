@@ -1,4 +1,4 @@
-// Skylike service worker: shows phone notifications and opens the app when one is tapped.
+// Skylike service worker v2: shows phone notifications and opens the app when one is tapped.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
@@ -8,7 +8,7 @@ self.addEventListener('push', e => {
   e.waitUntil(self.registration.showNotification(d.title || 'Skylike', {
     body: d.body || '',
     icon: 'icon-192.png',
-    badge: 'icon-192.png',
+    badge: 'badge-96.png',
     tag: d.tag || undefined,
     renotify: !!d.tag,
     data: {url: d.url || './'}

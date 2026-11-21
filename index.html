@@ -699,7 +699,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1120'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1135'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -899,6 +899,8 @@ async function checkForUpdate(reopened) {
 }
 setTimeout(() => checkForUpdate(true), 8000); setInterval(() => checkForUpdate(false), 10 * 60e3);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(true); });
+// keep the notification worker current (picks up new icons and fixes)
+if (!DEMO_PAGE && LS.get('pushOn', false)) setTimeout(() => swReg().then(r => r && r.update && r.update()), 4000);
 // coming back from the phone's settings: re-check notification permission if that screen is open
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.view === 'settings' && S.settingsTab === 'notify') { S._push = null; render(); } });
 setInterval(() => { // quiet nightly refresh on the family screen
