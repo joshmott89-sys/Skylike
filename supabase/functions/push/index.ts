@@ -37,6 +37,24 @@ async function send(subs: Sub[], payload: { title: string; body: string; url?: s
   }
   return ok;
 }
+// Each person's assistant (Settings → Assistant) words their notifications. The facts are the same; the voice changes.
+type P = { soon: (t: string) => string; now: (n: number) => string; evening: string; morning: string; assigned: (f: string) => string; test: string };
+const PCOPY: Record<string, P> = {
+  sunny: { soon: t => `Leave at ${t} ☀️`, now: n => n > 1 ? `Leave in ${n} min! 🚗` : "Time to go! 🚗", evening: "Tonight's little jobs ✨", morning: "Good morning! ☀️ Tap to hear your day", assigned: f => f ? `${f} gave you a to-do ✨` : "A new to-do for you ✨", test: "Yay, notifications are on! 🎉" },
+  mate: { soon: t => `Head off at ${t}, mate`, now: n => n > 1 ? `Off in ${n}, mate` : "Righto, time to head off", evening: "Before you knock off tonight", morning: "Morning! Here's the go today", assigned: f => f ? `${f} reckons this one's yours` : "One for you, mate", test: "Notifications are on. Too easy." },
+  sass: { soon: t => `Out the door by ${t}, please`, now: n => n > 1 ? `${n} minutes. Find your keys.` : "Keys. Shoes. Door. Now.", evening: "Before you collapse on the couch…", morning: "Up and at 'em. Here's your day", assigned: f => f ? `${f} volunteered you` : "Guess who's got a new job", test: "Notifications on. You're welcome." },
+  willow: { soon: t => `When you're ready: leave at ${t} 🌿`, now: n => n > 1 ? `About ${n} minutes until you leave` : "It's time to leave. You've got this.", evening: "A few things for this evening 🌿", morning: "Good morning 🌿 Your day, gently", assigned: f => f ? `${f} passed you a to-do` : "A to-do for you, no rush", test: "Notifications are on 🌿" },
+  news: { soon: t => `Leave at ${t}`, now: n => n > 1 ? `Leave in ${n} min` : "Time to leave", evening: "For tonight", morning: "Today · tap to hear your brief", assigned: f => f ? `${f} gave you a to-do` : "New to-do for you", test: "Skylike notifications are on" },
+  coach: { soon: t => `Leave at ${t}. Let's go! 💪`, now: n => n > 1 ? `${n} min to go time! 💪` : "Go time! Out the door 💪", evening: "Evening checklist 💪", morning: "Rise and shine, champ! Today's plan 💪", assigned: f => f ? `New mission from ${f} 💪` : "New mission for you 💪", test: "Notifications on. Let's go! 💪" },
+};
+const TONE_P: Record<string, string> = { bubbly: "sunny", sassy: "sass", plain: "news", calm: "willow" };
+const pidFor = (st: any, memberId: string | null) => { const m = (st && st.persona) || {}; const v = m[memberId || ""] || m.family || "sunny"; return PCOPY[v] ? v : TONE_P[v] || "sunny"; };
+async function sendP(subs: Sub[], st: any, make: (C: P) => { title: string; body: string; url?: string; tag?: string }) {
+  const groups = new Map<string, Sub[]>();
+  subs.forEach(s => { const k = pidFor(st, s.member_id); groups.set(k, [...(groups.get(k) || []), s]); });
+  let n = 0; for (const [k, g] of groups) n += await send(g, make(PCOPY[k])); return n;
+}
+
 // Send once: a key in notify_log stops repeats (cron runs every 5 minutes).
 async function once(key: string, hid: string) {
   const { error } = await admin.from("notify_log").insert({ key, household_id: hid });
@@ -173,9 +191,9 @@ async function tick() {
         const who = ov.taker ? [ov.taker] : grown.length ? grown : adults;
         const how = drive != null ? ` · ${drive} min drive` : "";
         if (toLeave <= 32 && toLeave >= 18 && await once(`soon:${hid}:${e.event_id}:${e.starts_at}`, hid))
-          sent += await send(await subsFor(hid, "leave", who), { title: `Leave at ${fmtTime(new Date(leaveAt).toISOString(), tz)}`, body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
+          sent += await sendP(await subsFor(hid, "leave", who), st, C => ({ title: C.soon(fmtTime(new Date(leaveAt).toISOString(), tz)), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
         else if (toLeave <= 6 && toLeave >= -4 && await once(`leave:${hid}:${e.event_id}:${e.starts_at}`, hid))
-          sent += await send(await subsFor(hid, "leave", who), { title: toLeave > 1 ? `Leave in ${toLeave} min` : "Time to leave", body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
+          sent += await sendP(await subsFor(hid, "leave", who), st, C => ({ title: C.now(toLeave), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
       }
     }
 
@@ -194,7 +212,7 @@ async function tick() {
         const dz = [...new Set((dinner.ingredients || []).map((x: any) => (frz || []).find((p: any) => thaw(p.name) && same(p.name, x.name))).filter(Boolean).map((p: any) => p.name))];
         if (dz.length) lines.push(`❄️ Defrost ${dz.join(", ")} for ${dinner.title}`);
       }
-      if (lines.length && await once(`evening:${hid}:${L.key}`, hid)) sent += await send(await subsFor(hid, "evening", adults), { title: "For tonight", body: lines.join("\n"), tag: "evening", url: "./" });
+      if (lines.length && await once(`evening:${hid}:${L.key}`, hid)) sent += await sendP(await subsFor(hid, "evening", adults), st, C => ({ title: C.evening, body: lines.join("\n"), tag: "evening", url: "./" }));
     }
 
     // 3) Morning at 7am: lunchboxes to pack and what's first today (only when there is something).
@@ -211,7 +229,7 @@ async function tick() {
       const repsToday = (await repeatingToday(hid, tz, [L.key])).filter((e: any) => new Date(e.starts_at).getTime() >= now);
       const f0 = [...(first || []), ...(firstL || []), ...repsToday].sort((a: any, b: any) => String(a.starts_at).localeCompare(String(b.starts_at)))[0];
       if (f0) lines.push(`📅 First up: ${f0.title} at ${fmtTime(f0.starts_at, tz)}`);
-      if (lines.length && await once(`morning:${hid}:${L.key}`, hid)) sent += await send(await subsFor(hid, "morning", adults), { title: "Today · tap to hear your brief", body: lines.join("\n"), tag: "morning", url: "./?brief=1" });
+      if (lines.length && await once(`morning:${hid}:${L.key}`, hid)) sent += await sendP(await subsFor(hid, "morning", adults), st, C => ({ title: C.morning, body: lines.join("\n"), tag: "morning", url: "./?brief=1" }));
     }
   }
   // tidy the log
@@ -227,7 +245,8 @@ async function assigned(itemId: string, actor: string | null) {
   let from = "";
   if (actor) { const { data: m } = await admin.from("members").select("name").eq("household_id", it.household_id).eq("user_id", actor).maybeSingle(); from = m?.name || ""; }
   if (!(await once(`assigned:${it.id}:${it.assignee}`, it.household_id))) return 0;
-  return await send(await subsFor(it.household_id, "assigned", [it.assignee]), { title: from ? `${from} gave you a to-do` : "New to-do for you", body: it.text, tag: "todo-" + it.id, url: "./?view=lists" });
+  const { data: hh } = await admin.from("households").select("settings").eq("id", it.household_id).single();
+  return await sendP(await subsFor(it.household_id, "assigned", [it.assignee]), hh?.settings || {}, C => ({ title: C.assigned(from), body: it.text, tag: "todo-" + it.id, url: "./?view=lists" }));
 }
 
 Deno.serve(async (req) => {
@@ -249,7 +268,8 @@ Deno.serve(async (req) => {
     if (!m) return json({ error: "not a member" }, 403);
     if (body.action === "test") {
       const { data: subs } = await admin.from("push_subscriptions").select("id,endpoint,p256dh,auth,member_id,prefs,fails").eq("household_id", hid).eq("device_id", String(body.device_id || ""));
-      const n = await send((subs || []) as Sub[], { title: "Skylike notifications are on 🎉", body: "You'll get to-dos given to you, leave reminders and a heads-up at 7pm.", tag: "test", url: "./" });
+      const { data: hh } = await admin.from("households").select("settings").eq("id", hid).single();
+      const n = await sendP((subs || []) as Sub[], hh?.settings || {}, C => ({ title: C.test, body: "You'll get to-dos given to you, leave reminders and a heads-up at 7pm.", tag: "test", url: "./" }));
       return json({ sent: n });
     }
     return json({ error: "unknown action" }, 400);

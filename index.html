@@ -778,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0815'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0830'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1902,6 +1902,22 @@ function personaPickerHTML() {
     <h3 style="margin-top:14px">Voice</h3><div class="chips2">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
     <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`;
 }
+/* Your assistant's voice in the app's own messages. Facts stay the same; only the wording changes. */
+const VOICE = {
+  sunny: {ready: 'Warming up my voice… ☀️', limit: "I've chatted a lot today! This device's voice will read the rest.", busy: "My voice is having a moment, so this device's voice will read it.", hide: 'Okay! See you tomorrow morning ☀️',
+    hello: "Hi, I'm Sunny! ☀️ Let's make it a great day.", shop: 'Shopping done! 🛒 Ticked items cleared and popped in the pantry.', events: n => `Popped ${n} event${n === 1 ? '' : 's'} in the calendar! 🎉`, saved: 'Saved! ✨', plannedPre: 'Yum! 🍽️ '},
+  mate: {ready: 'Hang on, just clearing me throat…', limit: "I'm all talked out for today, so the phone's voice will read it.", busy: "My voice has carked it for now, so the phone's voice will read it.", hide: 'No worries, catch you tomorrow.',
+    hello: "G'day, I'm your mate. We'll keep it easy.", shop: 'Shopping done, legend. Ticked stuff cleared and added to the pantry.', events: n => `Sorted. ${n} event${n === 1 ? '' : 's'} in the calendar.`, saved: 'Sorted.', plannedPre: 'Sorted. '},
+  sass: {ready: "One sec, I'm getting into character…", limit: "I've hit my talking limit for today. The phone's voice is covering for me.", busy: "I'm not feeling chatty. The phone's voice will read it.", hide: "Fine. I'll be back tomorrow.",
+    hello: 'Sass here. Try to keep up.', shop: 'Shopping done. Look at you, being organised.', events: n => `${n} event${n === 1 ? '' : 's'} added. Your calendar is thriving.`, saved: 'Saved. Obviously.', plannedPre: "You're welcome. "},
+  willow: {ready: 'Just a moment while I get ready…', limit: "My voice needs a rest today, so this device will read it gently.", busy: "My voice is resting, so this device will read it.", hide: 'Hidden until tomorrow. Rest easy. 🌿',
+    hello: "Hello, I'm Willow 🌿 One thing at a time.", shop: 'Shopping done. Ticked items are cleared and in the pantry.', events: n => `${n} event${n === 1 ? '' : 's'} added. All taken care of.`, saved: 'Saved.', plannedPre: 'One less thing to think about. '},
+  news: {ready: 'Preparing audio…', limit: 'Daily voice limit reached. Using device voice.', busy: 'Natural voice unavailable. Using device voice.', hide: 'Hidden until tomorrow.',
+    hello: 'Newsreader selected.', shop: 'Shopping done. Ticked items cleared and added to the pantry.', events: n => `Added ${n} event${n === 1 ? '' : 's'}.`, saved: 'Saved.', plannedPre: ''},
+  coach: {ready: 'Getting pumped up… 💪', limit: 'Voice is benched for today. Device voice is subbing in!', busy: 'Voice is off the field. Device voice is subbing in!', hide: "Done for today. Back tomorrow, champ! 💪",
+    hello: "Coach here! Let's get after it 💪", shop: 'Shopping smashed! 🛒 Ticked items cleared and in the pantry.', events: n => `Boom! ${n} event${n === 1 ? '' : 's'} locked in 💪`, saved: 'Locked in! 💪', plannedPre: 'Fuel sorted! 💪 '},
+};
+const pv = (k, ...a) => { const P = VOICE[personaId()] || VOICE.sunny, v = P[k] !== undefined ? P[k] : VOICE.news[k]; return typeof v === 'function' ? v(...a) : v; };
 // Play text in a personality's voice: the natural recording if we can, otherwise the device's best voice.
 function playSpeech(text, pid, onStart, onEnd) {
   const P = persona(pid); S._speaking = true; onStart && onStart();
@@ -1909,12 +1925,12 @@ function playSpeech(text, pid, onStart, onEnd) {
   if (!DEMO && S.aiOn && S.aiGemini !== false && LS.get('briefVoice', 'natural') === 'natural') {
     const a = S._audio || (S._audio = new Audio()); a.onended = a.onerror = null;
     try { a.src = silentWav(); a.play().catch(() => {}); } catch {}
-    const slow = setTimeout(() => S._speaking && toast('Getting the voice ready…', 3000), 900);
+    const slow = setTimeout(() => S._speaking && toast(pv('ready'), 3000), 900);
     callAI({action: 'speak', text, persona: P.id}).then(r => {
       clearTimeout(slow); if (!S._speaking) return;
       const fallback = msg => { if (!S._speaking) return; if (msg) toast(msg, 4000); if (!speak(text, P.tone, done)) done(); };
-      if (!r || !r.url) return fallback(r && r.error === 'voice-limit' ? "The natural voice is used up for today, so this device's voice is reading it." : r && r.error === 'voice-nokey' ? '' : "The natural voice isn't answering, so this device's voice is reading it.");
-      a.onended = done; a.onerror = () => fallback("Couldn't play the natural voice, so this device's voice is reading it.");
+      if (!r || !r.url) return fallback(r && r.error === 'voice-limit' ? pv('limit') : r && r.error === 'voice-nokey' ? '' : pv('busy'));
+      a.onended = done; a.onerror = () => fallback(pv('busy'));
       a.src = r.url; a.play().catch(() => fallback('Tap play again to hear it.'));
     });
     return;
@@ -2768,11 +2784,11 @@ const A = {
     const {data, error} = await sb.from('meals').upsert(rows, {onConflict: 'household_id,day,slot'}).select(); if (error) { render(); return toast("Couldn't save the plan."); }
     data.forEach(m => { const i = S.meals.findIndex(x => x.id === m.id || (x.day === m.day && (x.slot || 'dinner') === m.slot)); if (i >= 0) S.meals[i] = m; else S.meals.push(m); });
     const din = data.filter(m => m.slot === 'dinner'), real = din.filter(m => m.real).length, cooked = din.filter(m => !m.leftovers_of).length, lun = data.filter(m => m.slot === 'lunch').length;
-    render(); toast(`Planned ${din.length} dinner${din.length === 1 ? '' : 's'}${lun ? ` and ${lun} lunch${lun === 1 ? '' : 'es'}` : ''}. ${real} of ${cooked} dinners are real RecipeTin Eats recipes.${bigLeft.length ? ' Leftovers big enough for everyone became a leftovers night.' : ''}`, 6000);
+    render(); toast(`${pv('plannedPre')}Planned ${din.length} dinner${din.length === 1 ? '' : 's'}${lun ? ` and ${lun} lunch${lun === 1 ? '' : 'es'}` : ''}. ${real} of ${cooked} dinners are real RecipeTin Eats recipes.${bigLeft.length ? ' Leftovers big enough for everyone became a leftovers night.' : ''}`, 6000);
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
-  async 'shop-finish'(el) { A['shop-exit'](); await A['clear-done']({dataset: {id: el.dataset.list}}); toast('Shopping done. Ticked items cleared and added to the pantry.'); },
+  async 'shop-finish'(el) { A['shop-exit'](); await A['clear-done']({dataset: {id: el.dataset.list}}); toast(pv('shop')); },
   'push-on'() { pushEnable(); },
   'push-test'() { pushTest(); },
   'push-recheck'() { S._push = null; render(); },
@@ -2842,10 +2858,10 @@ const A = {
   },
   async 'persona-set'(el) {
     const v = el.dataset.v; document.querySelectorAll('.pcard').forEach(c => { const on = c.dataset.pid === v; c.classList.toggle('on', on); const m = c.querySelector('.pmain'); m && m.setAttribute('aria-pressed', on); });
-    await saveSettings({persona: Object.assign({}, settings().persona, {[personaKey()]: v})}, true); toast(`${persona(v).emoji} ${persona(v).name} is your assistant`, 2200);
+    await saveSettings({persona: Object.assign({}, settings().persona, {[personaKey()]: v})}, true); toast(pv('hello'), 3000);
   },
   'brief-more'() { S._briefOpen = !S._briefOpen; const b = $('.brief'); if (b) b.classList.toggle('open', S._briefOpen); },
-  'brief-hide'() { LS.set('briefHide', dayKey(new Date())); stopSpeech(); render(); toast('Hidden until tomorrow morning'); },
+  'brief-hide'() { LS.set('briefHide', dayKey(new Date())); stopSpeech(); render(); toast(pv('hide')); },
   'brief-tone'() { sheet(`<h2>Choose your assistant</h2><p class="help">Each one has its own voice and its own way of telling you about your day. Tap ▶ to hear them.</p>${personaPickerHTML()}`, {focus: false}); },
   'brief-voice'(el) { LS.set('briefVoice', el.dataset.v); document.querySelectorAll('#sheet-root [data-act="brief-voice"]').forEach(b => b.classList.toggle('on', b === el)); },
   'brief-open'() { sheet(`<h2>Today's brief</h2>${briefCardHTML(true).replace('class="brief"', 'class="brief insheet"')}`); },
@@ -3109,7 +3125,7 @@ async function saveLocalEvent(r, undo) {
   const q = r._new ? sb.from('local_events').insert(Object.assign({id: r.id}, row)) : sb.from('local_events').update(row).eq('id', r.id);
   const {error} = await q; delete r._new;
   if (error) { if (undo && undo.drop) S.localEvents = S.localEvents.filter(x => x !== r); else if (undo) Object.assign(r, {starts_at: undo.s, ends_at: undo.e2}); render(); return toast("Couldn't save the event. Try again.", 4000); }
-  toast('Saved', 1800);
+  toast(pv('saved'), 1800);
 }
 async function calWrite(body, undo) {
   if (DEMO) { toast('Sample data: nothing is sent to Google.'); return; }
@@ -3310,7 +3326,7 @@ const F = {
       const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day, location: d.location || null, notes: d.notes || null, member_id: d.who || null, member_ids: d.who ? [d.who] : []}; });
       S.localEvents.push(...rows); render(); if (DEMO) return toast('Sample data: nothing here is saved');
       const {error} = await sb.from('local_events').insert(rows); if (error) { S.localEvents = S.localEvents.filter(r => !rows.includes(r)); render(); return toast("Couldn't add them. Try again.", 4000); }
-      return toast(`Added ${rows.length} event${rows.length === 1 ? '' : 's'} ✓`, 3000);
+      return toast(pv('events', rows.length), 3000);
     }
     if (DEMO) return toast('Sample data: nothing is sent to Google.');
     toast(`Adding ${chosen.length} to Google Calendar…`, 3000); let ok = 0, err = '';
