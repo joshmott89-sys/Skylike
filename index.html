@@ -939,15 +939,16 @@ async function loadTravel() { const {data} = await sb.from('event_travel').selec
 const driveFor = e => { const t = (S.travel || []).find(x => x.event_id === e.event_id && x.location === e.location && x.status === 'ok'); return t ? t.minutes : null; };
 const leaveBufferFor = e => { if (!e.location) return 0; const d = driveFor(e); return d != null ? d + 5 : settings().leaveBuffer; };
 // Work out drives here on the device (the free map services block cloud servers), then share them via the database.
-let travelBusy = false;
+let travelBusy = false; const travelTried = new Set();
 async function computeTravel() {
   if (DEMO || travelBusy || !S.hid || !navigator.onLine) return; travelBusy = true;
   try {
     const st = settings(), home = st.location || {lat: -31.9523, lon: 115.8613}, now = Date.now();
     const todo = S.events.filter(e => !e.all_day && e.location && String(e.location).trim() && new Date(e.starts_at) > now && new Date(e.starts_at) - now < 2 * 864e5)
-      .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && (t.status === 'ok' || now - new Date(t.computed_at || 0) < 6 * 3600e3)))
+      .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && t.status === 'ok') && !travelTried.has(e.event_id + '|' + e.location))
       .slice(0, 4);
     for (const e of todo) {
+      travelTried.add(e.event_id + '|' + e.location);
       const row = {household_id: S.hid, event_id: e.event_id, location: e.location, minutes: null, km: null, status: 'nogeo', computed_at: new Date().toISOString()};
       let to = null;
       try { const box = [home.lon - 1, home.lat + 1, home.lon + 1, home.lat - 1].join(','); const g = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&viewbox=${box}&q=${encodeURIComponent(String(e.location).slice(0, 200))}`)).json(); if (g && g[0]) to = {lat: +g[0].lat, lon: +g[0].lon}; } catch {}
