@@ -406,6 +406,18 @@ body.night .kid{border-top-color:var(--c)}
 .avrow{align-items:center;gap:12px;flex-wrap:wrap}.face.lg{width:72px;height:72px;font-size:30px}
 .cropbox{width:min(100%,320px);margin:10px auto 0;aspect-ratio:1;border-radius:20px;overflow:hidden;touch-action:none;background:#000}.cropbox canvas{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
 .cropzl{display:flex;align-items:center;gap:10px;max-width:320px;margin:12px auto 0}.cropzl input{flex:1;accent-color:var(--ocean-2);min-height:44px;background:none;border:0;box-shadow:none;padding:0}
+.page.wide{max-width:none}.phint{margin:-6px 0 12px}
+.pgrid2{display:grid;grid-template-columns:repeat(var(--n),minmax(170px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px;align-items:start}
+.pcol{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);min-height:calc(100vh - 230px);display:flex;flex-direction:column;border-top:5px solid var(--c)}
+.pcol.drop-on{outline:3px dashed var(--ocean-2);outline-offset:-3px}
+.phd{display:flex;align-items:center;gap:10px;padding:12px 14px 10px}.phd .face{width:40px;height:40px;font-size:18px;flex:none}.phd b{font-size:18px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.phd .n{font-weight:800;color:var(--ink-2)}
+.pbody{display:grid;gap:8px;padding:0 10px 12px}.pnone{color:var(--muted);text-align:center;margin:18px 0;font-weight:650}
+.pev{display:grid;gap:2px;text-align:left;border:0;border-left:5px solid var(--c);border-radius:14px;padding:10px 12px;background:color-mix(in srgb,var(--c) 12%,var(--raise,var(--surface)));font:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.pev .pt{font-size:14px;font-weight:700;color:var(--ink-2)}.pev b{font-size:17px;line-height:1.25}.pev small{font-size:13.5px;color:var(--ink-2)}
+.ptk{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13.5px;font-weight:700}.ptk .face{width:22px;height:22px;font-size:11px;border-width:0}
+.evppl{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 14px 4px 6px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.chip2 .face{width:32px;height:32px;font-size:15px;border-width:0}.chip2.on{border-color:var(--ocean-2);box-shadow:0 0 0 2px var(--ocean-2) inset}
+body[data-drag="pev"] .pcol{transition:outline .1s}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -742,7 +754,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0010'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0035'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1156,11 +1168,13 @@ const localEvs = () => (S.localEvents || []).map(localToEv);
 const evById = id => S.events.find(x => x.id === id) || localEvs().find(x => x.id === id);
 function eventColour(ev) {
   if (ev.local) { const m = ev.member_id && memberById(ev.member_id); return (m && m.color) || '#C9772B'; }
+  const o = (settings().people || {})[ev.event_id]; if (o && o.for) { const m = memberById(o.for); if (m && m.color) return m.color; }
   const cal = S.calendars.find(c => c.google_id === ev.calendar_id);
   const m = cal && cal.member_id && memberById(cal.member_id);
   return (m && m.color) || (cal && cal.color) || '#2F7BB5';
 }
-function eventMember(ev) { if (ev.local) return ev.member_id ? memberById(ev.member_id) || null : null; const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
+function eventMember(ev) { if (ev.local) return ev.member_id ? memberById(ev.member_id) || null : null;
+  const o = (settings().people || {})[ev.event_id]; if (o && o.for !== undefined) return o.for ? memberById(o.for) || null : null; const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
 function visibleEvents() {
   const on = new Set(S.calendars.filter(c => c.enabled).map(c => c.google_id));
   return S.events.filter(e => on.size === 0 || on.has(e.calendar_id)).concat(localEvs()).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
@@ -1573,12 +1587,34 @@ function eventImportSheet() {
     ${canListen() ? `<button class="btn ghost" data-act="ev-voice">${icon('mic')} Say it</button>` : ''}</div>
     <form data-form="ev-text" style="margin-top:14px"><textarea class="input" name="text" rows="3" maxlength="6000" placeholder="Or paste an email or message, e.g. “Mia's party Sat 14th 2-4pm at Bounce Malaga”"></textarea><button class="btn soft" style="margin-top:8px">Find the events</button></form>`, {focus: false});
 }
+/* People view (tablet): a column per person for the day. Drag an event to someone to say who it's for;
+   tap it to pick who's taking them. Assignments for Google events live in Skylike (household settings),
+   Skylike-only events keep theirs on the event. */
+const takerOf = e => { const t = ((settings().people || {})[e.event_id] || {}).taker; return t ? memberById(t) : null; };
+function peopleHTML(k) {
+  const evs = eventsOnKey(k).sort((a, b) => (b.all_day - a.all_day) || a.starts_at.localeCompare(b.starts_at));
+  const cols = S.members.map(m => ({id: m.id, m})).concat([{id: '', m: null}]);
+  const by = id => evs.filter(e => ((eventMember(e) || {}).id || '') === id);
+  const card = e => { const t = takerOf(e), st = new Date(e.starts_at), d = !e.all_day ? driveFor(e) : null;
+    return `<button class="pev" data-ev="${e.id}" data-act="open-event" data-id="${e.id}" style="--c:${eventColour(e)}"><span class="pt num">${e.all_day ? 'All day' : esc(fmtTime(st))}</span><b>${esc(e.title || 'Busy')}</b>${e.location ? `<small>${esc(e.location)}${d != null ? ` · ${d} min` : ''}</small>` : ''}${t ? `<span class="ptk">🚗 ${avatar(t)} ${esc(t.name)}</span>` : ''}</button>`; };
+  return `<p class="help phint">Drag an event onto someone to say who it's for. Tap it to choose who's taking them.</p>
+    <div class="pgrid2" style="--n:${cols.length}">${cols.map(c => { const list = by(c.id); return `<section class="pcol" data-m="${c.id}" style="--c:${c.m ? esc(c.m.color) : 'var(--ink-2)'}"><div class="phd">${c.m ? avatar(c.m) : '<span class="face" style="--c:#8A93A6">👪</span>'}<b>${c.m ? esc(c.m.name) : 'Everyone'}</b><span class="n num">${list.length || ''}</span></div>
+      <div class="pbody">${list.map(card).join('') || `<p class="pnone">${c.m ? 'Free' : 'Nothing shared'}</p>`}</div></section>`; }).join('')}</div>`;
+}
+function setEventPeople(id, patch) {
+  const e = evById(id); if (!e) return;
+  if (e.local && 'for' in patch) { const r = e.row, old = {member_id: r.member_id}; r.member_id = patch.for || null; render(); saveLocalEvent(r, null); delete patch.for; if (!('taker' in patch)) return; }
+  const live = new Set(S.events.map(x => x.event_id).concat(localEvs().map(x => x.event_id))), map = {};
+  Object.entries(settings().people || {}).forEach(([key, v]) => { if (live.has(key)) map[key] = v; });
+  map[e.event_id] = Object.assign({}, map[e.event_id], patch);
+  saveSettings({people: map}, true);
+}
 /* Grown-up lock: a 4-digit PIN for changes on shared screens (calendar edits, settings, spending stars),
    so little fingers can't delete real Google events. Phones are unlocked by default. */
 const lockCfg = () => settings().lock || null;
 const lockHere = () => !!(lockCfg() && lockCfg().hash) && LS.get('lockHere', !isPhone());
 const unlocked = () => !lockHere() || Date.now() < (S.unlockUntil || 0);
-const LOCKED_ACTS = new Set(['ev-add', 'ev-edit', 'ev-del', 'ev-del-go', 'ev-setup', 'del-list', 'star-adj', 'redeem']);
+const LOCKED_ACTS = new Set(['ev-add', 'ev-edit', 'ev-del', 'ev-del-go', 'ev-setup', 'del-list', 'star-adj', 'redeem', 'ev-for', 'ev-taker']);
 const needsPin = (act, el) => !unlocked() && (LOCKED_ACTS.has(act) || (act === 'go' && el && el.dataset.view === 'settings'));
 async function pinHash(pin, salt) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 function askPin(then) {
@@ -1609,7 +1645,7 @@ function briefFacts(now = new Date()) {
   const k = dayKey(now), me = briefWho(), wx = dayWx(k);
   const events = eventsOnKey(k).filter(e => e.all_day || new Date(e.ends_at) > now).slice(0, 6).map(e => {
     const st = new Date(e.starts_at), b = e.all_day ? 0 : leaveBufferFor(e), m = eventMember(e);
-    return {title: e.title || 'Busy', time: e.all_day ? 'all day' : sayTime(st), who: m ? m.name : '', where: e.location || '', leave_by: b ? sayTime(new Date(st - b * 60e3)) : '', drive_min: driveFor(e)};
+    return {title: e.title || 'Busy', time: e.all_day ? 'all day' : sayTime(st), who: m ? m.name : '', taking: (takerOf(e) || {}).name || '', where: e.location || '', leave_by: b ? sayTime(new Date(st - b * 60e3)) : '', drive_min: driveFor(e)};
   });
   const noEmoji = t => String(t || '').replace(/\p{Extended_Pictographic}️?/gu, '').replace(/\s+([,.])/g, '$1').replace(/\s+/g, ' ').trim();
   const reminders = chipsFor(k, now).map(c => {
@@ -1631,7 +1667,7 @@ function briefTemplate(f) {
   out.push(`Good ${f.part}${f.name ? ', ' + f.name : ''}. It's ${f.date}.`);
   if (f.weather) out.push(`${f.weather.words}${f.weather.high != null ? `, top of ${f.weather.high}` : ''}${f.weather.rain_mm >= 2 ? ', with some rain about' : ''}.`);
   const ev = f.events.filter(e => e.time !== 'all day'), allDay = f.events.filter(e => e.time === 'all day');
-  if (ev.length) { const e = ev[0]; out.push(`First up, ${e.title}${e.who ? ' for ' + e.who : ''} at ${e.time}${e.leave_by ? `, so leave by ${e.leave_by}` : ''}.`);
+  if (ev.length) { const e = ev[0]; out.push(`First up, ${e.title}${e.who ? ' for ' + e.who : ''} at ${e.time}${e.leave_by ? `, so leave by ${e.leave_by}` : ''}${e.taking ? ` (${e.taking} is taking ${e.who && e.who !== e.taking ? 'them' : 'it'})` : ''}.`);
     if (ev.length > 1) out.push(`Then ${list(ev.slice(1, 4).map(x => `${x.title} at ${x.time}`))}.`); }
   else out.push(allDay.length ? '' : 'Nothing on the calendar today.');
   if (allDay.length) out.push(`All day: ${list(allDay.map(x => x.title))}.`);
@@ -1757,15 +1793,16 @@ function evRow(e, big) {
     <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${miniFace(m)}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
 }
 V.calendar = () => {
-  const today = dayKey(new Date()), mode = S.calMode;
+  const today = dayKey(new Date()), mode = S.calMode === 'people' && isPhone() ? 'day' : S.calMode;
   if (!S.dayKey) S.dayKey = today;
-  const title = mode === 'day' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
+  const title = mode === 'day' || mode === 'people' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
   const head = `<h1 class="calhead"><span class="ct">${title}</span><span class="sp"></span>
     <span class="cnav"><button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button><button class="btn soft" data-act="cal-shift" data-n="0">Today</button><button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button></span>
-    <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
-    <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
+    <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].concat(isPhone() ? [] : [['people', 'People']]).map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
+    <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' || mode === 'people' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
     <button class="icon-btn cref" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button></h1>`;
   const noCal = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Add a calendar in Settings to fill this in.</p>`;
+  if (mode === 'people') return `<div class="page wide">${head}${noCal}${peopleHTML(S.dayKey)}</div>`;
   if (mode === 'day') {
     const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const nowH = hoursFloat(new Date());
@@ -2332,11 +2369,11 @@ function memberSheet(id) {
 }
 
 /* ----- actions ----- */
-async function saveSettings(patch) {
+async function saveSettings(patch, quiet) {
   const next = Object.assign({}, S.household.settings || {}, patch);
   S.household.settings = next; render();
   const {error} = await sb.from('households').update({settings: next}).eq('id', S.hid);
-  if (error) toast("Couldn't save that. Check the connection."); else toast('Saved');
+  if (error) toast("Couldn't save that. Check the connection."); else if (!quiet) toast('Saved');
 }
 async function db(op, msg) { const {error} = await op; if (error) { console.error(error); toast(msg || "Couldn't save that. Check the connection."); return false; } return true; }
 
@@ -2470,6 +2507,8 @@ const A = {
   },
   'crop-cancel'(el) { S._crop = null; memberSheet(el.dataset.id); },
   async 'avatar-del'(el) { const m = memberById(el.dataset.id); if (!m) return; const old = m.photo; m.photo = null; render(); memberSheet(m.id); if (DEMO) return; const {error} = await sb.from('members').update({photo: null}).eq('id', m.id); if (error) { m.photo = old; render(); toast("Couldn't remove it."); } },
+  'ev-for'(el) { setEventPeople(el.dataset.id, {for: el.dataset.m || null}); A['open-event']({dataset: {id: el.dataset.id}}); },
+  'ev-taker'(el) { setEventPeople(el.dataset.id, {taker: el.dataset.m || null}); A['open-event']({dataset: {id: el.dataset.id}}); },
   'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
   'ev-import'() { eventImportSheet(); },
   'ev-voice'(el) { listen(t => readEvents({text: t}, t), el); toast('Listening… say what\'s on, e.g. “Swimming Saturday 9am at Craigie”', 3500); },
@@ -2646,11 +2685,12 @@ const A = {
   'note-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; },
   'pick-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; },
   async 'del-note'(el) { S.notes = S.notes.filter(n => n.id !== el.dataset.id); render(); await db(sb.from('notes').delete().eq('id', el.dataset.id)); },
-  'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; if (S.calMode === 'day') S.dayKey = dayKey(new Date()); LS.set('calMode', S.calMode); render(); },
-  'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
+  'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = dayKey(new Date()); LS.set('calMode', S.calMode); render(); },
+  'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
   'open-event'(el) { const e = evById(el.dataset.id); if (!e) return; const m = eventMember(e);
-    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
+    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${S.members.length ? `<div class="evppl"><div class="lbl">Who's it for</div><div class="chips2">${S.members.map(x => `<button class="chip2 ${(m && m.id === x.id) ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="${x.id}">${avatar(x)}${esc(x.name)}</button>`).join('')}<button class="chip2 ${!m ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="">👪 Everyone</button></div>
+      ${e.all_day ? '' : `<div class="lbl" style="margin-top:10px">Who's taking them</div><div class="chips2">${S.members.filter(x => x.kind !== 'kid').map(x => `<button class="chip2 ${(takerOf(e) || {}).id === x.id ? 'on' : ''}" data-act="ev-taker" data-id="${e.id}" data-m="${x.id}">🚗 ${avatar(x)}${esc(x.name)}</button>`).join('')}${takerOf(e) ? `<button class="chip2" data-act="ev-taker" data-id="${e.id}" data-m="">Nobody</button>` : ''}</div>`}</div>` : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
   'ev-add'(el) { eventForm(null, el.dataset.k); },
   'ev-setup'() { closeSheet(); A.go({dataset: {view: 'settings', tab: 'calendar'}}); },
   'ev-edit'(el) { eventForm(evById(el.dataset.id)); },
@@ -3125,7 +3165,7 @@ function dragStart() {
 }
 function dragMove(x, y) {
   drag.g.style.transform = `translate(${x - drag.dx}px,${y - drag.dy}px) rotate(-2deg)`;
-  const el = document.elementFromPoint(x, y), t = el && el.closest(drag.slot === 'ev' ? '.week .day[data-k]' : `.mday[data-slot="${drag.slot}"]`);
+  const el = document.elementFromPoint(x, y), t = el && el.closest(drag.slot === 'ev' ? '.week .day[data-k]' : drag.slot === 'pev' ? '.pcol[data-m]' : `.mday[data-slot="${drag.slot}"]`);
   if (drag.t2 !== t) { if (drag.t2) drag.t2.classList.remove('drop-on'); if (t && t !== drag.c) t.classList.add('drop-on'); drag.t2 = t; }
 }
 function dragStop(commit) {
@@ -3133,11 +3173,13 @@ function dragStop(commit) {
   if (drag.on) {
     dragEnd = Date.now(); const t = drag.t2, from = drag.c.dataset.k;
     drag.g.remove(); drag.c.classList.remove('drag-src'); if (t) t.classList.remove('drop-on'); document.body.classList.remove('dragging');
-    if (commit && t && t !== drag.c) { if (drag.slot === 'ev') moveEventToDay(drag.c.dataset.ev, t.dataset.k); else moveMeal(drag.slot, from, t.dataset.k); }
+    if (commit && t && t !== drag.c) { if (drag.slot === 'ev') moveEventToDay(drag.c.dataset.ev, t.dataset.k); else if (drag.slot === 'pev') { const id = drag.c.dataset.ev, mid = t.dataset.m; if (((eventMember(evById(id)) || {}).id || '') !== mid) { if (!unlocked()) askPin(() => setEventPeople(id, {for: mid || null})); else { setEventPeople(id, {for: mid || null}); const who = memberById(mid); toast(`${(evById(id) || {}).title || 'Event'} → ${who ? who.name : 'Everyone'}`); } } } else moveMeal(drag.slot, from, t.dataset.k); }
   }
   drag = null;
 }
 document.addEventListener('pointerdown', e => {
+  const pe = e.target.closest('.pev[data-ev]');
+  if (pe && e.button <= 0) { drag = {c: pe, slot: 'pev', x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse'}; if (drag.touch) drag.timer = setTimeout(() => drag && !drag.on && dragStart(), 320); return; }
   const ce = e.target.closest('.wev[data-ev]');
   if (ce && e.button <= 0) { drag = {c: ce, slot: 'ev', x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse'}; if (drag.touch) drag.timer = setTimeout(() => drag && !drag.on && dragStart(), 320); return; }
   const c = e.target.closest('.mday[data-slot]'); if (!c || e.button > 0 || !mealOn(c.dataset.k, c.dataset.slot)) return;
@@ -3156,7 +3198,7 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('.mday[data
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
-  if (Date.now() - dragEnd < 450 && el.closest('.mday, .wev')) return; // the tap that ended a drag
+  if (Date.now() - dragEnd < 450 && el.closest('.mday, .wev, .pev')) return; // the tap that ended a drag
   const fn = A[el.dataset.act]; if (fn) { if (el.tagName === 'BUTTON' && el.type !== 'submit') e.preventDefault(); if (needsPin(el.dataset.act, el)) return askPin(() => fn(el, e)); fn(el, e); }
 });
 document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); const fn = F[f.dataset.form]; if (fn) fn(f); });
