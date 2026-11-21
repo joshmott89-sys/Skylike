@@ -426,6 +426,7 @@ body[data-drag="pev"] .pcol{transition:outline .1s}
 .chip3{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;font-size:15px;color:var(--ink);cursor:pointer}.chip3.on{background:var(--pick);border-color:var(--pick);color:#fff}
 .locsug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border-radius:14px;box-shadow:0 12px 32px rgba(10,20,40,.22);overflow:hidden;max-height:300px;overflow-y:auto}
 .locopt{display:grid;gap:2px;width:100%;text-align:left;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:52px}.locopt:last-child{border-bottom:0}.locopt small{color:var(--ink-2);font-size:13.5px}.locopt:hover,.locopt:focus{background:color-mix(in srgb,var(--ocean-2) 8%,transparent)}
+.locrow{gap:8px;flex-wrap:nowrap}.locopt.asis b{color:var(--pick)}body.night .locopt.asis b{color:#8CC3DC}
 .locnone{margin:0;padding:12px 14px;color:var(--ink-2);font-size:14px}
 .plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
@@ -766,7 +767,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0625'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0700'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1581,15 +1582,15 @@ function cropSheet(file, id) {
 }
 /* Location box: saved places as one-tap chips, and type-to-search (OpenStreetMap's Photon, near home). */
 function locField(value, opts = {}) {
-  const pl = places();
+  const pl = places(), lid = 'loc' + Math.random().toString(36).slice(2, 8);
   return `<div class="locf">${opts.noChips || !pl.length ? '' : `<div class="locchips">${pl.map(p => `<button type="button" class="chip3 ${value && normLoc(value) === normLoc(p.name) ? 'on' : ''}" data-act="loc-place" data-name="${esc(p.name)}">${p.emoji || '📍'} ${esc(p.name)}</button>`).join('')}</div>`}
-    <input class="input" name="${opts.name || 'location'}" data-locsearch="1" placeholder="${opts.ph || 'Where? Start typing, e.g. Bounce'}" value="${esc(value || '')}" maxlength="200" autocomplete="off" autocapitalize="words">
+    <div class="row locrow"><input class="input grow" id="${lid}" name="${opts.name || 'location'}" data-locsearch="1" placeholder="${opts.ph || 'Where? Type or say it, e.g. Bounce'}" value="${esc(value || '')}" maxlength="200" autocomplete="off" autocapitalize="words">${micBtn('#' + lid)}</div>
     <input type="hidden" name="${opts.name || 'location'}_lat"><input type="hidden" name="${opts.name || 'location'}_lon">
     <div class="locsug" role="listbox" hidden></div></div>`;
 }
 let locTimer = 0, locSeq = 0;
 function locSearch(inp) {
-  const box = inp.parentElement.querySelector('.locsug'), q = inp.value.trim(); clearTimeout(locTimer);
+  const box = inp.closest('.locf').querySelector('.locsug'), q = inp.value.trim(); clearTimeout(locTimer);
   inp.form && (inp.form.querySelector(`[name="${inp.name}_lat"]`).value = '');
   if (q.length < 3 || placeFor(q)) { box.hidden = true; box.innerHTML = ''; return; }
   locTimer = setTimeout(async () => {
@@ -1602,13 +1603,14 @@ function locSearch(inp) {
         return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
       }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
       S._locList = list;
-      box.innerHTML = list.length ? list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') : `<p class="locnone">Not on the free map. Small businesses often aren't. Type its street address to get drive times, or keep the name as it is.</p>`;
+      const asis = `<button type="button" class="locopt asis" data-act="loc-asis"><b>✓ Use “${esc(q)}” as written</b><small>${list.length ? 'None of these? Keep what you typed' : 'Not on the free map (small businesses often aren\'t). Add a street address later for drive times.'}</small></button>`;
+      box.innerHTML = list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') + asis;
       box.hidden = false;
     } catch { box.hidden = true; }
   }, 350);
 }
 document.addEventListener('input', e => { const t = e.target; if (t && t.dataset && t.dataset.locsearch) locSearch(t); });
-document.addEventListener('focusout', e => { const t = e.target; if (t && t.dataset && t.dataset.locsearch) setTimeout(() => { const b = t.parentElement && t.parentElement.querySelector('.locsug'); if (b && !b.contains(document.activeElement)) b.hidden = true; }, 250); });
+document.addEventListener('focusout', e => { const t = e.target; if (t && t.dataset && t.dataset.locsearch) setTimeout(() => { const b = t.closest('.locf') && t.closest('.locf').querySelector('.locsug'); if (b && !b.contains(document.activeElement)) b.hidden = true; }, 250); });
 function placesPanelHTML() {
   const pl = places(), st = settings();
   return `<div class="panel" id="placespanel"><h2>Places</h2><p class="help">Places you go a lot. They show as one-tap buttons when you add an event, and driving times and leave reminders use them.</p>
@@ -2661,6 +2663,7 @@ const A = {
     const next = ids.includes(m) ? ids.filter(x => x !== m) : ids.concat(m); inp.value = next.join(','); el.classList.toggle('on', next.includes(m)); el.setAttribute('aria-pressed', next.includes(m));
   },
   'loc-place'(el) { const f = el.closest('.locf'), inp = f.querySelector('[data-locsearch]'); inp.value = el.dataset.name; f.querySelectorAll('.chip3').forEach(c => c.classList.toggle('on', c === el)); const b = f.querySelector('.locsug'); b.hidden = true; },
+  'loc-asis'(el) { const f = el.closest('.locf'), inp = f.querySelector('[data-locsearch]'); f.querySelector(`[name="${inp.name}_lat"]`).value = ''; const b = f.querySelector('.locsug'); b.hidden = true; b.innerHTML = ''; f.querySelectorAll('.chip3').forEach(c => c.classList.remove('on')); inp.blur(); },
   'loc-choose'(el) { const x = (S._locList || [])[+el.dataset.i]; if (!x) return; const f = el.closest('.locf'), inp = f.querySelector('[data-locsearch]'); inp.value = x.label; f.querySelector(`[name="${inp.name}_lat"]`).value = x.lat; f.querySelector(`[name="${inp.name}_lon"]`).value = x.lon; rememberGeo(x.label, x.lat, x.lon); const b = f.querySelector('.locsug'); b.hidden = true; b.innerHTML = ''; f.querySelectorAll('.chip3').forEach(c => c.classList.remove('on')); },
   'place-edit'(el) { placeSheet(el.dataset.id); },
   'place-preset'(el) { const f = el.closest('form'); f.name.value = el.dataset.n; f.emoji.value = el.dataset.e; },
