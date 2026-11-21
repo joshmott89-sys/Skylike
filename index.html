@@ -49,16 +49,23 @@ svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stro
 #app{display:grid;grid-template-columns:var(--rail) 1fr;height:100dvh;height:100vh}
 @supports(height:100dvh){#app{height:100dvh}}
 #app{height:var(--app-h,100dvh)}
-.rail{background:var(--ocean);color:var(--ocean-ink);display:flex;flex-direction:column;align-items:center;padding:calc(18px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom));gap:8px;transition:background .6s}
+.rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:var(--ocean);color:var(--ocean-ink);display:flex;flex-direction:column;align-items:center;padding:calc(18px + env(safe-area-inset-top)) 0 calc(14px + env(safe-area-inset-bottom));gap:8px;transition:background .6s}
 .faces{display:flex;flex-direction:column;gap:12px;padding-bottom:14px;margin-bottom:6px;border-bottom:1px solid rgba(230,242,247,.14)}
 .face{width:56px;height:56px;border-radius:50%;border:3px solid transparent;display:grid;place-items:center;font-weight:700;font-size:22px;color:#fff;background:var(--c,#2F7BB5);transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s}
 .face.on{border-color:var(--apricot);transform:scale(1.06)}
+.who{display:flex;flex-direction:column;align-items:center;gap:3px;width:76px;padding:6px 0 5px;flex:none;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s,color .2s}
+.who .face{width:44px;height:44px;font-size:19px;border:3px solid transparent}.who span:last-child{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who.on{background:rgba(0,10,20,.42);color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}.who.on .face{border-color:var(--apricot)}
+.fdiv{display:block;width:40px;height:1px;background:rgba(230,242,247,.18);margin:4px auto}
+.faces{gap:4px;padding-bottom:8px;margin-bottom:2px}
+.kidnav svg{width:30px;height:30px}.kidnav{min-height:76px;font-size:14px}
+.kidsolo{max-width:1100px}.kidsolo .kid{box-shadow:var(--shadow)}.kidsolo .ktiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.kidsolo .ktile{min-height:150px}.kidsolo .ktile .em{font-size:64px}.kidsolo .ktile .lb{font-size:19px}.kidsolo .kh h2{font-size:34px}
 .face small{display:block}
 .face{white-space:nowrap;line-height:1;overflow:hidden}
 .face.two{font-size:16px;letter-spacing:-1px}
 .face.lg.two{font-size:25px}
 .face.lg{width:68px;height:68px;font-size:36px;flex:none}
-.navbtn{width:68px;min-height:62px;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12.5px;font-weight:600;letter-spacing:.01em;transition:background .2s,color .2s}
+.navbtn{flex:none;width:68px;min-height:52px;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12.5px;font-weight:600;letter-spacing:.01em;transition:background .2s,color .2s}
 .navbtn:hover{color:var(--ocean-ink)}
 .navbtn.on{background:rgba(230,242,247,.13);color:#fff}
 body.night .navbtn.on{color:var(--ocean-ink)}
@@ -688,7 +695,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '20.11-2330'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1000'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1161,7 +1168,7 @@ function idleTick() {
       glanceEl.innerHTML = glanceHTML(now); glanceEl.classList.add('on');
     }
   } else glanceEl.classList.remove('on');
-  if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= st.idleReturn && !document.querySelector('.sheet-bg') && !['settings', 'kids'].includes(S.view)) {
+  if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= (S.view === 'kid' ? Math.max(10, st.idleReturn) : st.idleReturn) && !document.querySelector('.sheet-bg') && !['settings', 'kids'].includes(S.view)) {
     S.view = 'family'; S.activeMember = null; render();
   }
 }
@@ -1644,6 +1651,10 @@ function kidColumn(kid, k, now) {
     ${!r ? `<div class="kblock knext"><div class="kt">${next ? `Later: ${esc(next.emoji || '')} ${esc(routineName(next))}<span class="num">from ${esc(fmtHM(next.starts))}</span>` : 'No more routines today'}</div>${next ? `<div class="kpreview">${(next.steps || []).map(st => `<span title="${esc(st.label)}">${esc(st.emoji || '⭐')}</span>`).join('')}</div>` : ''}</div>` : ''}
   </section>`;
 }
+V.kid = () => {
+  const kid = memberById(S.activeMember); if (!kid || kid.kind !== 'kid') { S.view = 'kids'; return V.kids(); }
+  const now = new Date(); return `<div class="page kidsolo" style="--c:${esc(kid.color)}">${kidColumn(kid, dayKey(now), now)}</div>`;
+};
 V.kids = () => {
   const now = new Date(), k = dayKey(now), ks = kids();
   if (!ks.length) return `<div class="page"><h1>Kids</h1><div class="panel"><p class="help">Add the kids in Settings → Family (set Who to Kid), then their routines and jobs show here.</p><button class="btn" data-act="go" data-view="settings" data-tab="family">Add a kid</button></div></div>`;
@@ -1877,9 +1888,12 @@ const NAV = [['family','Home','home'],['kids','Kids','star'],['calendar','Calend
 function railHTML() {
   const adults = S.members.filter(m => m.kind !== 'kid');
   const sync = DEMO ? ['warn', 'Sample'] : !S.online ? ['bad', 'Offline'] : S.realtime === 'live' ? ['', 'Live'] : ['warn', S.realtime === 'lost' ? 'Retrying' : 'Linking'];
-  return `<div class="faces">${adults.map(m => `<button class="face ${S.activeMember === m.id ? 'on' : ''}" style="--c:${esc(m.color)}" data-act="me" data-id="${m.id}" aria-label="${esc(m.name)}'s view">${m.emoji ? esc(m.emoji) : esc(m.name.charAt(0).toUpperCase())}</button>`).join('')}</div>
-    ${NAV.map(([v, l, ic]) => `<button class="navbtn ${(S.view === v || (v === 'family' && ['focus','planner'].includes(S.view))) ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}
-    <span class="grow"></span><button class="syncdot ${sync[0]}" data-act="go" data-view="settings" data-tab="admin" title="${S.lastData ? 'Updated ' + ago((Date.now() - S.lastData) / 60e3) : ''}"><i></i>${sync[1]}</button>`;
+  const kidsList = kids(), kidOn = S.view === 'kid' && memberById(S.activeMember);
+  const faceBtn = m => `<button class="who ${S.activeMember === m.id ? 'on' : ''}" data-act="me" data-id="${m.id}" aria-pressed="${S.activeMember === m.id}" aria-label="${esc(m.name)}'s view">${avatar(m)}<span>${esc(m.name)}</span></button>`;
+  const KNAV = [['kid', 'My day', 'star'], ['kid-stars', 'Rewards', 'gift'], ['kid-timer', 'Timer', 'timer']];
+  return `<div class="faces">${adults.map(faceBtn).join('')}${kidsList.length ? `<i class="fdiv"></i>${kidsList.map(faceBtn).join('')}` : ''}</div>
+    ${kidOn ? KNAV.map(([v, l, ic]) => `<button class="navbtn kidnav ${v === 'kid' ? 'on' : ''}" data-act="${v === 'kid' ? 'go' : v}" data-view="kid" data-id="${kidOn.id}">${icon(ic)}${l}</button>`).join('') + `<span class="grow"></span><button class="navbtn" data-act="me" data-id="${kidOn.id}">${icon('home')}Grown-ups</button>` : NAV.filter(([v]) => !(v === 'kids' && kidsList.length)).map(([v, l, ic]) => `<button class="navbtn ${(S.view === v || (v === 'family' && ['focus','planner'].includes(S.view))) ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('') + '<span class="grow"></span>'}
+    <button class="syncdot ${sync[0]}" data-act="go" data-view="settings" data-tab="admin" title="${S.lastData ? 'Updated ' + ago((Date.now() - S.lastData) / 60e3) : ''}"><i></i>${sync[1]}</button>`;
 }
 function tabbarHTML() {
   const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['meals','Meals','meal'],['settings','More','gear']];
@@ -2207,7 +2221,9 @@ const A = {
   go(el) { if (el.dataset.view === 'calendar' && Date.now() - lastCalRefresh > 120e3) refreshCalendar(false); S.view = el.dataset.view;
     if (el.dataset.list) S.listId = el.dataset.list;
     if (el.dataset.mode) { S.calMode = el.dataset.mode; S.calOffset = 0; S.dayKey = el.dataset.k || dayKey(new Date()); } if (el.dataset.tab) S.settingsTab = el.dataset.tab; if (S.view === 'family') { S.activeMember = null; if (isPhone()) { const me = S.members.find(m => S.session && m.user_id === S.session.user.id); if (me && me.home_view !== 'family') { S.activeMember = me.id; S.view = me.home_view; } } } closeSheet(); render(); },
-  me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.home_view === 'family' ? 'family' : m.home_view; } render(); },
+  me(el) { const m = memberById(el.dataset.id); if (S.activeMember === m.id) { S.activeMember = null; S.view = 'family'; } else { S.activeMember = m.id; S.view = m.kind === 'kid' ? 'kid' : m.home_view === 'family' ? 'family' : m.home_view; } render(); },
+  'kid-stars'(el) { A['kid-rewards']({dataset: {id: el.dataset.id}}); },
+  'kid-timer'() { A['timer-open'](); },
   stab(el) { S.settingsTab = el.dataset.tab; render(); },
   wake() { $('#night').classList.remove('on'); $('#glance').classList.remove('on'); stopSaver(); S.lastTouch = Date.now(); },
   'close-sheet'(el, e) { if (e.target === el || el.tagName === 'BUTTON') closeSheet(); },
