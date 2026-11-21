@@ -210,6 +210,7 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .lgm{font-size:13.5px;font-weight:650;line-height:1.25}.lgm small{color:var(--muted);font-weight:600}
 .lboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.lbox{background:var(--card-2,#f4f1ea);border-radius:14px;padding:12px}.lbh{font-weight:800;margin-bottom:6px}
 .lit{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(0,0,0,.06)}.lit:first-of-type{border-top:0}.ls{font-size:12px;color:var(--muted);width:78px;flex:none}.ln{flex:1;min-width:0}.lr{display:flex;gap:2px;flex:none}.ptag-c{position:relative}.ptag-c input{position:absolute;opacity:0;pointer-events:none}.ptag-c span{display:inline-flex;align-items:center;justify-content:center;min-width:52px;min-height:44px;padding:0 14px;border-radius:99px;background:#fff;border:1px solid rgba(0,0,0,.1);font-weight:700;cursor:pointer}.ptag-c input:checked+span{background:var(--ocean,#0E4C6E);color:#fff;border-color:transparent}.ptag-c input:focus-visible+span{outline:2px solid var(--ocean-2);outline-offset:2px}
+.clearticked{width:100%;justify-content:flex-start;gap:10px;min-height:48px;margin:0 0 6px}
 .shopgo{width:100%;justify-content:flex-start;gap:10px;min-height:56px;margin:12px 0 4px;font-size:17px}.shopgo small{margin-left:auto;font-weight:600;opacity:.8;font-size:13.5px}
 .shop{position:fixed;inset:0;z-index:150;background:var(--bg,#f6f3ec);display:flex;flex-direction:column;height:var(--app-h,100dvh)}
 .shop header{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 18px 12px}.shop header>div{flex:1;min-width:0}
@@ -705,7 +706,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2045'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2130'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1599,7 +1600,7 @@ function shopHTML() {
     <div class="shopbar"><i style="width:${total ? Math.round(done.length / total * 100) : 0}%"></i></div>
     <div class="shopbody">${AISLE_ORDER.filter(a => groups[a]).map(a => `<section><h3>${esc(a)}</h3><ul>${groups[a].map(row).join('')}</ul></section>`).join('')}
     ${done.length ? `<section class="trolley"><h3>In the trolley · ${done.length}</h3><ul>${done.map(row).join('')}</ul></section>` : ''}
-    ${!open.length ? `<button class="btn" style="margin:20px auto;display:flex" data-act="shop-exit">Finish shopping</button>` : ''}</div></div>`;
+    ${!open.length ? `<div class="row" style="justify-content:center;margin:20px 0"><button class="btn" data-act="shop-finish" data-list="${l.id}">Finish and clear ticked</button><button class="btn ghost" data-act="shop-exit">Finish</button></div>` : ''}</div></div>`;
 }
 // Calm layout: fewer things on screen at once, more space. On automatically for people whose home view is Focus (Settings → Screen to change).
 const isCalm = () => { const c = LS.get('calm', 'auto'); if (c === 'on') return true; if (c === 'off') return false; const me = meMember(); return !!(me && me.home_view === 'focus'); };
@@ -1616,6 +1617,7 @@ V.lists = () => {
     return `<div class="page calm"><h1>Lists</h1><div class="tabs">${tabs}</div>
       <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
         ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops</button>` : ''}
+        ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
         <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
         <div class="foldbar">${done.length ? `<button class="fold ${showDone ? 'open' : ''}" data-act="fold" data-k="ldone:${l.id}" aria-expanded="${showDone}">${icon('right')}${showDone ? 'Hide' : 'Show'} ${done.length} done</button>` : ''}<button class="fold ${more ? 'open' : ''}" data-act="fold" data-k="ltools:${l.id}" aria-expanded="${more}">${icon('right')}More</button></div>
         ${showDone ? `<ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul><div class="row"><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div>` : ''}
@@ -1628,6 +1630,7 @@ V.lists = () => {
     <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200"><button class="btn">${icon('plus')}Add</button></form>
       ${(sug => sug.length ? `<div class="quick" aria-label="Quick add">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : '')(suggestionsFor(l))}
       ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops <small>${open.length} item${open.length === 1 ? '' : 's'}, in aisle order</small></button>` : ''}
+      ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
       ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">Total about <b>$${Math.round(listItems(l.id, false).reduce((a, it) => a + (priceOf(it) || 0), 0) || b.total)}</b> · prices per item below · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
       <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
@@ -2215,6 +2218,7 @@ const A = {
   },
   'lunch-open'(el) { lunchSheet(el.dataset.k); },
   'lunch-faves'() { favesSheet(); },
+  async 'shop-finish'(el) { A['shop-exit'](); await A['clear-done']({dataset: {id: el.dataset.list}}); toast('Shopping done. Ticked items cleared and added to the pantry.'); },
   'push-on'() { pushEnable(); },
   'push-test'() { pushTest(); },
   'push-recheck'() { S._push = null; render(); },
