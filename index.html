@@ -429,6 +429,7 @@ body[data-drag="pev"] .pcol{transition:outline .1s}
 .locnone{margin:0;padding:12px 14px;color:var(--ink-2);font-size:14px}
 .plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.smarthint{margin:-4px 0 0;font-size:14px;font-weight:700;color:var(--pick)}body.night .smarthint{color:#8CC3DC}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -765,7 +766,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0640'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0620b'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1624,6 +1625,62 @@ function placeSheet(id) {
       <label class="lbl" style="margin-top:10px">Address</label>${locField(p ? p.address : '', {noChips: true, ph: isHome ? 'Start typing your street' : 'Start typing, e.g. Bounce Malaga'})}
       ${isHome ? `<p class="help">Or stand at home and <button type="button" class="linkbtn" data-act="use-location">use this device's location</button>.</p>` : ''}
       <div class="row" style="margin-top:12px"><button class="btn">Save</button>${p && !isHome ? `<button type="button" class="btn ghost" data-act="place-del" data-id="${p.id}">Delete</button>` : ''}</div></form>`, {focus: false});
+}
+/* Smart title: "Dancing for Elowyn at 10am Saturday at Kindy" fills the time, day, people and place.
+   Works on the device, no AI needed. Only fills what it finds; the title keeps the rest. */
+function parseEventText(raw, baseDay) {
+  let t = ' ' + String(raw || '').replace(/\s+/g, ' ').trim() + ' ';
+  const out = {}, cut = re => { t = t.replace(re, ' '); };
+  const to24 = (h, m, ap) => { h = +h; m = +(m || 0); if (ap) { ap = ap.toLowerCase(); if (ap.startsWith('p') && h < 12) h += 12; if (ap.startsWith('a') && h === 12) h = 0; } else if (h >= 1 && h <= 6) h += 12; return h <= 23 && m <= 59 ? String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') : null; };
+  // time range "2-4pm", "2 to 4:30pm", "10am till 11"
+  let m = t.match(/\s(?:from\s+|at\s+|@\s*)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?\s*(?:-|–|to|till|until)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\s/i);
+  if (m) { const ap2 = m[6], ap1 = m[3] || (+m[1] <= +m[4] || +m[4] === 12 ? ap2 : (ap2.toLowerCase().startsWith('p') ? 'am' : 'pm')); out.start = to24(m[1], m[2], ap1); out.end = to24(m[4], m[5], ap2); cut(m[0].replace(/\s$/, '') ? new RegExp(m[0].trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : /$^/); }
+  else {
+    m = t.match(/\s(?:at\s+|@\s*|from\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\s/i) || t.match(/\s(?:at|@)\s*(\d{1,2})[:.](\d{2})()\s/i);
+    if (m) { out.start = to24(m[1], m[2], m[3]); cut(new RegExp(m[0].trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')); }
+    else if (/\s(at\s+)?(noon|midday)\s/i.test(t)) { out.start = '12:00'; cut(/\s(at\s+)?(noon|midday)\s/i); }
+  }
+  if (/\s(all day|all-day)\s/i.test(t)) { out.all_day = true; cut(/\s(all day|all-day)\s/i); }
+  // day
+  const base = baseDay || dayKey(new Date()), wd = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  if (/\s(today|tonight|this (morning|afternoon|arvo|evening))\s/i.test(t)) { out.day = dayKey(new Date()); if (/tonight|evening/i.test(t) && !out.start) out.start = '18:00'; cut(/\s(today|tonight|this (morning|afternoon|arvo|evening))\s/i); }
+  else if (/\stomorrow\s/i.test(t)) { out.day = addDaysKey(dayKey(new Date()), 1); cut(/\s(on\s+)?tomorrow\s/i); }
+  else if ((m = t.match(/\s(?:on\s+)?(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)(?:\s+of)?(?:\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*)?\s/i)) || (m = t.match(/\s(?:on\s+)?(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s/i))) {
+    const now = new Date(dayKey(new Date()) + 'T12:00:00Z'), mons = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    let mo = m[2] ? mons.indexOf(m[2].toLowerCase().slice(0, 3)) : now.getUTCMonth(), y = now.getUTCFullYear(), d = +m[1];
+    let k = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; if (k < dayKey(new Date())) { if (m[2]) y++; else { mo++; if (mo > 11) { mo = 0; y++; } } k = `${y}-${String(mo + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`; }
+    if (d >= 1 && d <= 31) { out.day = k; cut(new RegExp(m[0].trim(), 'i')); cut(/\s(on\s+)?(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)(day|nesday|sday|urday|rsday)?\s/i); }
+  } else if ((m = t.match(/\s(?:on\s+|this\s+|next\s+)?(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)(?:day|nesday|sday|urday|rsday)?\s/i))) {
+    const i = wd.findIndex(w => w.startsWith(m[1].toLowerCase().slice(0, 3))), today = new Date(dayKey(new Date()) + 'T12:00:00Z').getUTCDay();
+    let add = (i - today + 7) % 7; if (add === 0 && /next\s/i.test(m[0])) add = 7; out.day = addDaysKey(dayKey(new Date()), add); cut(new RegExp(m[0].trim(), 'i'));
+  }
+  // people: "for Elowyn and Violet", or names anywhere
+  const who = [];
+  S.members.forEach(mb => { const n = mb.name.trim(); if (!n) return; const re = new RegExp('\\s(?:for\\s+|with\\s+)?' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "(?:'s)?(?=\\s)", 'i'); if (re.test(t)) { who.push(mb.id); t = t.replace(re, ' '); } });
+  if (/\s(for\s+)?(the\s+)?(kids|girls|boys)\s/i.test(t) && !who.length) { S.members.filter(x => x.kind === 'kid').forEach(x => who.push(x.id)); cut(/\s(for\s+)?(the\s+)?(kids|girls|boys)\s/i); }
+  if (who.length) out.who = who;
+  t = t.replace(/\s(for|and|&|with)\s+(?=(for|and|&|with)?\s*$)/gi, ' ');
+  // place: a saved place after at/to/@, else "at Something" at the end
+  const pl = places().find(x => new RegExp('\\s(?:at|to|@|in)\\s+(?:the\\s+)?' + x.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=\\s)', 'i').test(t));
+  if (pl) { out.location = pl.name; t = t.replace(new RegExp('\\s(?:at|to|@|in)\\s+(?:the\\s+)?' + pl.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=\\s)', 'i'), ' '); }
+  else if ((m = t.match(/\s(?:at|@)\s+([A-Za-z0-9'&][^,]{2,60}?)\s*$/))) { out.location = m[1].trim().replace(/(^|\s)([a-z])/g, (x, a2, c2) => a2 + c2.toUpperCase()); t = t.slice(0, m.index) + ' '; }
+  // tidy what's left as the title
+  let title = t.replace(/\s+(on|at|for|and|&|with|from|this)\s*$/i, ' ').replace(/^\s*(on|at|for|and|&|with)\s+/i, ' ').replace(/\s{2,}/g, ' ').replace(/\s+([,.])/g, '$1').trim().replace(/[,.\-–]+$/, '').trim();
+  if (title) out.title = title.charAt(0).toUpperCase() + title.slice(1);
+  return out;
+}
+function smartFill(f) {
+  const inp = f.title; if (!inp || !inp.value.trim() || inp.dataset.parsed === inp.value) return;
+  const r = parseEventText(inp.value, f.day && f.day.value), done = [];
+  if (r.day && f.day) { f.day.value = r.day; done.push(fmtDay(r.day, {weekday: 'short', day: 'numeric', month: 'short'})); }
+  if (r.all_day && f.allday) { f.allday.checked = true; const tm = f.querySelector('.evtimes'); if (tm) tm.hidden = true; done.push('all day'); }
+  if (r.start && f.start) { const toM = v => +v.slice(0, 2) * 60 + +v.slice(3, 5), dur = Math.max(15, (toM(f.end.value || '00:00') - toM(f.start.value || '00:00')) || 60); f.start.value = r.start; f.start.dataset.prev = r.start; f.end.value = r.end || (n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'))(Math.min(1439, toM(r.start) + dur)); if (f.allday && f.allday.checked) { f.allday.checked = false; const tm = f.querySelector('.evtimes'); if (tm) tm.hidden = false; } done.push(fmtTime(new Date(zonedISO(f.day.value, r.start))) + (r.end ? '–' + fmtTime(new Date(zonedISO(f.day.value, r.end))) : '')); }
+  if (r.who && f.who) { const cal = f.calendar; if (cal && cal.value !== 'skylike' && [...cal.options].some(o => o.value === 'skylike') && !twoWayCals().length) cal.value = 'skylike';
+    const w = f.querySelector('.evwho'); if (w) w.hidden = false; f.who.value = r.who.join(','); f.querySelectorAll('[data-act="who-tog"]').forEach(b => { const on = r.who.includes(b.dataset.m); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); done.push(andList(r.who.map(id => memberById(id).name))); }
+  if (r.location && f.location && !f.location.value.trim()) { f.location.value = r.location; f.querySelectorAll('.locf .chip3').forEach(c => c.classList.toggle('on', normLoc(c.dataset.name) === normLoc(r.location))); done.push(r.location); }
+  if (done.length && r.title) inp.value = r.title;
+  inp.dataset.parsed = inp.value;
+  const h = f.querySelector('.smarthint'); if (h) { h.hidden = !done.length; h.textContent = done.length ? '✨ Filled in: ' + done.join(' · ') : ''; }
 }
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -2608,7 +2665,7 @@ const A = {
   'place-edit'(el) { placeSheet(el.dataset.id); },
   'place-preset'(el) { const f = el.closest('form'); f.name.value = el.dataset.n; f.emoji.value = el.dataset.e; },
   async 'place-del'(el) { await saveSettings({places: (settings().places || []).filter(p => p.id !== el.dataset.id)}); closeSheet(); toast('Place deleted'); },
-  'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
+  'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (inp.id === 'ev-title') smartFill(inp.form); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
   'ev-import'() { eventImportSheet(); },
   'ev-voice'(el) { listen(t => readEvents({text: t}, t), el); toast('Listening… say what\'s on, e.g. “Swimming Saturday 9am at Craigie”', 3500); },
   'ev-draft-edit'(el) { const [d] = S._evReview.splice(+el.dataset.i, 1); if (!d) return; S._evDraft = d; eventForm(null); },
@@ -2867,7 +2924,7 @@ function eventForm(e, k) {
   sheet(`<h2>${e ? 'Edit event' : 'Add an event'}</h2>
     <form data-form="ev-save" data-id="${e ? e.id : ''}" class="evform">
       ${e || pre0.title ? '' : `<div class="evimp"><button type="button" class="btn soft sm" data-act="ev-import">${icon('camera')} From a photo</button>${canListen() ? `<button type="button" class="btn soft sm" data-act="ev-voice">${icon('mic')} Say it</button>` : ''}<button type="button" class="btn soft sm" data-act="ev-import">Paste text</button></div>`}
-      <div class="row evtitle"><input class="input grow" id="ev-title" name="title" placeholder="What's on? e.g. Swimming" value="${esc(e ? e.title : (pre.title || ''))}" maxlength="120" required>${micBtn('#ev-title')}</div>
+      <div class="row evtitle"><input class="input grow" id="ev-title" name="title" data-change="ev-smart" placeholder="e.g. Dancing for Elowyn at 10am Saturday" value="${esc(e ? e.title : (pre.title || ''))}" maxlength="120" required>${micBtn('#ev-title')}</div><p class="smarthint" hidden></p>
       ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
       ${whoSel}
       <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
@@ -3114,6 +3171,7 @@ const F = {
     S._fb = null; closeSheet(); toast('Thanks! Your feedback has been sent.', 3500);
   },
   async 'ev-save'(f) {
+    smartFill(f);
     const id = f.dataset.id, title = f.title.value.trim(), day = f.day.value, allDay = f.allday.checked; if (!title || !day) return;
     let start, end;
     if (allDay) { start = day; end = addDaysKey(day, 1); }
@@ -3342,6 +3400,7 @@ document.addEventListener('change', async e => {
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
   if (el.dataset.change === 'avatar-pick' && el.files && el.files[0]) { const f0 = el.files[0]; el.value = ''; return cropSheet(f0, el.dataset.id); }
   if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
+  if (el.dataset.change === 'ev-smart') { smartFill(el.form); return; }
   if (el.dataset.change === 'ev-start') { const f = el.closest('form'), en = f.end, toM = v => { const [h, m] = String(v || '').split(':').map(Number); return h * 60 + m; }, fromM = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
     if (el.value) { let dur = toM(en.value) - toM(el.dataset.prev); if (!(dur > 0)) dur = 60; en.value = fromM(Math.min(23 * 60 + 59, toM(el.value) + dur)); el.dataset.prev = el.value; } return; }
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
