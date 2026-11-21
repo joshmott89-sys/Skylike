@@ -53,9 +53,9 @@ svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stro
 .faces{display:flex;flex-direction:column;gap:12px;padding-bottom:14px;margin-bottom:6px;border-bottom:1px solid rgba(230,242,247,.14)}
 .face{width:56px;height:56px;border-radius:50%;border:3px solid transparent;display:grid;place-items:center;font-weight:700;font-size:22px;color:#fff;background:var(--c,#2F7BB5);transition:transform .2s cubic-bezier(.2,.8,.2,1),border-color .2s}
 .face.on{border-color:var(--apricot);transform:scale(1.06)}
-.who{display:flex;flex-direction:column;align-items:center;gap:3px;width:76px;padding:6px 0 5px;flex:none;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s,color .2s}
-.who .face{width:44px;height:44px;font-size:19px;border:3px solid transparent}.who span:last-child{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who.on{background:rgba(0,10,20,.42);color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}.who.on .face{border-color:var(--apricot)}
+.faces .who{display:flex;flex-direction:column;align-items:center;gap:3px;width:76px;padding:6px 0 5px;flex:none;border:0;border-radius:18px;background:transparent;color:var(--ocean-ink-2);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .2s,color .2s}
+.faces .who .face{width:44px;height:44px;font-size:19px;border:3px solid transparent}.faces .who span:last-child{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.faces .who.on{background:rgba(0,10,20,.42);color:#fff;box-shadow:inset 0 0 0 2px rgba(255,255,255,.18)}.faces .who.on .face{border-color:var(--apricot)}
 .fdiv{display:block;width:40px;height:1px;background:rgba(230,242,247,.18);margin:4px auto}
 .faces{gap:4px;padding-bottom:8px;margin-bottom:2px}
 .kidnav svg{width:30px;height:30px}.kidnav{min-height:76px;font-size:14px}
@@ -210,6 +210,7 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .lgm{font-size:13.5px;font-weight:650;line-height:1.25}.lgm small{color:var(--muted);font-weight:600}
 .lboxes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.lbox{background:var(--card-2,#f4f1ea);border-radius:14px;padding:12px}.lbh{font-weight:800;margin-bottom:6px}
 .lit{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid rgba(0,0,0,.06)}.lit:first-of-type{border-top:0}.ls{font-size:12px;color:var(--muted);width:78px;flex:none}.ln{flex:1;min-width:0}.lr{display:flex;gap:2px;flex:none}.ptag-c{position:relative}.ptag-c input{position:absolute;opacity:0;pointer-events:none}.ptag-c span{display:inline-flex;align-items:center;justify-content:center;min-width:52px;min-height:44px;padding:0 14px;border-radius:99px;background:#fff;border:1px solid rgba(0,0,0,.1);font-weight:700;cursor:pointer}.ptag-c input:checked+span{background:var(--ocean,#0E4C6E);color:#fff;border-color:transparent}.ptag-c input:focus-visible+span{outline:2px solid var(--ocean-2);outline-offset:2px}
+.backupai{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.backupai summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;list-style:none}.backupai summary::-webkit-details-marker{display:none}
 .clearticked{width:100%;justify-content:flex-start;gap:10px;min-height:48px;margin:0 0 6px}
 .shopgo{width:100%;justify-content:flex-start;gap:10px;min-height:56px;margin:12px 0 4px;font-size:17px}.shopgo small{margin-left:auto;font-weight:600;opacity:.8;font-size:13.5px}
 .shop{position:fixed;inset:0;z-index:150;background:var(--bg,#f6f3ec);display:flex;flex-direction:column;height:var(--app-h,100dvh)}
@@ -283,6 +284,14 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1.4}
 .allow{margin:6px 0 14px}.allow summary{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:700;cursor:pointer;list-style:none}.allow summary::-webkit-details-marker{display:none}.allow summary svg{width:18px;height:18px;transition:transform .2s}.allow[open] summary svg{transform:rotate(90deg)}
 .evform{display:grid;gap:12px}.evrow{gap:12px;align-items:end}.evrow .lbl{display:grid;gap:4px}.evad{display:flex!important;grid-auto-flow:column;align-items:center;gap:8px;min-height:48px}.evad input{width:22px;height:22px;accent-color:var(--ocean-2)}
+.calhead .cnav{display:inline-flex;gap:6px;align-items:center}
+@media (max-width:700px){
+  .page h1.calhead{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"t add ref" "seg nav nav";gap:10px 8px;align-items:center}
+  .calhead .ct{grid-area:t;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.calhead .sp{display:none}
+  .calhead .cal-add{grid-area:add}.calhead .cref{grid-area:ref}
+  .calhead .cseg{grid-area:seg;display:flex;min-width:0}.calhead .cseg button{flex:1;padding:9px 6px;font-size:15px;min-height:44px}
+  .calhead .cnav{grid-area:nav;justify-self:end;gap:4px}.calhead .cnav .icon-btn{width:44px;min-width:44px;height:44px}.calhead .cnav .btn{padding:0 12px;min-height:44px;font-size:15px}
+}
 .cal-add{flex:none}@media (max-width:700px){.cal-add span{display:none}.cal-add{min-width:48px;padding:0;justify-content:center}}
 .btn.danger{color:#B3261E}.btn.danger:not(.ghost){background:#B3261E;color:#fff}
 .week .day.drop-on{outline:3px dashed var(--ocean-2);outline-offset:-3px}
@@ -638,6 +647,7 @@ body.night .hero .leave{color:var(--apricot)}
   .zone{overflow:visible}
   .week{grid-template-columns:1fr}
   .day{min-height:0}
+  .week .day:not(.today):not(:has(.wev)){padding:6px 14px;gap:0;border-radius:14px}.week .day:not(.today):not(:has(.wev)) .dh{align-items:center}.week .day:not(.today):not(:has(.wev)) .dh b{font-size:19px;color:var(--ink-2)}
   .row>.grow{min-width:40px}
   .page h1{font-size:28px}
   .capture{bottom:calc(84px + env(safe-area-inset-bottom))}
@@ -706,7 +716,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2130'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2215'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -936,7 +946,7 @@ async function loadAll() {
   TABLES.forEach((t, i) => { if (!rest[i].error) S[KEY_OF[t]] = rest[i].data || []; });
   S.lastData = Date.now(); saveSnap();
   refreshCalStatus(); loadHistory(); loadBalances(); loadTravel().then(() => setTimeout(computeTravel, 3000));
-  sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; });
+  sb.rpc('ai_keys', {p_household: S.hid}).then(({data, error}) => { if (error) return sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; }); S.aiGemini = !!data?.gemini; S.aiBackup = !!data?.openrouter; S.aiOn = S.aiGemini || S.aiBackup; });
   return true;
 }
 // Driving times worked out on the server (home → event address), used for "leave in" countdowns.
@@ -1543,13 +1553,11 @@ V.calendar = () => {
   const today = dayKey(new Date()), mode = S.calMode;
   if (!S.dayKey) S.dayKey = today;
   const title = mode === 'day' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
-  const head = `<h1>${title}<span class="sp"></span>
-    <button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button>
+  const head = `<h1 class="calhead"><span class="ct">${title}</span><span class="sp"></span>
+    <span class="cnav"><button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button><button class="btn soft" data-act="cal-shift" data-n="0">Today</button><button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button></span>
+    <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
     <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
-    <button class="icon-btn" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button>
-    <button class="btn soft" data-act="cal-shift" data-n="0">Today</button>
-    <button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button>
-    <span class="seg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span></h1>`;
+    <button class="icon-btn cref" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button></h1>`;
   const noCal = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Add a calendar in Settings to fill this in.</p>`;
   if (mode === 'day') {
     const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
@@ -1882,11 +1890,16 @@ V.settings = () => {
       <form data-form="add-reward" class="row" style="margin-top:12px"><input class="input" name="emoji" placeholder="🛝" maxlength="4" style="width:70px;text-align:center;font-size:22px"><input class="input grow" name="title" placeholder="e.g. Trip to the park" required maxlength="40"><label class="lbl">Stars <input class="input num" type="number" min="1" max="500" name="cost" value="10" style="width:80px"></label><button class="btn">Add</button></form></div>`; }
   if (t === 'kitchen') { const ks = kset();
     body = `<div class="panel"><h2>AI helper</h2><p class="help">Meal plans, pantry photos, the grocery brain-dump and cost estimates use Google's Gemini. A key is free, needs no card, and is saved once for the whole household on the server (never on the tablet).</p>
-      <p><b>${S.aiOn ? '✓ Connected' : 'Not set up yet'}</b>${S.aiModel ? ` <span class="lbl">(${esc(S.aiModel)})</span>` : ''}</p>
+      <p><b>${(S.aiGemini ?? S.aiOn) ? '✓ Connected' : 'Not set up yet'}</b>${S.aiModel ? ` <span class="lbl">(${esc(S.aiModel)})</span>` : ''}</p>
       <ol class="steps"><li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> and sign in with any Google account.</li><li>Tap <b>Create API key</b> (accept the terms if asked).</li><li>Copy the key, paste it below and tap Save.</li></ol>
       <p class="help">If Google says the request is <b>“suspicious”</b>, open the link in Chrome itself (not from inside Skylike), make sure you're signed in to Google, turn off any VPN, or do it on a computer.</p>
       <form data-form="ai-key" class="row"><input class="input grow" name="key" type="password" placeholder="${S.aiOn ? 'Paste a new key to replace it' : 'Paste your key (starts with AIza…)'}" autocomplete="off" required><button class="btn">Save and test</button></form>
-      ${S.aiOn ? `<button class="btn ghost" style="margin-top:8px" data-act="ai-test">Test the connection</button>` : ''}</div>
+      ${S.aiOn ? `<button class="btn ghost" style="margin-top:8px" data-act="ai-test">Test the connection</button>` : ''}
+      <details class="backupai" ${S.aiBackup ? '' : ''}><summary><b>Backup AI</b> <span class="lbl">${S.aiBackup ? '✓ On' : 'Optional'}</span></summary>
+        <p class="help">If Gemini hits its free daily limit or is busy, Skylike can pass the same request to a free model on OpenRouter instead, so a pantry scan or meal plan doesn't stall halfway. Also free, no card.</p>
+        <ol class="steps"><li>Open <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">openrouter.ai/settings/keys</a> and sign in (Google works).</li><li>Tap <b>Create key</b>, give it any name, leave the credit limit empty.</li><li>Copy the key (starts with sk-or-…), paste it below and tap Save.</li></ol>
+        <form data-form="or-key" class="row"><input class="input grow" name="key" type="password" placeholder="${S.aiBackup ? 'Paste a new key to replace it' : 'Paste your key (starts with sk-or-…)'}" autocomplete="off" required><button class="btn">Save and test</button></form>
+        ${S.aiBackup ? `<button class="btn ghost" style="margin-top:8px" data-act="or-off">Remove backup key</button>` : ''}</details></div>
     <div class="panel"><h2>Meal planning</h2><form data-form="kitchen">
       <div class="lbl">What the family likes, and anything to avoid</div><textarea class="input" name="prefs" rows="3" placeholder="e.g. Kid-friendly, mild spice, no mushrooms, fish once a week, vegetarian Mondays">${esc(ks.prefs)}</textarea>
       <div class="row" style="margin-top:10px"><label class="lbl">People <input class="input num" type="number" min="1" max="12" name="servings" value="${ks.servings}" style="width:80px"></label><label class="lbl">Shop day <select class="input" name="shopday" style="width:auto">${['', 0, 1, 2, 3, 4, 5, 6].map(d => `<option value="${d}" ${String(ks.shopDay ?? '') === String(d) ? 'selected' : ''}>${d === '' ? 'No set day' : WD[d]}</option>`).join('')}</select></label><label class="lbl">Weekly dinner budget $ <input class="input num" type="number" min="0" max="2000" name="budget" value="${ks.budget || ''}" style="width:100px"></label><button class="btn">Save</button></div></form></div>`; }
@@ -2327,7 +2340,8 @@ const A = {
     LS.set('gbudget:' + el.dataset.list, {total, count: all.length, at: Date.now(), items: {}}); render();
     toast(items.length ? `Priced ${items.length} new item${items.length === 1 ? '' : 's'}${all.length > items.length ? `, kept ${all.length - items.length} from before` : ''}. About $${Math.round(total)}.` : `All ${all.length} items already priced. About $${Math.round(total)}.`, 4500);
   },
-  async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast('Connected ✓'); render(); },
+  async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast(r.gemini ? r.gemini : `Connected ✓${r.backup ? (r.backup === 'rejected' ? ' Backup key was rejected.' : ' Backup ready too.') : ''}`, 4000); render(); },
+  async 'or-off'() { const {error} = await sb.rpc('set_openrouter_key', {p_household: S.hid, p_key: ''}); if (error) return toast("Couldn't remove it."); S.aiBackup = false; S.aiOn = !!S.aiGemini; toast('Backup key removed'); render(); },
   invite() {
     const code = (S.household || {}).join_code || '', link = location.origin + location.pathname + '?join=' + encodeURIComponent(code);
     const msg = `Join our family on Skylike, our shared calendar, lists and meals. Open ${link} on your phone, sign in with your email, and the code ${code} is filled in for you.`;
@@ -2633,8 +2647,14 @@ const F = {
   },
   async 'ai-key'(f) {
     const {error} = await sb.rpc('set_ai_key', {p_household: S.hid, p_key: f.key.value.trim()}); if (error) return toast("Couldn't save the key.");
-    S.aiOn = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
+    S.aiOn = true; S.aiGemini = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
     if (r.error) { toast(r.error, 6000); } else { S.aiModel = r.model; toast('Connected ✓ Meals, pantry photos and the brain-dump are ready.', 4000); } render();
+  },
+  async 'or-key'(f) {
+    const k = f.key.value.trim(); if (!/^sk-or-/.test(k)) return toast('That doesn\'t look like an OpenRouter key. It starts with sk-or-.', 4000);
+    const {error} = await sb.rpc('set_openrouter_key', {p_household: S.hid, p_key: k}); if (error) return toast("Couldn't save the key.");
+    S.aiBackup = true; S.aiOn = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
+    if (r.error || r.backup === 'rejected') toast(r.error || 'OpenRouter didn\'t accept that key. Check it and paste it again.', 6000); else toast('Backup AI on ✓', 3000); render();
   },
   async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || '', days: [...f.querySelectorAll(`input[name="days_${k.id}"]:checked`)].map(i => +i.value)}; });
     await saveSettings({kitchen: {...kset(), lunchbox: lb}}); closeSheet(); toast('Lunchbox favourites saved'); if (S._plan && S._planReopen) { S._planReopen = 0; planSheet(true); } },

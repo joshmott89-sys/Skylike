@@ -1,6 +1,7 @@
 // Skylike AI helper (Gemini, the household's own free key, kept server-side).
 // Signed-in member: { household_id, action, ... }
-// actions: test | groceries | pantry_photo | plan | budget | recipe
+// actions: test | groceries | pantry_photo | plan | budget | recipe | brief | event_parse
+// Backup: if Gemini is out (limit, busy, slow) and the household saved a free OpenRouter key, the same request goes to a free OpenRouter model.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
@@ -76,6 +77,72 @@ async function gemini(key: string, prompt: string, image?: { data: string; mime:
     : lastErr === "unreadable" ? "The AI reply couldn't be read. Try again." : "Google's AI is busy right now. Try again in a minute.");
 }
 
+
+// ---- Backup AI: OpenRouter's free models (the household's own free key) ----
+const ORAPI = "https://openrouter.ai/api/v1";
+let orModels: { list: any[]; at: number } | null = null;
+async function orFree(needImage: boolean): Promise<string[]> {
+  if (!orModels || Date.now() - orModels.at > 6 * 3600e3) {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 10000);
+    try { const r = await fetch(`${ORAPI}/models`, { signal: ctrl.signal }); const d = await r.json(); orModels = { list: d.data || [], at: Date.now() }; }
+    catch { orModels = orModels || { list: [], at: 0 }; } finally { clearTimeout(t); }
+  }
+  const free = orModels.list.filter((m: any) => String(m.id).endsWith(":free") || (m.pricing && +m.pricing.prompt === 0 && +m.pricing.completion === 0 && !/^openrouter\/auto/.test(m.id)));
+  const img = (m: any) => (m.architecture?.input_modalities || []).includes("image") || /vision|vl\b|-vl|gemma-3|llama-4|gemini|mistral-small-3/i.test(m.id);
+  const pref = [/gemini/i, /llama-4/i, /qwen.*(vl|2\.5|3)/i, /mistral-small/i, /gemma-3/i, /deepseek-(chat|v3)/i, /llama-3\.3-70b/i, /gpt-oss/i];
+  const rank = (m: any) => { const i = pref.findIndex(r => r.test(m.id)); return i < 0 ? 99 : i; };
+  return free.filter((m: any) => !needImage || img(m)).filter((m: any) => !/r1\b|thinking|reason/i.test(m.id) || !needImage)
+    .sort((a: any, b: any) => rank(a) - rank(b) || (b.context_length || 0) - (a.context_length || 0)).map((m: any) => m.id).slice(0, 4);
+}
+function parseLoose(text: string) {
+  text = String(text || ""); const t = text.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+  try { return JSON.parse(t); } catch {}
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if (a >= 0 && b > a) return JSON.parse(text.slice(a, b + 1));
+  throw new Error("unreadable");
+}
+async function openrouter(key: string, prompt: string, image?: any, opts: { timeout?: number } = {}) {
+  const imgs = image ? (Array.isArray(image) ? image : [image]) : [];
+  const models = await orFree(imgs.length > 0);
+  if (!models.length) throw new Error(imgs.length ? "The backup AI has no free photo model right now." : "The backup AI has no free model right now.");
+  const content: any[] = [{ type: "text", text: prompt + "\nReply with JSON only." }];
+  imgs.forEach((im: any) => content.push({ type: "image_url", image_url: { url: `data:${im.mime || "image/jpeg"};base64,${im.data}` } }));
+  let lastErr = "busy";
+  for (const model of models) {
+    const t0 = Date.now();
+    for (const fmt of [true, false]) {
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), Math.min(opts.timeout || 60000, 55000));
+      try {
+        const r = await fetch(`${ORAPI}/chat/completions`, {
+          method: "POST", signal: ctrl.signal,
+          headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json", "HTTP-Referer": "https://joshmott89-sys.github.io/Skylike/", "X-Title": "Skylike" },
+          body: JSON.stringify({ model, temperature: 0.4, messages: [{ role: "user", content }], ...(fmt ? { response_format: { type: "json_object" } } : {}) }),
+        });
+        const d = await r.json().catch(() => ({}));
+        console.log(JSON.stringify({ or: model, fmt, ms: Date.now() - t0, status: r.status, err: d?.error?.message }));
+        if (r.status === 401 || r.status === 403) throw new Error("That OpenRouter key wasn't accepted. Check it in Settings → Kitchen.");
+        if (r.status === 400 && fmt) continue; // model doesn't do JSON mode: ask again plainly
+        if (!r.ok) { lastErr = r.status === 429 ? "limit" : "busy"; break; }
+        const text = d?.choices?.[0]?.message?.content || "";
+        try { return { model: "openrouter:" + model, out: parseLoose(text) }; } catch { lastErr = "unreadable"; break; }
+      } catch (e) {
+        if (/wasn't accepted/.test(String((e as Error).message))) throw e;
+        lastErr = "slow"; break;
+      } finally { clearTimeout(t); }
+    }
+  }
+  throw new Error(lastErr === "limit" ? "Both free AIs are at their limit for now. Try again later." : lastErr === "slow" ? "The AI took too long to answer. Try again in a moment." : "The AI is busy right now. Try again in a minute.");
+}
+// Gemini first; if it can't answer (limit, slow, busy) and there's a backup key, hand the same request to OpenRouter.
+async function askAI(keys: { g?: string; o?: string }, prompt: string, image?: any, opts: any = {}) {
+  if (keys.g) {
+    try { return await gemini(keys.g, prompt, image, opts); }
+    catch (e) { if (!keys.o) throw e; console.log(JSON.stringify({ fallback: String((e as Error).message) })); }
+  }
+  if (keys.o) return await openrouter(keys.o, prompt, image, opts);
+  throw new Error("Add a free Gemini key in Settings → Kitchen first.");
+}
+
 // ---- Real recipes: look each planned dinner up on RecipeTin Eats and use its actual ingredient card ----
 const RTE = "https://www.recipetineats.com/wp-json/wp/v2/posts";
 const STOP = new Set(["the","a","an","and","with","of","in","my","easy","best","recipe","nagi","s","recipetin","eats"]);
@@ -142,17 +209,43 @@ Deno.serve(async (req) => {
   const hid = body.household_id as string;
   const { data: m } = await admin.from("memberships").select("user_id").eq("household_id", hid).eq("user_id", u.user.id).maybeSingle();
   if (!m) return json({ error: "not a member" }, 403);
-  const { data: hp } = await admin.from("household_private").select("ai_key").eq("household_id", hid).maybeSingle();
-  const key = hp?.ai_key;
-  if (!key) return json({ error: "Add a free Gemini key in Settings → Kitchen first." }, 400);
+  const { data: hp } = await admin.from("household_private").select("ai_key, openrouter_key").eq("household_id", hid).maybeSingle();
+  const keys = { g: hp?.ai_key || undefined, o: hp?.openrouter_key || undefined };
+  if (!keys.g && !keys.o) return json({ error: "Add a free Gemini key in Settings → Kitchen first." }, 400);
+  const ask = (p: string, img?: any, o?: any) => askAI(keys, p, img, o);
 
   try {
     const a = body.action;
-    if (a === "test") return json({ ok: true, model: await pickModel(key) });
+    if (a === "test") {
+      const out: any = { ok: true };
+      if (keys.g) { try { out.model = await pickModel(keys.g); } catch (e) { out.ok = false; out.gemini = String((e as Error).message); } }
+      if (keys.o) { try { const r = await fetch(`${ORAPI}/key`, { headers: { Authorization: `Bearer ${keys.o}` } }); out.backup = r.ok ? (await orFree(false))[0] || "none free" : "rejected"; if (!r.ok) out.ok = !!out.model; } catch { out.backup = "unreachable"; } }
+      return json(out);
+    }
+    if (a === "brief") {
+      const tone = ({ bubbly: "bubbly and upbeat, warm, a little playful, one light joke at most", sassy: "cheeky and a bit sassy, dry Aussie humour, still kind", plain: "matter-of-fact and brisk, no fluff", calm: "calm, gentle and reassuring, slow pace" } as any)[body.tone] || "warm and friendly";
+      const { out } = await ask(`Write a spoken morning briefing for ${String(body.name || "the family").slice(0, 40)} in Perth, Australia. Tone: ${tone}.
+It will be read aloud, so: plain sentences, no lists, no emoji, no markdown, times like "nine thirty" are fine as "9:30". 50 to 110 words. Australian English.
+Lead with what needs doing first (leave times, lunches to pack, defrosting), then the rest of the day, then one nice thing to look forward to. Only use these facts, don't invent any: ${JSON.stringify(body.facts || {}).slice(0, 3500)}
+Return JSON: {"text":"..."}`);
+      return json({ text: String(out.text || "").slice(0, 1200) });
+    }
+    if (a === "event_parse") {
+      const imgs = (Array.isArray(body.images) ? body.images : []).filter(Boolean).slice(0, 4).map((d: string) => ({ data: String(d), mime: "image/jpeg" }));
+      const text = String(body.text || "").slice(0, 6000);
+      if (!imgs.length && !text) return json({ error: "Nothing to read. Add a photo or some text." }, 400);
+      const { out } = await ask(`${imgs.length ? "These photos show a flyer, invitation, school newsletter, letter or screenshot." : "This is something a parent said or pasted (a message, email or note)."} Pull out every event a family would put on their calendar.
+Today is ${String(body.today || "").slice(0, 10)} (${String(body.weekday || "")}) in Perth, Australia. Resolve relative dates ("this Saturday", "next Tuesday", "the 14th") to real dates on or after today. If a year is missing, use the next time that date comes round.
+Use 24-hour HH:MM times. If no time is given, set all_day true. If only a start time is given, leave end empty. Keep titles short and clear (e.g. "Mia's 5th birthday party", "Swimming lesson"). Put the venue or address in location. Put anything to remember (bring a hat, RSVP by, cost, dress-up theme) in notes, briefly.
+${(body.people || []).length ? "Family members: " + JSON.stringify(body.people).slice(0, 400) + ". If an event is clearly for one of them, set who to that name." : ""}
+${text ? 'Text: """' + text + '"""' : ""}
+Return JSON: {"events":[{"title":"","date":"YYYY-MM-DD","start":"HH:MM","end":"","all_day":false,"location":"","notes":"","who":""}]} (empty list if there are none).`, imgs.length ? imgs : undefined, { timeout: 60000 });
+      return json({ events: (out.events || []).slice(0, 20) });
+    }
 
     if (a === "groceries") {
       const text = String(body.text || "").slice(0, 4000);
-      const { out } = await gemini(key, `Turn this Australian family's grocery brain-dump into a tidy shopping list.
+      const { out } = await ask(`Turn this Australian family's grocery brain-dump into a tidy shopping list.
 Split it into separate items, fix spelling, use Australian names (capsicum, zucchini, mince), keep any quantity they gave, and drop chatter that isn't a grocery item.
 Merge duplicates. Already on the list (don't repeat): ${JSON.stringify(body.existing || []).slice(0, 2000)}.
 Give each an aisle from: ${AISLES}.
@@ -165,7 +258,7 @@ Brain-dump: """${text}"""`);
       const imgs = (Array.isArray(body.images) ? body.images : [body.image]).filter(Boolean).slice(0, 5).map((d: string) => ({ data: String(d), mime: "image/jpeg" }));
       if (!imgs.length) return json({ error: "No photo came through. Try again." }, 400);
       if (imgs.reduce((a: number, x: any) => a + x.data.length, 0) > 14_000_000) return json({ error: "Those photos are too big. Try fewer at once." }, 400);
-      const { out } = await gemini(key, `${imgs.length > 1 ? `These ${imgs.length} photos together show one family's ${body.place || "fridge or pantry"} (e.g. shelves, then each door). Treat them as one inventory and don't list an item twice just because it shows in two photos.` : `This is a photo of a family's ${body.place || "fridge or pantry"}.`} ${body.place === "freezer" ? "Freezers are hard to read: use the text and pictures on bags and boxes, the shape and colour of what's inside clear bags, and name each pack (e.g. \"Frozen peas\", \"Chicken thighs\", \"Fish fingers\", \"Ice cream\"). Look in every drawer and on the door. " : ""}List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
+      const { out } = await ask(`${imgs.length > 1 ? `These ${imgs.length} photos together show one family's ${body.place || "fridge or pantry"} (e.g. shelves, then each door). Treat them as one inventory and don't list an item twice just because it shows in two photos.` : `This is a photo of a family's ${body.place || "fridge or pantry"}.`} ${body.place === "freezer" ? "Freezers are hard to read: use the text and pictures on bags and boxes, the shape and colour of what's inside clear bags, and name each pack (e.g. \"Frozen peas\", \"Chicken thighs\", \"Fish fingers\", \"Ice cream\"). Look in every drawer and on the door. " : ""}List the food and drink items you can clearly identify, with a rough quantity (e.g. "half", "2", "1 bottle", "low").
 Use short, plain Australian names (e.g. "Milk", "Tinned tuna", "Jalapenos"), no brand unless it is the product's common name. Mark items that look nearly finished as low. Skip anything you can't identify confidently. List each item once.
 Already recorded (if an item is the same thing, use EXACTLY this name): ${JSON.stringify(body.existing || []).slice(0, 2500)}.
 If you can see cooked leftovers (food in containers or covered bowls) and can reasonably tell what they are, list them as "Leftover <dish>" with leftover:true and a guess at portions (whole number). If you can't tell what a container holds, skip it.
@@ -177,7 +270,7 @@ Return JSON: {"items":[{"name":"Milk","qty":"half","place":"fridge","low":true},
       const dates = (body.dates || []).slice(0, 7);
       const L = body.lunches;
       // lunches run alongside dinners (quick, Lite model), so they don't slow the plan down
-      const lunchP = L && (L.dates || []).length ? gemini(key, `Plan packed lunchboxes for these dates: ${JSON.stringify(L.dates.slice(0, 7))}. These are lunchbox ITEMS, not cooked meals: e.g. "Vegemite sandwich", "Apple slices", "Cheese stick", "Fruit roll-up", "Popcorn".
+      const lunchP = L && (L.dates || []).length ? ask(`Plan packed lunchboxes for these dates: ${JSON.stringify(L.dates.slice(0, 7))}. These are lunchbox ITEMS, not cooked meals: e.g. "Vegemite sandwich", "Apple slices", "Cheese stick", "Fruit roll-up", "Popcorn".
 ${L.who === "kids" ? `Kids' school lunchboxes in Perth, WA. Nut-free (school rules), no reheating, easy for small hands. Each box has these slots: "Crunch & Sip" (one piece of fruit or veg for the morning break), "Recess" (1-2 snacks), "Lunch" (the main, e.g. a sandwich, wrap, scroll, pasta salad, crackers & cheese), and optionally one "Treat".
 The kids (plan one box per kid per day): ${JSON.stringify(L.kids || [{ name: "Kids" }]).slice(0, 1500)}.
 They're picky: build each box MOSTLY from that kid's likes and the staples, repeat favourites freely across the week, NEVER include anything on their won't-eat list, and add at most ONE new item per kid per week (set "new":true on it).` : `One packed lunch per person for the family (${body.people || 4} people) on each date; use the box name "Everyone" and the slots "Lunch" and "Snack".`}
@@ -185,7 +278,7 @@ ${L.staples ? "Staples that go in every box where they fit: " + String(L.staples
 For each item, "buy" lists the plain grocery products it needs (e.g. Vegemite sandwich → ["Bread","Vegemite","Butter"]). Keep shopping small by reusing products. Estimate the AUD cost of each day's new purchases.
 Return JSON: {"lunches":[{"day":"YYYY-MM-DD","boxes":[{"who":"Ruby","items":[{"slot":"Crunch & Sip","name":"Apple slices","buy":["Apples"],"new":false,"leftover":false}]}],"est_cost":4}]}`).then(r => r.out.lunches || []).catch(() => []) : Promise.resolve([]);
       if (!dates.length) return json({ meals: [], lunches: await lunchP });
-      const { out } = await gemini(key, `Plan family dinners. Cook on these dates (double=true means cook a DOUBLE batch so the next night is leftovers): ${JSON.stringify(dates)}.
+      const { out } = await ask(`Plan family dinners. Cook on these dates (double=true means cook a DOUBLE batch so the next night is leftovers): ${JSON.stringify(dates)}.
 Feeding: ${body.people || 4} people (young kids included). Cooking skill: ${body.skill || "home cook"}. Vibe and effort: ${body.vibe || "standard family dinners"}.
 ${(body.focus || []).length ? "Focus: " + body.focus.join(", ") + ".\n" : ""}${(body.cuisines || []).length ? "Lean toward these cuisines: " + body.cuisines.join(", ") + ".\n" : ""}Tastes and things to avoid: ${String(body.notes || "none given").slice(0, 600)}. Weekly dinner budget: ${body.budget ? "$" + body.budget + " AUD" : "keep it sensible"}.
 ${(body.leftovers || []).length ? "Leftovers in the fridge (too few portions for a family dinner, so don't plan a dinner around them; they're for lunches): " + JSON.stringify(body.leftovers).slice(0, 600) + ".\n" : ""}Use up what's already in the fridge and pantry where it makes sense: ${JSON.stringify(body.pantry || []).slice(0, 1500)}.
@@ -204,13 +297,13 @@ Return JSON: {"meals":[{"day":"YYYY-MM-DD","title":"Tuna Mornay (Tuna Casserole 
     if (a === "recipe") {
       const r = await realRecipe(String(body.title || ""));
       if (r) return json(Object.assign({ emoji: null, est_cost: null, real: true }, r));
-      const { out } = await gemini(key, `Give the main ingredients, with quantities for ${body.servings || 4} people, for the dish "${String(body.title || "").slice(0, 120)}" as made on RecipeTin Eats if it exists there, plus a fitting food emoji and an estimated AUD cost at Woolworths or Coles.
+      const { out } = await ask(`Give the main ingredients, with quantities for ${body.servings || 4} people, for the dish "${String(body.title || "").slice(0, 120)}" as made on RecipeTin Eats if it exists there, plus a fitting food emoji and an estimated AUD cost at Woolworths or Coles.
 Return JSON: {"title":"...","emoji":"🍝","ingredients":[{"name":"...","qty":"..."}],"est_cost":15}`);
       return json(out);
     }
 
     if (a === "budget") {
-      const { out } = await gemini(key, `Estimate what these groceries would cost at Woolworths or Coles in Perth, Australia right now, using typical everyday (non-special) prices for a normal pack size, in AUD.
+      const { out } = await ask(`Estimate what these groceries would cost at Woolworths or Coles in Perth, Australia right now, using typical everyday (non-special) prices for a normal pack size, in AUD.
 Items: ${JSON.stringify(body.items || []).slice(0, 4000)}
 Return one entry per item, in the same order, using each item's name exactly as given.
 Return JSON: {"total":85.5,"items":[{"name":"Milk","est":3.1}]}`);
