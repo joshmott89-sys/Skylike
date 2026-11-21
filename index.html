@@ -766,7 +766,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0620b'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0625'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1602,7 +1602,7 @@ function locSearch(inp) {
         return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
       }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
       S._locList = list;
-      box.innerHTML = list.length ? list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') : `<p class="locnone">No match nearby. You can keep what you typed.</p>`;
+      box.innerHTML = list.length ? list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') : `<p class="locnone">Not on the free map. Small businesses often aren't. Type its street address to get drive times, or keep the name as it is.</p>`;
       box.hidden = false;
     } catch { box.hidden = true; }
   }, 350);
