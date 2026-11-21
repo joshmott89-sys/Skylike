@@ -742,7 +742,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2355'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0010'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1543,6 +1543,8 @@ function listen(cb, el) {
 const submitForm = f => { if (!f) return; if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); };
 
 /* Photo or words → calendar events: the AI reads a flyer, invite, school note or a sentence, then you check and add. */
+// Quick add only treats it as an event when there's a clock time or an obvious appointment word ("call mum Friday" stays a to-do).
+const looksLikeAppointment = t => /\b\d{1,2}(:\d\d)?\s?(am|pm)\b|\b\d{1,2}:\d\d\b/i.test(t) || (/\b(party|appointment|appt|lesson|class|practice|training|game|match|recital|concert|dentist|doctor|gp|vaccination|playdate|play date|excursion|assembly|camp)\b/i.test(t) && looksLikeEvent(t));
 const looksLikeEvent = t => /\b(mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun)(day)?\b|\btomorrow\b|\btonight\b|\bnext (week|mon|tue|wed|thu|fri|sat|sun)|\b\d{1,2}(:\d\d)?\s?(am|pm)\b|\b\d{1,2}(st|nd|rd|th)\b|\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}\b/i.test(t);
 async function readEvents(payload, fallbackText) {
   if (!S.aiOn) { if (fallbackText) { S._evDraft = {title: fallbackText.slice(0, 120)}; return eventForm(null); } return toast('Turn on the AI helper first (Settings → Kitchen).', 4000); }
@@ -1643,7 +1645,7 @@ function briefTemplate(f) {
 const briefHash = f => { const t = JSON.stringify(f); let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); };
 function briefText() {
   const f = briefFacts(), tone = briefTone(), who = (briefWho() || {}).id || 'family', key = `brief:${dayKey(new Date())}:${who}:${tone}`, hash = briefHash(f), c = LS.get(key, null);
-  if (S.aiOn && !DEMO && (!c || (c.hash !== hash && Date.now() - c.at > 20 * 60e3)) && S._briefReq !== key + hash) {
+  if (S.aiOn && !DEMO && (!c || (c.hash !== hash && Date.now() - c.at > 90 * 60e3)) && S._briefReq !== key + hash) {
     S._briefReq = key + hash;
     callAI({action: 'brief', tone, name: f.name, facts: f}).then(r => { if (r && r.text) { LS.set(key, {hash, text: r.text, at: Date.now()}); const el = $('.brief .btxt'); if (el) el.textContent = r.text; } });
   }
@@ -2973,7 +2975,7 @@ const F = {
   },
   async fquick(f) {
     const raw0 = f.text.value.trim(); if (!raw0) return;
-    if (!S._fqForce && S.aiOn && !DEMO && looksLikeEvent(raw0) && !/^(buy|get|pick up|grab)\b/i.test(raw0)) { f.text.value = ''; return readEvents({text: raw0}, raw0); }
+    if (!S._fqForce && S.aiOn && !DEMO && looksLikeAppointment(raw0) && !parseAssignee(raw0).who && !/^(buy|get|pick up|grab|call|ring|email|text|pay|book|order|remind)\b/i.test(raw0)) { f.text.value = ''; return readEvents({text: raw0}, raw0); }
     const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
     const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
     const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, assignee: A2.who ? A2.who.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
