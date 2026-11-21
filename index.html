@@ -436,6 +436,12 @@ body[data-drag="pev"] .pcol{transition:outline .1s}
 .pmain{display:grid;gap:3px;justify-items:start;width:100%;text-align:left;padding:14px 14px 14px;border:0;background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:118px}.pmain .pe{font-size:30px;line-height:1}.pmain b{font-size:17px;margin-top:4px}.pmain small{color:var(--ink-2);font-size:13.5px;line-height:1.3;padding-right:34px}
 .psample{position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;border:0;background:var(--pick);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center}.psample.on{background:#C9473A}
 .pcard.on .pmain b::after{content:' ✓';color:var(--pick)}
+.evrep{display:flex;align-items:center;gap:10px;min-height:48px;font-weight:700;cursor:pointer}.evrep input{width:22px;height:22px}
+.repbox [hidden],.repbox[hidden],.evwho[hidden],.locsug[hidden]{display:none!important}
+.repbox{display:grid;gap:10px;padding:12px;border-radius:16px;background:color-mix(in srgb,var(--pick) 7%,transparent);border:1.5px solid color-mix(in srgb,var(--pick) 25%,transparent)}
+.repfreq .chip2{padding:4px 14px}.dowrow{display:flex;gap:6px;flex-wrap:wrap}.dow{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:800;color:var(--ink);cursor:pointer}.dow.on{background:var(--pick);border-color:var(--pick);color:#fff}
+.repmonth{display:grid;gap:6px}.repmonth label,.repscope label{display:flex;align-items:center;gap:8px;min-height:40px}.repend{gap:10px;align-items:end;flex-wrap:wrap}.repsum{margin:0;font-weight:700;color:var(--pick)}body.night .repsum{color:#8CC3DC}
+.repscope{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,#F2B33D 14%,transparent)}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -772,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0740'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0815'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -994,7 +1000,7 @@ async function loadAll() {
     q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}),
     q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}), q('devices'),
     q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules'),
-    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').gte('starts_at', since).order('starts_at')
+    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').or(`starts_at.gte.${since},repeat.not.is.null`).order('starts_at')
   ]);
   if (hh.error) throw hh.error;
   if (!hh.data) { S.hid = null; LS.set('hid', null); return false; }
@@ -1198,7 +1204,50 @@ function localToEv(r) {
   const e0 = r.ends_at ? (ad ? String(r.ends_at).slice(0, 10) + 'T00:00:00Z' : r.ends_at) : (ad ? addDaysKey(s0.slice(0, 10), 1) + 'T00:00:00Z' : new Date(new Date(s0).getTime() + 3600e3).toISOString());
   return {id: 'L-' + r.id, local: true, row: r, household_id: r.household_id, calendar_id: 'skylike', event_id: 'L-' + r.id, title: r.title, starts_at: s0, ends_at: e0, all_day: ad, location: r.location, member_id: r.member_id, member_ids: r.member_ids || (r.member_id ? [r.member_id] : []), notes: r.notes};
 }
-const localEvs = () => (S.localEvents || []).map(localToEv);
+/* Repeating Skylike events: repeat = {freq: day|week|fortnight|month|year, days: [0-6], monthBy: date|weekday, until, count, skip: [dates]} */
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const startKeyOf = r => r.all_day ? String(r.starts_at).slice(0, 10) : dayKey(new Date(r.starts_at));
+function occursOn(R, startK, k) {
+  const wd0 = weekdayOfKey(startK), dd = daysBetween(startK, k), wd = weekdayOfKey(k), days = R.days && R.days.length ? R.days : [wd0];
+  if (dd < 0) return false;
+  if (R.freq === 'day') return true;
+  if (R.freq === 'week' || R.freq === 'fortnight') { if (!days.includes(wd)) return false; return R.freq === 'week' || Math.floor((dd + wd0) / 7) % 2 === 0; }
+  const [y0, m0, d0] = startK.split('-').map(Number), [, m, d] = k.split('-').map(Number);
+  if (R.freq === 'month') return R.monthBy === 'weekday' ? wd === wd0 && Math.ceil(d / 7) === Math.ceil(d0 / 7) : d === d0;
+  if (R.freq === 'year') return m === m0 && d === d0;
+  return false;
+}
+function occurrences(r, fromK, toK) {
+  const R = r.repeat, startK = startKeyOf(r), until = R.until || '9999-12-31', max = +R.count || 1e9, skip = R.skip || [], out = [];
+  let k = startK, n = 0, guard = 0;
+  if (!R.count && fromK > startK && R.freq !== 'fortnight') { k = fromK; } // no counting needed: jump ahead
+  while (k <= toK && k <= until && n < max && guard++ < 5000) {
+    if (occursOn(R, startK, k)) { n++; if (k >= fromK && !skip.includes(k)) out.push(k); }
+    k = addDaysKey(k, 1);
+  }
+  return out;
+}
+function repeatText(R, startK) {
+  if (!R) return '';
+  const days = (R.days && R.days.length ? R.days : [weekdayOfKey(startK)]).slice().sort(), dn = andList(days.map(i => DOWL[i]));
+  const d0 = +startK.slice(8, 10), nth = ['first', 'second', 'third', 'fourth', 'last'][Math.min(4, Math.ceil(d0 / 7) - 1)];
+  const base = R.freq === 'day' ? 'Every day' : R.freq === 'week' ? (days.length === 5 && !days.includes(0) && !days.includes(6) ? 'Every weekday' : `Every ${dn}`) : R.freq === 'fortnight' ? `Every second ${dn}` : R.freq === 'month' ? (R.monthBy === 'weekday' ? `Monthly on the ${nth} ${DOWL[weekdayOfKey(startK)]}` : `Monthly on the ${d0}${[, 'st', 'nd', 'rd'][d0 % 10 > 3 || Math.floor(d0 / 10) === 1 ? 0 : d0 % 10] || 'th'}`) : 'Every year';
+  return base + (R.until ? `, until ${fmtDay(R.until, {day: 'numeric', month: 'short'})}` : R.count ? `, ${R.count} times` : '');
+}
+let _levKey = '', _levVal = [];
+function localEvs() {
+  const rows = S.localEvents || [], sig = rows.map(r => r.id + r.starts_at + r.ends_at + r.title + (r.location || '') + (r.member_ids || []).join() + (r.repeat ? JSON.stringify(r.repeat) : '')).join('|') + dayKey(new Date());
+  if (sig === _levKey) return _levVal;
+  const today = dayKey(new Date()), fromK = addDaysKey(today, -7), toK = addDaysKey(today, 400), out = [];
+  rows.forEach(r => {
+    if (!r.repeat) return out.push(localToEv(r));
+    const base = localToEv(r), dur = new Date(base.ends_at) - new Date(base.starts_at), hm = r.all_day ? null : hhmmOf(new Date(r.starts_at));
+    occurrences(r, fromK, toK).forEach(k => { const st = r.all_day ? k + 'T00:00:00Z' : zonedISO(k, hm);
+      out.push(Object.assign({}, base, {id: 'L-' + r.id + '@' + k, event_id: 'L-' + r.id + '@' + k, series: true, occ: k, starts_at: st, ends_at: new Date(new Date(st).getTime() + dur).toISOString()})); });
+  });
+  _levKey = sig; _levVal = out; return out;
+}
+const rowOfLocalId = id => S.localEvents.find(x => x.id === String(id).replace(/^L-/, '').replace(/@.*$/, ''));
 const evById = id => S.events.find(x => x.id === id) || localEvs().find(x => x.id === id);
 function eventColour(ev) {
   if (ev.local) { const m = ev.member_id && memberById(ev.member_id); return (m && m.color) || '#C9772B'; }
@@ -1648,6 +1697,16 @@ function parseEventText(raw, baseDay) {
     else if (/\s(at\s+)?(noon|midday)\s/i.test(t)) { out.start = '12:00'; cut(/\s(at\s+)?(noon|midday)\s/i); }
   }
   if (/\s(all day|all-day)\s/i.test(t)) { out.all_day = true; cut(/\s(all day|all-day)\s/i); }
+  // repeats: "every Tuesday", "every weekday", "fortnightly on Fridays", "weekly", "every day"
+  const dIdx = w => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(w.toLowerCase().slice(0, 3));
+  let rm;
+  if ((rm = t.match(/\s(every|each)\s+(day|morning|night)\s/i)) || /\sdaily\s/i.test(t)) { out.repeat = {freq: 'day'}; cut(rm ? new RegExp(rm[0].trim(), 'i') : /\sdaily\s/i); }
+  else if ((rm = t.match(/\s(every|each)\s+weekday\s/i))) { out.repeat = {freq: 'week', days: [1, 2, 3, 4, 5]}; cut(new RegExp(rm[0].trim(), 'i')); }
+  else if ((rm = t.match(/\s(?:every\s+(other|second)\s+|fortnightly\s+(?:on\s+)?)?(?:every\s+|each\s+|on\s+)((?:(?:sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)(?:day|nesday|sday|urday|rsday)?s?(?:\s*(?:,|and|&)\s*)?)+)\s/i)) && /every|each|fortnightly|days\b|days?s\s/i.test(rm[0] + ' ' + rm[2])) {
+    const ds = rm[2].split(/\s*(?:,|and|&)\s*/).filter(Boolean).map(dIdx).filter(i => i >= 0);
+    if (ds.length) { out.repeat = {freq: /other|second|fortnightly/i.test(rm[0]) ? 'fortnight' : 'week', days: ds}; cut(new RegExp(rm[0].trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')); if (!out.day) { const today = weekdayOfKey(dayKey(new Date())), add = Math.min(...ds.map(i => (i - today + 7) % 7)); out.day = addDaysKey(dayKey(new Date()), add); } }
+  }
+  else if ((rm = t.match(/\s(?:every\s+(fortnight|week|month|year)|(fortnightly|weekly|monthly|yearly))\s/i))) { const w = (rm[1] || rm[2]).toLowerCase(); out.repeat = {freq: w.startsWith('fortnight') ? 'fortnight' : w.startsWith('week') ? 'week' : w.startsWith('month') ? 'month' : 'year'}; cut(new RegExp(rm[0].trim(), 'i')); }
   // day
   const base = baseDay || dayKey(new Date()), wd = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   if (/\s(today|tonight|this (morning|afternoon|arvo|evening))\s/i.test(t)) { out.day = dayKey(new Date()); if (/tonight|evening/i.test(t) && !out.start) out.start = '18:00'; cut(/\s(today|tonight|this (morning|afternoon|arvo|evening))\s/i); }
@@ -1684,10 +1743,50 @@ function smartFill(f) {
   if (r.start && f.start) { const toM = v => +v.slice(0, 2) * 60 + +v.slice(3, 5), dur = Math.max(15, (toM(f.end.value || '00:00') - toM(f.start.value || '00:00')) || 60); f.start.value = r.start; f.start.dataset.prev = r.start; f.end.value = r.end || (n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0'))(Math.min(1439, toM(r.start) + dur)); if (f.allday && f.allday.checked) { f.allday.checked = false; const tm = f.querySelector('.evtimes'); if (tm) tm.hidden = false; } done.push(fmtTime(new Date(zonedISO(f.day.value, r.start))) + (r.end ? '–' + fmtTime(new Date(zonedISO(f.day.value, r.end))) : '')); }
   if (r.who && f.who) { const cal = f.calendar; if (cal && cal.value !== 'skylike' && [...cal.options].some(o => o.value === 'skylike') && !twoWayCals().length) cal.value = 'skylike';
     const w = f.querySelector('.evwho'); if (w) w.hidden = false; f.who.value = r.who.join(','); f.querySelectorAll('[data-act="who-tog"]').forEach(b => { const on = r.who.includes(b.dataset.m); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); done.push(andList(r.who.map(id => memberById(id).name))); }
+  if (r.repeat && f.rep_on) { f.rep_on.checked = true; f.querySelector('.repbox').hidden = false; f.rep_freq.value = r.repeat.freq; f.querySelectorAll('[data-act="rep-freq"]').forEach(b => b.classList.toggle('on', b.dataset.v === r.repeat.freq));
+    if (r.repeat.days) { f.rep_days.value = r.repeat.days.join(','); f.querySelectorAll('.dow').forEach(b => { const on = r.repeat.days.includes(+b.dataset.v); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); } else f.rep_days.value = '';
+    repRefresh(f); done.push(repeatText(Object.assign({}, r.repeat), f.day.value).toLowerCase()); }
   if (r.location && f.location && !f.location.value.trim()) { f.location.value = r.location; f.querySelectorAll('.locf .chip3').forEach(c => c.classList.toggle('on', normLoc(c.dataset.name) === normLoc(r.location))); done.push(r.location); }
   if (done.length && r.title) inp.value = r.title;
   inp.dataset.parsed = inp.value;
   const h = f.querySelector('.smarthint'); if (h) { h.hidden = !done.length; h.textContent = done.length ? '✨ Filled in: ' + done.join(' · ') : ''; }
+}
+/* The "Is this a regular event?" scheduler in the event form. */
+function repeatBlock(e, day, pre) {
+  const row = e && e.local ? e.row : null, R = (row && row.repeat) || pre.repeat || null, wd = weekdayOfKey(day);
+  const freq = R ? R.freq : 'week', days = R && R.days && R.days.length ? R.days : [wd], endKind = R ? (R.until ? (R.until === termEndAfter(day) ? 'term' : 'date') : R.count ? 'count' : 'never') : 'never';
+  const google = !e && twoWayCals().length, te = termEndAfter(day);
+  return `${e && e.series ? `<div class="repscope"><b>🔁 This repeats.</b> Change: <label><input type="radio" name="scope" value="one" checked> just this one</label><label><input type="radio" name="scope" value="all"> every one</label></div>` : ''}
+    <label class="evrep"><input type="checkbox" name="rep_on" data-change="rep-toggle" ${R ? 'checked' : ''}> 🔁 Is this a regular event?</label>
+    <div class="repbox" ${R ? '' : 'hidden'}>
+      <input type="hidden" name="rep_freq" value="${freq}"><input type="hidden" name="rep_days" value="${days.join(',')}">
+      <div class="chips2 repfreq">${[['day', 'Every day'], ['week', 'Every week'], ['fortnight', 'Every fortnight'], ['month', 'Every month'], ['year', 'Every year']].map(([k, l]) => `<button type="button" class="chip2 ${freq === k ? 'on' : ''}" data-act="rep-freq" data-v="${k}">${l}</button>`).join('')}</div>
+      <div class="repdays" ${freq === 'week' || freq === 'fortnight' ? '' : 'hidden'}><div class="lbl">On</div><div class="dowrow">${[1, 2, 3, 4, 5, 6, 0].map(i => `<button type="button" class="dow ${days.includes(i) ? 'on' : ''}" data-act="rep-day" data-v="${i}" aria-pressed="${days.includes(i)}" aria-label="${DOWL[i]}">${DOW[i].slice(0, 2)}</button>`).join('')}</div></div>
+      <div class="repmonth" ${freq === 'month' ? '' : 'hidden'}><label><input type="radio" name="rep_mby" value="date" ${!R || R.monthBy !== 'weekday' ? 'checked' : ''} data-change="rep-refresh"> <span class="rm-d"></span></label><label><input type="radio" name="rep_mby" value="weekday" ${R && R.monthBy === 'weekday' ? 'checked' : ''} data-change="rep-refresh"> <span class="rm-w"></span></label></div>
+      <div class="row repend"><label class="lbl">Ends <select class="input" name="rep_end" data-change="rep-refresh"><option value="never" ${endKind === 'never' ? 'selected' : ''}>Never</option>${te ? `<option value="term" ${endKind === 'term' ? 'selected' : ''}>End of this school term</option>` : ''}<option value="date" ${endKind === 'date' ? 'selected' : ''}>On a date</option><option value="count" ${endKind === 'count' ? 'selected' : ''}>After a number of times</option></select></label>
+        <input class="input" type="date" name="rep_until" value="${R && R.until ? R.until : addDaysKey(day, 84)}" data-change="rep-refresh" ${endKind === 'date' ? '' : 'hidden'}>
+        <label class="lbl repcount" ${endKind === 'count' ? '' : 'hidden'}><input class="input" type="number" name="rep_count" min="2" max="200" value="${R && R.count ? R.count : 10}" data-change="rep-refresh" style="width:90px"> times</label></div>
+      <p class="repsum"></p>${google ? '<p class="help">Repeats work in Google calendars too once two-way editing is connected.</p>' : ''}
+    </div>`;
+}
+const termEndAfter = k => { const t = WA_TERMS.find(([a, b]) => b >= k); return t ? t[1] : ''; };
+function repeatFrom(f) {
+  if (!f.rep_on || !f.rep_on.checked) return null;
+  const freq = f.rep_freq.value, R = {freq};
+  if (freq === 'week' || freq === 'fortnight') R.days = f.rep_days.value.split(',').filter(x => x !== '').map(Number);
+  if (freq === 'month') R.monthBy = (f.querySelector('[name="rep_mby"]:checked') || {}).value || 'date';
+  const end = f.rep_end.value;
+  if (end === 'term') R.until = termEndAfter(f.day.value); else if (end === 'date') R.until = f.rep_until.value || null; else if (end === 'count') R.count = Math.max(2, Math.min(200, +f.rep_count.value || 10));
+  return R;
+}
+function repRefresh(f) {
+  if (!f || !f.rep_freq) return; const k = f.day.value || dayKey(new Date()), freq = f.rep_freq.value, box = f.querySelector('.repbox');
+  box.querySelector('.repdays').hidden = !(freq === 'week' || freq === 'fortnight'); box.querySelector('.repmonth').hidden = freq !== 'month';
+  const d0 = +k.slice(8, 10), nth = ['first', 'second', 'third', 'fourth', 'last'][Math.min(4, Math.ceil(d0 / 7) - 1)];
+  box.querySelector('.rm-d').textContent = `On the ${d0}${[, 'st', 'nd', 'rd'][d0 % 10 > 3 || Math.floor(d0 / 10) === 1 ? 0 : d0 % 10] || 'th'} each month`; box.querySelector('.rm-w').textContent = `On the ${nth} ${DOWL[weekdayOfKey(k)]} each month`;
+  const end = f.rep_end.value; f.rep_until.hidden = end !== 'date'; box.querySelector('.repcount').hidden = end !== 'count';
+  if ((freq === 'week' || freq === 'fortnight') && !f.rep_days.value) { f.rep_days.value = String(weekdayOfKey(k)); box.querySelectorAll('.dow').forEach(b => b.classList.toggle('on', +b.dataset.v === weekdayOfKey(k))); }
+  const R = repeatFrom(f); box.querySelector('.repsum').textContent = R ? '🔁 ' + repeatText(R, k) : '';
 }
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -2713,6 +2812,10 @@ const A = {
     setEventPeople(id, {taker: m});
     document.querySelectorAll('#sheet-root [data-act="ev-taker"]').forEach(b => b.classList.toggle('on', !!m && b.dataset.m === m));
   },
+  'rep-freq'(el) { const f = el.closest('form'); f.rep_freq.value = el.dataset.v; f.querySelectorAll('[data-act="rep-freq"]').forEach(b => b.classList.toggle('on', b === el)); repRefresh(f); },
+  'rep-day'(el) { const f = el.closest('form'), cur = f.rep_days.value ? f.rep_days.value.split(',') : [], v = el.dataset.v, next = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v);
+    if (!next.length) return toast('Pick at least one day.'); f.rep_days.value = next.join(','); el.classList.toggle('on', next.includes(v)); el.setAttribute('aria-pressed', next.includes(v)); repRefresh(f); },
+  async 'ev-del-one'(el) { const e = evById(el.dataset.id); if (!e || !e.series) return; const r = e.row; r.repeat = Object.assign({}, r.repeat, {skip: (r.repeat.skip || []).concat(e.occ)}); closeSheet(); render(); saveLocalEvent(r, null); },
   'who-tog'(el) {
     const f = el.closest('form'), inp = f.querySelector('input[name="who"]'), ids = inp.value ? inp.value.split(',') : [], m = el.dataset.m;
     const next = ids.includes(m) ? ids.filter(x => x !== m) : ids.concat(m); inp.value = next.join(','); el.classList.toggle('on', next.includes(m)); el.setAttribute('aria-pressed', next.includes(m));
@@ -2909,14 +3012,15 @@ const A = {
   'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
   'open-event'(el) { const e = evById(el.dataset.id); if (!e) return; const m = eventMember(e);
-    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${eventMembers(e).length ? `<p class="row evwhos">${eventMembers(e).map(x => `<span class="row" style="gap:6px">${avatar(x)} ${esc(x.name)}</span>`).join('')}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${S.members.length ? `<div class="evppl"><div class="lbl">Who's it for <span class="hint">tap one or more</span></div><div class="chips2">${S.members.map(x => { const on = eventMembers(e).some(y => y.id === x.id); return `<button class="chip2 ${on ? 'on' : ''}" aria-pressed="${on}" data-act="ev-for" data-id="${e.id}" data-m="${x.id}">${avatar(x)}${esc(x.name)}</button>`; }).join('')}<button class="chip2 ${!eventMembers(e).length ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="">👪 Everyone</button></div>
+    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${eventMembers(e).length ? `<p class="row evwhos">${eventMembers(e).map(x => `<span class="row" style="gap:6px">${avatar(x)} ${esc(x.name)}</span>`).join('')}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.series ? `<p class="lbl">🔁 ${esc(repeatText(e.row.repeat, startKeyOf(e.row)))}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${S.members.length ? `<div class="evppl"><div class="lbl">Who's it for <span class="hint">tap one or more</span></div><div class="chips2">${S.members.map(x => { const on = eventMembers(e).some(y => y.id === x.id); return `<button class="chip2 ${on ? 'on' : ''}" aria-pressed="${on}" data-act="ev-for" data-id="${e.id}" data-m="${x.id}">${avatar(x)}${esc(x.name)}</button>`; }).join('')}<button class="chip2 ${!eventMembers(e).length ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="">👪 Everyone</button></div>
       ${e.all_day ? '' : `<div class="lbl" style="margin-top:10px">Who's taking them</div><div class="chips2">${S.members.filter(x => x.kind !== 'kid').map(x => `<button class="chip2 ${(takerOf(e) || {}).id === x.id ? 'on' : ''}" data-act="ev-taker" data-id="${e.id}" data-m="${x.id}">🚗 ${avatar(x)}${esc(x.name)}</button>`).join('')}${takerOf(e) ? `<button class="chip2" data-act="ev-taker" data-id="${e.id}" data-m="">Nobody</button>` : ''}</div>`}</div>` : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
   'ev-add'(el) { eventForm(null, el.dataset.k); },
   'ev-setup'() { closeSheet(); A.go({dataset: {view: 'settings', tab: 'calendar'}}); },
   'ev-edit'(el) { eventForm(evById(el.dataset.id)); },
   'ev-del'(el) { const e = evById(el.dataset.id); if (!e) return;
+    if (e.series) return sheet(`<h2>Delete “${esc(e.title || 'this event')}”?</h2><p class="help">It repeats: ${esc(repeatText(e.row.repeat, startKeyOf(e.row)))}.</p><div class="row" style="flex-wrap:wrap"><button class="btn" data-act="ev-del-one" data-id="${e.id}">Just this one (${esc(fmtDay(e.occ, {weekday: 'short', day: 'numeric', month: 'short'}))})</button><button class="btn danger" data-act="ev-del-go" data-id="${e.id}">Every one</button><button class="btn ghost" data-act="close-sheet">Keep it</button></div>`);
     sheet(`<h2>Delete “${esc(e.title || 'this event')}”?</h2><p class="help">${e.local ? 'It\'s removed from Skylike for everyone in the family.' : 'It\'s removed from Google Calendar for everyone.'}</p><div class="row"><button class="btn danger" data-act="ev-del-go" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Keep it</button></div>`); },
-  async 'ev-del-go'(el) { if (String(el.dataset.id).startsWith('L-')) { const rid = el.dataset.id.slice(2), row = S.localEvents.find(r => r.id === rid); S.localEvents = S.localEvents.filter(r => r.id !== rid); closeSheet(); render(); if (DEMO) return; const {error} = await sb.from('local_events').delete().eq('id', rid); if (error) { if (row) S.localEvents.push(row); render(); return toast("Couldn't delete it. Try again."); } return toast('Deleted'); }
+  async 'ev-del-go'(el) { if (String(el.dataset.id).startsWith('L-')) { const rid = el.dataset.id.slice(2).replace(/@.*$/, ''), row = S.localEvents.find(r => r.id === rid); S.localEvents = S.localEvents.filter(r => r.id !== rid); closeSheet(); render(); if (DEMO) return; const {error} = await sb.from('local_events').delete().eq('id', rid); if (error) { if (row) S.localEvents.push(row); render(); return toast("Couldn't delete it. Try again."); } return toast('Deleted'); }
     const i = S.events.findIndex(x => x.id === el.dataset.id); if (i < 0) return; const [e] = S.events.splice(i, 1); closeSheet(); render(); calWrite({action: 'delete', id: e.id}, () => S.events.splice(i, 0, e)); },
   'edit-member'(el) { memberSheet(el.dataset.id); },
   async 'del-row'(el) { if (el.dataset.table === 'members' && !confirm('Remove this person?')) return; const t = el.dataset.table, key = KEY_OF[t]; S[key] = S[key].filter(r => r.id !== el.dataset.id); closeSheet(); render(); await db(sb.from(t).delete().eq('id', el.dataset.id)); },
@@ -2991,8 +3095,9 @@ function eventForm(e, k) {
       <div class="row evtitle"><input class="input grow" id="ev-title" name="title" data-change="ev-smart" placeholder="e.g. Dancing for Elowyn at 10am Saturday" value="${esc(e ? e.title : (pre.title || ''))}" maxlength="120" required>${micBtn('#ev-title')}</div><p class="smarthint" hidden></p>
       ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
       ${whoSel}
-      <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
+      <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required data-change="rep-refresh"></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
       <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}" data-change="ev-start" data-prev="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
+      ${repeatBlock(e, day, pre0)}
       <div class="lbl">Where <span class="hint">optional, used for leave reminders</span></div>${locField(e ? e.location : pre0.location)}
       ${e && /@\\d+$/.test(e.event_id) && S.events.filter(x => x.event_id.replace(/@\\d+$/, '') === e.event_id.replace(/@\\d+$/, '')).length > 1 ? '<p class="help">This repeats: changes here only affect this one.</p>' : ''}
       <div class="row" style="margin-top:6px"><button class="btn">${e ? 'Save' : 'Add to calendar'}</button>${e ? `<button type="button" class="btn ghost danger" data-act="ev-del" data-id="${e.id}">Delete</button>` : ''}</div>
@@ -3000,7 +3105,7 @@ function eventForm(e, k) {
 }
 async function saveLocalEvent(r, undo) {
   if (DEMO) return toast('Sample data: nothing here is saved');
-  const row = {household_id: S.hid, title: r.title, starts_at: r.starts_at, ends_at: r.ends_at, all_day: !!r.all_day, location: r.location || null, notes: r.notes || null, member_id: (r.member_ids && r.member_ids[0]) || r.member_id || null, member_ids: r.member_ids || (r.member_id ? [r.member_id] : []), updated_at: new Date().toISOString()};
+  const row = {household_id: S.hid, title: r.title, starts_at: r.starts_at, ends_at: r.ends_at, all_day: !!r.all_day, location: r.location || null, notes: r.notes || null, member_id: (r.member_ids && r.member_ids[0]) || r.member_id || null, member_ids: r.member_ids || (r.member_id ? [r.member_id] : []), repeat: r.repeat || null, updated_at: new Date().toISOString()};
   const q = r._new ? sb.from('local_events').insert(Object.assign({id: r.id}, row)) : sb.from('local_events').update(row).eq('id', r.id);
   const {error} = await q; delete r._new;
   if (error) { if (undo && undo.drop) S.localEvents = S.localEvents.filter(x => x !== r); else if (undo) Object.assign(r, {starts_at: undo.s, ends_at: undo.e2}); render(); return toast("Couldn't save the event. Try again.", 4000); }
@@ -3015,6 +3120,9 @@ async function calWrite(body, undo) {
 function moveEventToDay(id, k) {
   if (!unlocked()) return askPin(() => moveEventToDay(id, k));
   const e = evById(id); if (!e || !canEdit(e)) return toast('That calendar is read-only here.');
+  if (e.local && e.series) { const r = e.row, k0 = e.occ; if (k0 === k) return; const st = e.all_day ? k + 'T00:00:00Z' : zonedISO(k, hhmmOf(new Date(e.starts_at))), en = new Date(new Date(st).getTime() + (new Date(e.ends_at) - new Date(e.starts_at))).toISOString();
+    r.repeat = Object.assign({}, r.repeat, {skip: (r.repeat.skip || []).concat(k0)}); const c = {id: uid(), _new: true, household_id: S.hid, title: r.title, location: r.location, notes: r.notes, all_day: r.all_day, starts_at: st, ends_at: en, member_id: r.member_id, member_ids: r.member_ids || [], repeat: null};
+    S.localEvents.push(c); render(); saveLocalEvent(r, null); saveLocalEvent(c, {drop: true}); toast('Moved just this one'); return; }
   if (e.local) { const r = e.row, fromK = e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at)); if (fromK === k) return; const old = {s: r.starts_at, e2: r.ends_at};
     if (e.all_day) { const len = Math.max(1, daysBetween(e.starts_at.slice(0, 10), e.ends_at.slice(0, 10))); r.starts_at = k + 'T00:00:00Z'; r.ends_at = addDaysKey(k, len) + 'T00:00:00Z'; }
     else { const ns = zonedISO(k, hhmmOf(new Date(e.starts_at))); r.ends_at = new Date(new Date(ns).getTime() + (new Date(e.ends_at) - new Date(e.starts_at))).toISOString(); r.starts_at = ns; }
@@ -3244,14 +3352,25 @@ const F = {
     if (location && f.location_lat && f.location_lat.value) rememberGeo(location, f.location_lat.value, f.location_lon.value);
     const sa = allDay ? start + 'T00:00:00Z' : start, ea = allDay ? end + 'T00:00:00Z' : end;
     closeSheet();
-    if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes}); render(); return saveLocalEvent(r, old); }
-    if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes, created_at: new Date().toISOString()};
+    const R = repeatFrom(f);
+    if (id && id.includes('@') && id.startsWith('L-')) { const ev = evById(id), r = rowOfLocalId(id); if (!r || !ev) return;
+      if ((f.querySelector('[name="scope"]:checked') || {}).value !== 'all') { // just this one: skip it in the series, save a one-off copy
+        r.repeat = Object.assign({}, r.repeat, {skip: (r.repeat.skip || []).concat(ev.occ)});
+        const c = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes, repeat: null};
+        S.localEvents.push(c); render(); saveLocalEvent(r, null); return saveLocalEvent(c, {drop: true}); }
+      // every one: keep the series' first date (moved by however many days this one moved), take the new times and details
+      const shift = daysBetween(ev.occ, day), sk = addDaysKey(startKeyOf(r), shift), old = {s: r.starts_at, e2: r.ends_at};
+      const ns = allDay ? sk + 'T00:00:00Z' : zonedISO(sk, f.start.value || '09:00'), ne = new Date(new Date(ns).getTime() + (new Date(ea) - new Date(sa))).toISOString();
+      Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: ns, ends_at: ne, member_id: who, member_ids: whoIds, notes, repeat: R ? Object.assign({}, R, {skip: (r.repeat && r.repeat.skip) || []}) : null});
+      render(); return saveLocalEvent(r, old); }
+    if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; r.repeat = R; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes}); render(); return saveLocalEvent(r, old); }
+    if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes, repeat: R, created_at: new Date().toISOString()};
       S.localEvents.push(r); render(); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); return saveLocalEvent(r, {drop: true}); }
     if (id) { const e = S.events.find(x => x.id === id); if (!e) return; const old = Object.assign({}, e);
       Object.assign(e, {title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end}); render();
       calWrite({action: 'update', id, title, start, end, allDay, location}, () => Object.assign(e, old)); }
     else { const cal = S.calendars.find(c => c.id === f.calendar.value), tmp = {id: 'tmp-' + uid(), household_id: S.hid, calendar_id: cal ? cal.google_id : '', event_id: 'tmp', title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end};
-      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location}, () => { S.events = S.events.filter(x => x !== tmp); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
+      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location, ...(R ? {repeat: JSON.stringify(R)} : {})}, () => { S.events = S.events.filter(x => x !== tmp); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
   },
   async fquick(f) {
     const raw0 = f.text.value.trim(); if (!raw0) return;
@@ -3465,6 +3584,8 @@ document.addEventListener('change', async e => {
   if (el.dataset.change === 'avatar-pick' && el.files && el.files[0]) { const f0 = el.files[0]; el.value = ''; return cropSheet(f0, el.dataset.id); }
   if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
   if (el.dataset.change === 'ev-smart') { smartFill(el.form); return; }
+  if (el.dataset.change === 'rep-toggle') { const box = el.form.querySelector('.repbox'); box.hidden = !el.checked; repRefresh(el.form); return; }
+  if (el.dataset.change === 'rep-refresh') { repRefresh(el.form); return; }
   if (el.dataset.change === 'ev-start') { const f = el.closest('form'), en = f.end, toM = v => { const [h, m] = String(v || '').split(':').map(Number); return h * 60 + m; }, fromM = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
     if (el.value) { let dur = toM(en.value) - toM(el.dataset.prev); if (!(dur > 0)) dur = 60; en.value = fromM(Math.min(23 * 60 + 59, toM(el.value) + dur)); el.dataset.prev = el.value; } return; }
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }

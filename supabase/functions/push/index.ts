@@ -99,6 +99,30 @@ async function travel(hid: string, e: any, home: { lat: number; lon: number }) {
   return row;
 }
 
+// Repeating Skylike events: same rules as the app (repeat = {freq, days, monthBy, until, count, skip}).
+function occursOn(R: any, startK: string, k: string) {
+  const dd = daysBetween(startK, k); if (dd < 0) return false;
+  const wd0 = weekday(startK), wd = weekday(k), days = R.days && R.days.length ? R.days : [wd0];
+  if (R.freq === "day") return true;
+  if (R.freq === "week" || R.freq === "fortnight") return days.includes(wd) && (R.freq === "week" || Math.floor((dd + wd0) / 7) % 2 === 0);
+  const d0 = +startK.slice(8, 10), m0 = +startK.slice(5, 7), d = +k.slice(8, 10), m = +k.slice(5, 7);
+  if (R.freq === "month") return R.monthBy === "weekday" ? wd === wd0 && Math.ceil(d / 7) === Math.ceil(d0 / 7) : d === d0;
+  if (R.freq === "year") return m === m0 && d === d0;
+  return false;
+}
+function repeatsOn(r: any, k: string, tz: string) {
+  const R = r.repeat, startK = local(tz, new Date(r.starts_at)).key;
+  if (!occursOn(R, startK, k) || (R.skip || []).includes(k) || (R.until && k > R.until)) return null;
+  if (R.count) { let n = 0; for (let d = startK; d <= k && n <= R.count; d = addDays(d, 1)) if (occursOn(R, startK, d)) n++; if (n > R.count) return null; }
+  return new Date(new Date(r.starts_at).getTime() + daysBetween(startK, k) * 864e5).toISOString();
+}
+async function repeatingToday(hid: string, tz: string, keys: string[]) {
+  const { data } = await admin.from("local_events").select("id,title,starts_at,location,member_id,member_ids,all_day,repeat").eq("household_id", hid).eq("all_day", false).not("repeat", "is", null);
+  const out: any[] = [];
+  (data || []).forEach((r: any) => keys.forEach(k => { const st = repeatsOn(r, k, tz); if (st) out.push({ event_id: "L-" + r.id + "@" + k, calendar_id: "skylike", member_id: r.member_id, member_ids: r.member_ids || [], title: r.title, starts_at: st, location: r.location, all_day: false }); }));
+  return out;
+}
+
 async function subsFor(hid: string, pref: string, memberIds?: string[]) {
   let q = admin.from("push_subscriptions").select("id,endpoint,p256dh,auth,member_id,prefs,fails").eq("household_id", hid);
   if (memberIds) q = q.in("member_id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
@@ -123,9 +147,10 @@ async function tick() {
     const { data: evs } = await admin.from("events_cache").select("event_id,calendar_id,title,starts_at,location,all_day").eq("household_id", hid).eq("all_day", false)
       .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString()).order("starts_at");
     // Skylike-only events (added on the screen, not in Google) get the same reminders.
-    const { data: lev } = await admin.from("local_events").select("id,title,starts_at,location,member_id,member_ids").eq("household_id", hid).eq("all_day", false)
+    const { data: lev } = await admin.from("local_events").select("id,title,starts_at,location,member_id,member_ids,repeat").eq("household_id", hid).eq("all_day", false)
       .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString());
-    const all = (evs || []).concat((lev || []).map((r: any) => ({ event_id: "L-" + r.id, calendar_id: "skylike", member_id: r.member_id, member_ids: r.member_ids || [], title: r.title, starts_at: r.starts_at, location: r.location, all_day: false })));
+    const reps = (await repeatingToday(hid, tz, [L.key, addDays(L.key, 1)])).filter((e: any) => { const t = new Date(e.starts_at).getTime(); return t >= now && t <= now + 8 * 3600e3; });
+    const all = (evs || []).concat(reps).concat((lev || []).filter((r: any) => !r.repeat).map((r: any) => ({ event_id: "L-" + r.id, calendar_id: "skylike", member_id: r.member_id, member_ids: r.member_ids || [], title: r.title, starts_at: r.starts_at, location: r.location, all_day: false })));
     const withPlace = all.filter((e: any) => e.location && String(e.location).trim());
     if (withPlace.length) {
       const { data: cals } = await admin.from("calendars").select("id,google_id,member_id").eq("household_id", hid);
@@ -183,7 +208,8 @@ async function tick() {
       const dayEnd = new Date(now + (24 * 60 - L.mins) * 60e3).toISOString();
       const { data: first } = await admin.from("events_cache").select("title,starts_at").eq("household_id", hid).eq("all_day", false).gte("starts_at", new Date(now).toISOString()).lte("starts_at", dayEnd).order("starts_at").limit(1);
       const { data: firstL } = await admin.from("local_events").select("title,starts_at").eq("household_id", hid).eq("all_day", false).gte("starts_at", new Date(now).toISOString()).lte("starts_at", dayEnd).order("starts_at").limit(1);
-      const f0 = [...(first || []), ...(firstL || [])].sort((a: any, b: any) => String(a.starts_at).localeCompare(String(b.starts_at)))[0];
+      const repsToday = (await repeatingToday(hid, tz, [L.key])).filter((e: any) => new Date(e.starts_at).getTime() >= now);
+      const f0 = [...(first || []), ...(firstL || []), ...repsToday].sort((a: any, b: any) => String(a.starts_at).localeCompare(String(b.starts_at)))[0];
       if (f0) lines.push(`📅 First up: ${f0.title} at ${fmtTime(f0.starts_at, tz)}`);
       if (lines.length && await once(`morning:${hid}:${L.key}`, hid)) sent += await send(await subsFor(hid, "morning", adults), { title: "Today · tap to hear your brief", body: lines.join("\n"), tag: "morning", url: "./?brief=1" });
     }

@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
       if (!cal || String(cal.google_id).startsWith("ics:")) return json({ error: "Pick a two-way calendar to add it to." }, 400);
       p.calendarId = cal.google_id;
     }
-    for (const k of ["title", "start", "end", "location", "description"]) if (body[k] !== undefined && body[k] !== null) p[k] = String(body[k]).slice(0, k === "description" ? 2000 : 500);
+    for (const k of ["title", "start", "end", "location", "description", "repeat"]) if (body[k] !== undefined && body[k] !== null) p[k] = String(body[k]).slice(0, k === "description" ? 2000 : 500);
     if (body.allDay !== undefined) p.allDay = body.allDay ? "true" : "false";
     try { await callBridge(b, p); } catch (err) { return json({ error: String((err as Error).message || err) }, 502); }
     const r = await syncHousehold(hid);

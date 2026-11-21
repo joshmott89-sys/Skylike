@@ -155,6 +155,20 @@ async function ttsModels(key: string): Promise<string[]> {
     .sort((a: string, b: string) => (Number(/lite/.test(a)) - Number(/lite/.test(b))) || ver(b) - ver(a));
   ttsCache.set(key, { list, at: Date.now() }); return list;
 }
+// Newer speech models send a whole WAV file (header first, a metadata block at the end), older ones send raw sound.
+// Keep only the sound: reading the metadata as sound is what made the loud noise at the end.
+function pcmOf(bytes: Uint8Array, rate: number) {
+  const tag = (o: number) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+  if (bytes.length < 12 || tag(0) !== "RIFF" || tag(8) !== "WAVE") return { pcm: bytes, rate };
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.length); let o = 12, r = rate;
+  while (o + 8 <= bytes.length) {
+    const id = tag(o), size = dv.getUint32(o + 4, true);
+    if (id === "fmt ") r = dv.getUint32(o + 12, true) || r;
+    if (id === "data") return { pcm: bytes.subarray(o + 8, Math.min(bytes.length, o + 8 + size)), rate: r };
+    o += 8 + size + (size % 2);
+  }
+  return { pcm: bytes.subarray(44), rate: r };
+}
 // Smooth the edges: a short fade in, a gentle fade out and a little silence after, so speakers don't thump when it stops.
 function soften(raw: Uint8Array, rate: number) {
   const n = Math.floor(raw.length / 2), src = new DataView(raw.buffer, raw.byteOffset, n * 2), tail = Math.round(rate * 0.25);
@@ -184,7 +198,7 @@ const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", p
 async function speak(key: string, hid: string, text: string, pid: string) {
   const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voice;
   const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with a warm Australian accent: ${P.speak}. These are directions only: never say them out loud.`;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v3|" + voice + "|" + P.speak + "|" + text));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4|" + voice + "|" + P.speak + "|" + text));
   const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
   const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
   const signed = async () => (await store.createSignedUrl(path, 12 * 3600)).data?.signedUrl;
@@ -208,8 +222,9 @@ async function speak(key: string, hid: string, text: string, pid: string) {
       const part = (d?.candidates?.[0]?.content?.parts || []).find((p: any) => p.inlineData || p.inline_data);
       const b64 = (part?.inlineData || part?.inline_data)?.data; if (!b64) { lastErr = "busy"; continue; }
       const mime = String((part.inlineData || part.inline_data).mimeType || ""), rate = +((mime.match(/rate=(\d+)/) || [])[1] || 24000);
-      const bin = atob(b64), pcm = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
-      const up = await store.upload(path, wav(soften(pcm, rate), rate), { contentType: "audio/wav", upsert: true });
+      const bin = atob(b64), raw = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) raw[i] = bin.charCodeAt(i);
+      const got = pcmOf(raw, rate); console.log(JSON.stringify({ tts_mime: mime, wavIn: got.pcm !== raw, rate: got.rate }));
+      const up = await store.upload(path, wav(soften(got.pcm, got.rate), got.rate), { contentType: "audio/wav", upsert: true });
       if (up.error) throw new Error("couldn't save the audio");
       // tidy: keep only the last few days of briefs
       const { data: old } = await store.list(`${hid}/brief`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });

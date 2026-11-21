@@ -65,6 +65,13 @@ function handle_(p) {
       case 'create': {
         const cal = CalendarApp.getCalendarById(p.calendarId) || CalendarApp.getDefaultCalendar();
         const opts = { location: p.location || '', description: p.description || '' };
+        if (p.repeat) { // a regular event: Skylike sends {freq, days, monthBy, until, count}
+          const rule = recurrence_(JSON.parse(p.repeat), date_(p.start));
+          const series = bool_(p.allDay)
+            ? cal.createAllDayEventSeries(p.title, date_(p.start), rule, opts)
+            : cal.createEventSeries(p.title, date_(p.start), date_(p.end), rule, opts);
+          return out_({ ok: true, id: series.getId() });
+        }
         const ev = bool_(p.allDay)
           ? cal.createAllDayEvent(p.title, date_(p.start), date_(p.end), opts)
           : cal.createEvent(p.title, date_(p.start), date_(p.end), opts);
@@ -96,6 +103,20 @@ function handle_(p) {
   }
 }
 
+// Turn Skylike's repeat settings into a Google Calendar recurrence.
+// (Apps Script can't say "2nd Tuesday of the month", so monthly repeats use the same date each month.)
+function recurrence_(R, start) {
+  const W = [CalendarApp.Weekday.SUNDAY, CalendarApp.Weekday.MONDAY, CalendarApp.Weekday.TUESDAY, CalendarApp.Weekday.WEDNESDAY, CalendarApp.Weekday.THURSDAY, CalendarApp.Weekday.FRIDAY, CalendarApp.Weekday.SATURDAY];
+  const rec = CalendarApp.newRecurrence();
+  let rule;
+  if (R.freq === 'day') rule = rec.addDailyRule();
+  else if (R.freq === 'week' || R.freq === 'fortnight') { rule = rec.addWeeklyRule().interval(R.freq === 'fortnight' ? 2 : 1); const d = (R.days && R.days.length ? R.days : [start.getDay()]).map(function (i) { return W[i]; }); rule = rule.onlyOnWeekdays(d); }
+  else if (R.freq === 'month') rule = rec.addMonthlyRule().onlyOnMonthDay(start.getDate());
+  else rule = rec.addYearlyRule();
+  if (R.until) rule.until(date_(R.until + 'T23:59:59'));
+  else if (R.count) rule.times(+R.count);
+  return rec;
+}
 // "true"/"false" arrive as text from web requests
 function bool_(v) { return v === true || v === 'true' || v === '1'; }
 // A plain date (YYYY-MM-DD) is a calendar day in this script's time zone; anything else is an exact time.
