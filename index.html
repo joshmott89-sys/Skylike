@@ -18,7 +18,7 @@
 :root{
   --ground:#E8EFF1; --surface:#F8FBFC; --raise:#FFFFFF; --sand:#E9DDC8; --sand-ink:#5E4B2E;
   --ink:#10293A; --ink-2:#46606F; --ink-3:#6B8290; --line:rgba(0,0,0,.10);
-  --ocean:#0B4F6C; --ocean-2:#126C8F; --ocean-ink:#E6F2F7; --ocean-ink-2:#9CC3D3;
+  --pick:#126C8F; --ocean:#0B4F6C; --ocean-2:#126C8F; --ocean-ink:#E6F2F7; --ocean-ink-2:#9CC3D3;
   --apricot:#F2A65A; --apricot-ink:#7A4210;
   --ok:#3E8A63; --warn:#C98A12; --bad:#C24A3A;
   --shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px -14px rgba(0,0,0,.22);
@@ -28,6 +28,7 @@
   color-scheme:light;
 }
 body.night{
+  --pick:#2F7FA6;
   --ground:#0C1424; --surface:#121C30; --raise:#17233B; --sand:#2A2A35; --sand-ink:#CDBF9F;
   --ink:#B9C6D6; --ink-2:#8697AB; --ink-3:#66778C; --line:rgba(185,198,214,.10);
   --ocean:#08101E; --ocean-2:#13233D; --ocean-ink:#AFC0D2; --ocean-ink-2:#6E8199;
@@ -416,8 +417,18 @@ body.night .kid{border-top-color:var(--c)}
 .pev .pt{font-size:14px;font-weight:700;color:var(--ink-2)}.pev b{font-size:17px;line-height:1.25}.pev small{font-size:13.5px;color:var(--ink-2)}
 .ptk{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13.5px;font-weight:700}.ptk .face{width:22px;height:22px;font-size:11px;border-width:0}
 .evppl{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.chip2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 14px 4px 6px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.chip2 .face{width:32px;height:32px;font-size:15px;border-width:0}.chip2.on{border-color:var(--ocean-2);box-shadow:0 0 0 2px var(--ocean-2) inset}
+.chip2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 14px 4px 6px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.chip2 .face{width:32px;height:32px;font-size:15px;border-width:0}.chip2.on{background:var(--pick);border-color:var(--pick);color:#fff}.chip2.on .face{box-shadow:0 0 0 2px #fff}
 body[data-drag="pev"] .pcol{transition:outline .1s}
+.hint{font-weight:600;color:var(--muted);font-size:13px;text-transform:none;letter-spacing:0;margin-left:6px}
+.evwhos{gap:14px;flex-wrap:wrap}
+.forpick{margin:2px 0 10px}.chip2.on::after{content:'✓';font-weight:900;margin-left:2px}
+.locf{position:relative;display:grid;gap:8px}.locchips{display:flex;flex-wrap:wrap;gap:6px}
+.chip3{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;font-size:15px;color:var(--ink);cursor:pointer}.chip3.on{background:var(--pick);border-color:var(--pick);color:#fff}
+.locsug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border-radius:14px;box-shadow:0 12px 32px rgba(10,20,40,.22);overflow:hidden;max-height:300px;overflow-y:auto}
+.locopt{display:grid;gap:2px;width:100%;text-align:left;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:52px}.locopt:last-child{border-bottom:0}.locopt small{color:var(--ink-2);font-size:13.5px}.locopt:hover,.locopt:focus{background:color-mix(in srgb,var(--ocean-2) 8%,transparent)}
+.locnone{margin:0;padding:12px 14px;color:var(--ink-2);font-size:14px}
+.plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -754,7 +765,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0035'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0640'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -991,23 +1002,39 @@ async function loadAll() {
 }
 // Driving times worked out on the server (home → event address), used for "leave in" countdowns.
 async function loadTravel() { const {data} = await sb.from('event_travel').select('event_id,location,minutes,km,status,computed_at').eq('household_id', S.hid); if (data) S.travel = data; }
-const driveFor = e => { const t = (S.travel || []).find(x => x.event_id === e.event_id && x.location === e.location && x.status === 'ok'); return t ? t.minutes : null; };
-const leaveBufferFor = e => { if (!e.location) return 0; const d = driveFor(e); return d != null ? d + 5 : settings().leaveBuffer; };
+/* Saved places: Home (settings.location) plus the family's own (school, kindy, swimming…), one tap in any event. */
+const PLACE_PRESETS = [['School', '🏫'], ['Kindy', '🧸'], ['Daycare', '🍼'], ['Work', '💼'], ['Swimming', '🏊'], ['Gym', '🏋️'], ['Grandma & Grandpa', '👵'], ['Shops', '🛒'], ['Doctor', '🩺'], ['Park', '🌳']];
+function places() {
+  const st = settings(), out = [];
+  if (st.location && st.location.lat) out.push({id: 'home', name: 'Home', emoji: '🏠', address: st.location.address || '', lat: st.location.lat, lon: st.location.lon, home: true});
+  return out.concat((st.places || []).filter(p => p && p.name));
+}
+const normLoc = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const placeFor = loc => { const n = normLoc(loc); if (!n) return null; return places().find(p => normLoc(p.name) === n || (p.address && normLoc(p.address) === n)) || null; };
+const isHomeLoc = loc => { const p = placeFor(loc); return !!(p && p.home); };
+const geoCache = () => LS.get('geo', {});
+function rememberGeo(label, lat, lon) { if (!label || lat == null) return; const g = geoCache(); g[label] = {lat: +lat, lon: +lon}; const keys = Object.keys(g); if (keys.length > 150) delete g[keys[0]]; LS.set('geo', g); }
+const driveFor = e => { if (isHomeLoc(e.location)) return null; const t = (S.travel || []).find(x => x.event_id === e.event_id && x.location === e.location && x.status === 'ok'); return t ? t.minutes : null; };
+const leaveBufferFor = e => { if (!e.location || isHomeLoc(e.location)) return 0; const d = driveFor(e); return d != null ? d + 5 : settings().leaveBuffer; };
 // Work out drives here on the device (the free map services block cloud servers), then share them via the database.
 let travelBusy = false; const travelTried = new Set();
 async function computeTravel() {
   if (DEMO || travelBusy || !S.hid || !navigator.onLine) return; travelBusy = true;
   try {
-    const st = settings(), home = st.location || {lat: -31.9523, lon: 115.8613}, now = Date.now();
+    const st = settings(), home = st.location && st.location.lat ? st.location : {lat: -31.9523, lon: 115.8613}, now = Date.now();
     const todo = S.events.concat(localEvs()).filter(e => !e.all_day && e.location && String(e.location).trim() && new Date(e.starts_at) > now && new Date(e.starts_at) - now < 2 * 864e5)
-      .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && t.status === 'ok') && !travelTried.has(e.event_id + '|' + e.location))
+      .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && (t.status === 'ok' || t.status === 'home') && (!home.at || new Date(t.computed_at) >= new Date(home.at))) && !travelTried.has(e.event_id + '|' + e.location + '|' + (home.at || '')))
       .slice(0, 4);
     for (const e of todo) {
-      travelTried.add(e.event_id + '|' + e.location);
+      travelTried.add(e.event_id + '|' + e.location + '|' + (home.at || ''));
       const row = {household_id: S.hid, event_id: e.event_id, location: e.location, minutes: null, km: null, status: 'nogeo', computed_at: new Date().toISOString()};
-      let to = null;
+      const pl = placeFor(e.location), cached = geoCache()[e.location];
+      let to = pl && pl.lat != null ? {lat: +pl.lat, lon: +pl.lon} : cached || null;
+      if (pl && pl.home) { row.minutes = 0; row.km = 0; row.status = 'home'; to = null; }
+      else if (!to) {
       try { const box = [home.lon - 1, home.lat + 1, home.lon + 1, home.lat - 1].join(','); const g = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&viewbox=${box}&q=${encodeURIComponent(String(e.location).slice(0, 200))}`)).json(); if (g && g[0]) to = {lat: +g[0].lat, lon: +g[0].lon}; } catch {}
       if (!to) { try { const g = await (await fetch(`https://photon.komoot.io/api/?limit=1&lang=en&lat=${home.lat}&lon=${home.lon}&q=${encodeURIComponent(String(e.location).slice(0, 200))}`)).json(); const f = g && g.features && g.features[0]; if (f) to = {lon: +f.geometry.coordinates[0], lat: +f.geometry.coordinates[1]}; } catch {} }
+      }
       if (to) {
         try { const r = await (await fetch(`https://router.project-osrm.org/route/v1/driving/${home.lon},${home.lat};${to.lon},${to.lat}?overview=false`)).json(); const rt = r && r.routes && r.routes[0]; if (rt) { row.minutes = Math.max(1, Math.ceil(rt.duration / 60 * 1.25)); row.km = Math.round(rt.distance / 100) / 10; row.status = 'ok'; } } catch {}
         if (row.status !== 'ok') { const R = 6371, dLat = (to.lat - home.lat) * Math.PI / 180, dLon = (to.lon - home.lon) * Math.PI / 180, x = Math.sin(dLat / 2) ** 2 + Math.cos(home.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2, km = 2 * R * Math.asin(Math.sqrt(x)) * 1.35; row.km = Math.round(km * 10) / 10; row.minutes = Math.max(3, Math.ceil(km / 45 * 60 + 3)); row.status = 'ok'; }
@@ -1162,7 +1189,7 @@ const memberById = id => S.members.find(m => m.id === id);
 function localToEv(r) {
   const ad = !!r.all_day, s0 = ad ? String(r.starts_at).slice(0, 10) + 'T00:00:00Z' : r.starts_at;
   const e0 = r.ends_at ? (ad ? String(r.ends_at).slice(0, 10) + 'T00:00:00Z' : r.ends_at) : (ad ? addDaysKey(s0.slice(0, 10), 1) + 'T00:00:00Z' : new Date(new Date(s0).getTime() + 3600e3).toISOString());
-  return {id: 'L-' + r.id, local: true, row: r, household_id: r.household_id, calendar_id: 'skylike', event_id: 'L-' + r.id, title: r.title, starts_at: s0, ends_at: e0, all_day: ad, location: r.location, member_id: r.member_id, notes: r.notes};
+  return {id: 'L-' + r.id, local: true, row: r, household_id: r.household_id, calendar_id: 'skylike', event_id: 'L-' + r.id, title: r.title, starts_at: s0, ends_at: e0, all_day: ad, location: r.location, member_id: r.member_id, member_ids: r.member_ids || (r.member_id ? [r.member_id] : []), notes: r.notes};
 }
 const localEvs = () => (S.localEvents || []).map(localToEv);
 const evById = id => S.events.find(x => x.id === id) || localEvs().find(x => x.id === id);
@@ -1173,8 +1200,16 @@ function eventColour(ev) {
   const m = cal && cal.member_id && memberById(cal.member_id);
   return (m && m.color) || (cal && cal.color) || '#2F7BB5';
 }
-function eventMember(ev) { if (ev.local) return ev.member_id ? memberById(ev.member_id) || null : null;
-  const o = (settings().people || {})[ev.event_id]; if (o && o.for !== undefined) return o.for ? memberById(o.for) || null : null; const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
+// Who an event is for: one or more people (none = everyone). Skylike events keep it on the event; Google events in settings.people.
+function eventMembers(ev) {
+  if (!ev) return [];
+  if (ev.local) { const ids = ev.member_ids && ev.member_ids.length ? ev.member_ids : ev.member_id ? [ev.member_id] : []; return ids.map(memberById).filter(Boolean); }
+  const o = (settings().people || {})[ev.event_id]; if (o && o.for !== undefined) return [].concat(o.for || []).map(memberById).filter(Boolean);
+  const m = eventMemberCal(ev); return m ? [m] : [];
+}
+const whoMeta = (e, calName) => { const ms = eventMembers(e); return ms.length ? ms.slice(0, 3).map(miniFace).join('') + esc(andList(ms.map(x => x.name))) : '<i></i>' + esc(calName); };
+function eventMember(ev) { return eventMembers(ev)[0] || null; }
+function eventMemberCal(ev) { const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
 function visibleEvents() {
   const on = new Set(S.calendars.filter(c => c.enabled).map(c => c.google_id));
   return S.events.filter(e => on.size === 0 || on.has(e.calendar_id)).concat(localEvs()).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
@@ -1456,7 +1491,7 @@ function upNextHTML(limit = 4) {
     const m = eventMember(e), st = new Date(e.starts_at), live = st <= now;
     return `<div class="ev ${i === 0 && label === 'Up next' ? 'next' : ''}" style="--c:${eventColour(e)}">
       <div class="when num">${live ? 'Now' : esc(fmtTime(st))}${untilHTML(e)}</div>
-      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${miniFace(m)}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
+      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${whoMeta(e, (S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
   }).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
     ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
@@ -1543,6 +1578,53 @@ function cropSheet(file, id) {
   img.onerror = () => toast("Couldn't open that photo. Try another.", 4000);
   img.src = url;
 }
+/* Location box: saved places as one-tap chips, and type-to-search (OpenStreetMap's Photon, near home). */
+function locField(value, opts = {}) {
+  const pl = places();
+  return `<div class="locf">${opts.noChips || !pl.length ? '' : `<div class="locchips">${pl.map(p => `<button type="button" class="chip3 ${value && normLoc(value) === normLoc(p.name) ? 'on' : ''}" data-act="loc-place" data-name="${esc(p.name)}">${p.emoji || '📍'} ${esc(p.name)}</button>`).join('')}</div>`}
+    <input class="input" name="${opts.name || 'location'}" data-locsearch="1" placeholder="${opts.ph || 'Where? Start typing, e.g. Bounce'}" value="${esc(value || '')}" maxlength="200" autocomplete="off" autocapitalize="words">
+    <input type="hidden" name="${opts.name || 'location'}_lat"><input type="hidden" name="${opts.name || 'location'}_lon">
+    <div class="locsug" role="listbox" hidden></div></div>`;
+}
+let locTimer = 0, locSeq = 0;
+function locSearch(inp) {
+  const box = inp.parentElement.querySelector('.locsug'), q = inp.value.trim(); clearTimeout(locTimer);
+  inp.form && (inp.form.querySelector(`[name="${inp.name}_lat"]`).value = '');
+  if (q.length < 3 || placeFor(q)) { box.hidden = true; box.innerHTML = ''; return; }
+  locTimer = setTimeout(async () => {
+    const seq = ++locSeq, h = settings().location && settings().location.lat ? settings().location : {lat: -31.95, lon: 115.86};
+    try {
+      const r = await fetch(`https://photon.komoot.io/api/?limit=7&lang=en&lat=${h.lat}&lon=${h.lon}&location_bias_scale=0.6&q=${encodeURIComponent(q)}`); const d = await r.json(); if (seq !== locSeq) return;
+      const seen = new Set(), list = (d.features || []).filter(f => (f.properties.countrycode || 'AU') === 'AU').map(f => {
+        const P = f.properties, street = [P.housenumber, P.street].filter(Boolean).join(' '), area = P.suburb || P.district || P.locality || P.city || '';
+        const name = P.name || street, sub = [P.name && street ? street : '', area !== name ? area : '', P.state && P.state !== 'Western Australia' ? P.state : ''].filter(Boolean).join(', ');
+        return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
+      }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
+      S._locList = list;
+      box.innerHTML = list.length ? list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') : `<p class="locnone">No match nearby. You can keep what you typed.</p>`;
+      box.hidden = false;
+    } catch { box.hidden = true; }
+  }, 350);
+}
+document.addEventListener('input', e => { const t = e.target; if (t && t.dataset && t.dataset.locsearch) locSearch(t); });
+document.addEventListener('focusout', e => { const t = e.target; if (t && t.dataset && t.dataset.locsearch) setTimeout(() => { const b = t.parentElement && t.parentElement.querySelector('.locsug'); if (b && !b.contains(document.activeElement)) b.hidden = true; }, 250); });
+function placesPanelHTML() {
+  const pl = places(), st = settings();
+  return `<div class="panel" id="placespanel"><h2>Places</h2><p class="help">Places you go a lot. They show as one-tap buttons when you add an event, and driving times and leave reminders use them.</p>
+    <ul class="plist">${st.location && st.location.lat ? '' : `<li class="pl-none">🏠 <span><b>Home</b><small>Not set yet, so drives are worked out from the city.</small></span><button class="btn soft sm" data-act="place-edit" data-id="home">Set home</button></li>`}
+    ${pl.map(p => `<li>${p.emoji || '📍'} <span><b>${esc(p.name)}</b><small>${esc(p.address || (p.home ? "Set from this device's location" : ''))}</small></span><button class="btn soft sm" data-act="place-edit" data-id="${p.id}">Edit</button></li>`).join('')}</ul>
+    <button class="btn soft" data-act="place-edit" data-id="">${icon('plus')} Add a place</button></div>`;
+}
+function placeSheet(id) {
+  const p = id ? places().find(x => x.id === id) || (id === 'home' ? {id: 'home', name: 'Home', emoji: '🏠', home: true} : null) : null, isHome = p && p.home || id === 'home';
+  sheet(`<h2>${isHome ? 'Home' : p ? 'Edit place' : 'Add a place'}</h2>
+    <form data-form="place-save" data-id="${esc(id || '')}">
+      ${isHome ? '' : `<div class="presets">${PLACE_PRESETS.map(([n, e]) => `<button type="button" class="chip3" data-act="place-preset" data-n="${esc(n)}" data-e="${e}">${e} ${esc(n)}</button>`).join('')}</div>
+      <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="input" name="emoji" value="${esc(p ? p.emoji || '📍' : '📍')}" maxlength="4" style="width:64px;text-align:center;font-size:22px" aria-label="Emoji"><input class="input grow" name="name" placeholder="Name, e.g. School" value="${esc(p ? p.name : '')}" maxlength="40" required></div>`}
+      <label class="lbl" style="margin-top:10px">Address</label>${locField(p ? p.address : '', {noChips: true, ph: isHome ? 'Start typing your street' : 'Start typing, e.g. Bounce Malaga'})}
+      ${isHome ? `<p class="help">Or stand at home and <button type="button" class="linkbtn" data-act="use-location">use this device's location</button>.</p>` : ''}
+      <div class="row" style="margin-top:12px"><button class="btn">Save</button>${p && !isHome ? `<button type="button" class="btn ghost" data-act="place-del" data-id="${p.id}">Delete</button>` : ''}</div></form>`, {focus: false});
+}
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 const micBtn = (target, submit) => canListen() ? `<button type="button" class="icon-btn micbtn" data-act="mic" data-target="${target}" ${submit ? 'data-submit="1"' : ''} aria-label="Say it instead of typing">${icon('mic')}</button>` : '';
@@ -1594,7 +1676,7 @@ const takerOf = e => { const t = ((settings().people || {})[e.event_id] || {}).t
 function peopleHTML(k) {
   const evs = eventsOnKey(k).sort((a, b) => (b.all_day - a.all_day) || a.starts_at.localeCompare(b.starts_at));
   const cols = S.members.map(m => ({id: m.id, m})).concat([{id: '', m: null}]);
-  const by = id => evs.filter(e => ((eventMember(e) || {}).id || '') === id);
+  const by = id => evs.filter(e => { const ids = eventMembers(e).map(m => m.id); return id ? ids.includes(id) : !ids.length; });
   const card = e => { const t = takerOf(e), st = new Date(e.starts_at), d = !e.all_day ? driveFor(e) : null;
     return `<button class="pev" data-ev="${e.id}" data-act="open-event" data-id="${e.id}" style="--c:${eventColour(e)}"><span class="pt num">${e.all_day ? 'All day' : esc(fmtTime(st))}</span><b>${esc(e.title || 'Busy')}</b>${e.location ? `<small>${esc(e.location)}${d != null ? ` · ${d} min` : ''}</small>` : ''}${t ? `<span class="ptk">🚗 ${avatar(t)} ${esc(t.name)}</span>` : ''}</button>`; };
   return `<p class="help phint">Drag an event onto someone to say who it's for. Tap it to choose who's taking them.</p>
@@ -1603,7 +1685,7 @@ function peopleHTML(k) {
 }
 function setEventPeople(id, patch) {
   const e = evById(id); if (!e) return;
-  if (e.local && 'for' in patch) { const r = e.row, old = {member_id: r.member_id}; r.member_id = patch.for || null; render(); saveLocalEvent(r, null); delete patch.for; if (!('taker' in patch)) return; }
+  if (e.local && 'for' in patch) { const r = e.row, ids = [].concat(patch.for || []).filter(Boolean); r.member_ids = ids; r.member_id = ids[0] || null; render(); saveLocalEvent(r, null); delete patch.for; if (!('taker' in patch)) return; }
   const live = new Set(S.events.map(x => x.event_id).concat(localEvs().map(x => x.event_id))), map = {};
   Object.entries(settings().people || {}).forEach(([key, v]) => { if (live.has(key)) map[key] = v; });
   map[e.event_id] = Object.assign({}, map[e.event_id], patch);
@@ -1644,7 +1726,7 @@ const sayTime = d => fmtTime(d).replace(':00', '');
 function briefFacts(now = new Date()) {
   const k = dayKey(now), me = briefWho(), wx = dayWx(k);
   const events = eventsOnKey(k).filter(e => e.all_day || new Date(e.ends_at) > now).slice(0, 6).map(e => {
-    const st = new Date(e.starts_at), b = e.all_day ? 0 : leaveBufferFor(e), m = eventMember(e);
+    const st = new Date(e.starts_at), b = e.all_day ? 0 : leaveBufferFor(e), ms = eventMembers(e), m = ms.length ? {name: andList(ms.map(x => x.name))} : null;
     return {title: e.title || 'Busy', time: e.all_day ? 'all day' : sayTime(st), who: m ? m.name : '', taking: (takerOf(e) || {}).name || '', where: e.location || '', leave_by: b ? sayTime(new Date(st - b * 60e3)) : '', drive_min: driveFor(e)};
   });
   const noEmoji = t => String(t || '').replace(/\p{Extended_Pictographic}️?/gu, '').replace(/\s+([,.])/g, '$1').replace(/\s+/g, ' ').trim();
@@ -1790,7 +1872,7 @@ const bandOf = e => { const h = hoursFloat(new Date(e.starts_at)); return BANDS.
 function evRow(e, big) {
   const m = eventMember(e), st = new Date(e.starts_at);
   return `<button class="ev evbtn" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${e.all_day ? 'All day' : esc(fmtTime(st)) + untilHTML(e)}</div>
-    <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${miniFace(m)}${m ? esc(m.name) : esc((S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
+    <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${whoMeta(e, (S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
 }
 V.calendar = () => {
   const today = dayKey(new Date()), mode = S.calMode === 'people' && isPhone() ? 'day' : S.calMode;
@@ -2161,7 +2243,7 @@ V.settings = () => {
   if (t === 'family') body = `<div class="panel"><h2>Family</h2><p class="help">Adults get their own home view. Kids' colours show on their events.</p>
     ${S.members.map(m => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)">${avatar(m)}<div class="grow"><b>${esc(m.name)}</b><div class="lbl">${m.kind === 'kid' ? 'Kid' : 'Adult · ' + ({family:'Family view', focus:'Focus view', planner:'Planner view'})[m.home_view]}</div></div><button class="btn soft" data-act="edit-member" data-id="${m.id}">Edit</button></div>`).join('')}
     <button class="btn" style="margin-top:16px" data-act="edit-member">${icon('plus')}Add someone</button></div>`;
-  if (t === 'family') body += lockPanelHTML();
+  if (t === 'family') body += placesPanelHTML() + lockPanelHTML();
   if (t === 'calendar') body = calendarSettingsHTML();
   if (t === 'reminders') body = `
     <div class="panel"><h2>Bin days</h2><p class="help">Add each bin on its own. For bins that swap week to week (say yellow one week, green the next), set both to every 2 weeks and give each its next collection date. Enter the day the <b>truck comes</b>: the reminder shows from 3pm the night before (“out tonight”), and the next morning until midday.</p>
@@ -2507,8 +2589,25 @@ const A = {
   },
   'crop-cancel'(el) { S._crop = null; memberSheet(el.dataset.id); },
   async 'avatar-del'(el) { const m = memberById(el.dataset.id); if (!m) return; const old = m.photo; m.photo = null; render(); memberSheet(m.id); if (DEMO) return; const {error} = await sb.from('members').update({photo: null}).eq('id', m.id); if (error) { m.photo = old; render(); toast("Couldn't remove it."); } },
-  'ev-for'(el) { setEventPeople(el.dataset.id, {for: el.dataset.m || null}); A['open-event']({dataset: {id: el.dataset.id}}); },
-  'ev-taker'(el) { setEventPeople(el.dataset.id, {taker: el.dataset.m || null}); A['open-event']({dataset: {id: el.dataset.id}}); },
+  'ev-for'(el) {
+    const id = el.dataset.id, m = el.dataset.m, cur = eventMembers(evById(id)).map(x => x.id), ids = !m ? [] : cur.includes(m) ? cur.filter(x => x !== m) : cur.concat(m);
+    setEventPeople(id, {for: ids});
+    document.querySelectorAll('#sheet-root [data-act="ev-for"]').forEach(b => { const on = b.dataset.m ? ids.includes(b.dataset.m) : !ids.length; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  },
+  'ev-taker'(el) {
+    const id = el.dataset.id, cur = (takerOf(evById(id)) || {}).id, m = el.dataset.m && el.dataset.m !== cur ? el.dataset.m : null;
+    setEventPeople(id, {taker: m});
+    document.querySelectorAll('#sheet-root [data-act="ev-taker"]').forEach(b => b.classList.toggle('on', !!m && b.dataset.m === m));
+  },
+  'who-tog'(el) {
+    const f = el.closest('form'), inp = f.querySelector('input[name="who"]'), ids = inp.value ? inp.value.split(',') : [], m = el.dataset.m;
+    const next = ids.includes(m) ? ids.filter(x => x !== m) : ids.concat(m); inp.value = next.join(','); el.classList.toggle('on', next.includes(m)); el.setAttribute('aria-pressed', next.includes(m));
+  },
+  'loc-place'(el) { const f = el.closest('.locf'), inp = f.querySelector('[data-locsearch]'); inp.value = el.dataset.name; f.querySelectorAll('.chip3').forEach(c => c.classList.toggle('on', c === el)); const b = f.querySelector('.locsug'); b.hidden = true; },
+  'loc-choose'(el) { const x = (S._locList || [])[+el.dataset.i]; if (!x) return; const f = el.closest('.locf'), inp = f.querySelector('[data-locsearch]'); inp.value = x.label; f.querySelector(`[name="${inp.name}_lat"]`).value = x.lat; f.querySelector(`[name="${inp.name}_lon"]`).value = x.lon; rememberGeo(x.label, x.lat, x.lon); const b = f.querySelector('.locsug'); b.hidden = true; b.innerHTML = ''; f.querySelectorAll('.chip3').forEach(c => c.classList.remove('on')); },
+  'place-edit'(el) { placeSheet(el.dataset.id); },
+  'place-preset'(el) { const f = el.closest('form'); f.name.value = el.dataset.n; f.emoji.value = el.dataset.e; },
+  async 'place-del'(el) { await saveSettings({places: (settings().places || []).filter(p => p.id !== el.dataset.id)}); closeSheet(); toast('Place deleted'); },
   'mic'(el) { listen(t => { const inp = $(el.dataset.target); if (!inp) return; inp.value = (inp.value.trim() ? inp.value.trim() + ' ' : '') + t; inp.dispatchEvent(new Event('input', {bubbles: true})); if (el.dataset.submit) submitForm(inp.closest('form')); }, el); },
   'ev-import'() { eventImportSheet(); },
   'ev-voice'(el) { listen(t => readEvents({text: t}, t), el); toast('Listening… say what\'s on, e.g. “Swimming Saturday 9am at Craigie”', 3500); },
@@ -2689,7 +2788,7 @@ const A = {
   'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
   'open-event'(el) { const e = evById(el.dataset.id); if (!e) return; const m = eventMember(e);
-    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${S.members.length ? `<div class="evppl"><div class="lbl">Who's it for</div><div class="chips2">${S.members.map(x => `<button class="chip2 ${(m && m.id === x.id) ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="${x.id}">${avatar(x)}${esc(x.name)}</button>`).join('')}<button class="chip2 ${!m ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="">👪 Everyone</button></div>
+    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${eventMembers(e).length ? `<p class="row evwhos">${eventMembers(e).map(x => `<span class="row" style="gap:6px">${avatar(x)} ${esc(x.name)}</span>`).join('')}</p>` : ''}${e.notes ? `<p class="help" style="white-space:pre-line">${esc(e.notes)}</p>` : ''}${e.local ? '<p class="lbl">Only in Skylike</p>' : ''}${S.members.length ? `<div class="evppl"><div class="lbl">Who's it for <span class="hint">tap one or more</span></div><div class="chips2">${S.members.map(x => { const on = eventMembers(e).some(y => y.id === x.id); return `<button class="chip2 ${on ? 'on' : ''}" aria-pressed="${on}" data-act="ev-for" data-id="${e.id}" data-m="${x.id}">${avatar(x)}${esc(x.name)}</button>`; }).join('')}<button class="chip2 ${!eventMembers(e).length ? 'on' : ''}" data-act="ev-for" data-id="${e.id}" data-m="">👪 Everyone</button></div>
       ${e.all_day ? '' : `<div class="lbl" style="margin-top:10px">Who's taking them</div><div class="chips2">${S.members.filter(x => x.kind !== 'kid').map(x => `<button class="chip2 ${(takerOf(e) || {}).id === x.id ? 'on' : ''}" data-act="ev-taker" data-id="${e.id}" data-m="${x.id}">🚗 ${avatar(x)}${esc(x.name)}</button>`).join('')}${takerOf(e) ? `<button class="chip2" data-act="ev-taker" data-id="${e.id}" data-m="">Nobody</button>` : ''}</div>`}</div>` : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
   'ev-add'(el) { eventForm(null, el.dataset.k); },
   'ev-setup'() { closeSheet(); A.go({dataset: {view: 'settings', tab: 'calendar'}}); },
@@ -2704,7 +2803,7 @@ const A = {
   async 'toggle-saver'(el) { const s = settings().saver; await saveSettings({saver: Object.assign({}, s, {on: !s.on})}); },
   'use-location'() {
     if (!navigator.geolocation) return toast("This device can't share its location.");
-    navigator.geolocation.getCurrentPosition(async p => { await saveSettings({location: {lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3), name: 'Home'}}); loadWeather(); toast('Home saved. Weather and driving times now use it.'); }, () => toast('Location was not allowed.'));
+    navigator.geolocation.getCurrentPosition(async p => { await saveSettings({location: Object.assign({}, settings().location, {lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4), name: 'Home', at: new Date().toISOString()})}); travelTried.clear(); loadWeather(); computeTravel(); toast('Home saved. Weather and driving times now use it.'); }, () => toast('Location was not allowed.'));
   },
   async 'sign-out'() { await sb.auth.signOut(); LS.set('hid', null); location.reload(); },
   onboard(el) { S._onboard = el.dataset.mode; renderOnboard(); },
@@ -2761,7 +2860,9 @@ function eventForm(e, k) {
   const nowH = tzParts(new Date()).h, st = e && !e.all_day ? hhmmOf(new Date(e.starts_at)) : (pre0.start || String(Math.min(22, nowH + 1)).padStart(2, '0') + ':00');
   const en = e && !e.all_day ? hhmmOf(new Date(e.ends_at)) : (pre0.end || String(Math.min(23, +st.slice(0, 2) + 1)).padStart(2, '0') + ':' + st.slice(3, 5));
   const mine = cals.find(c => me && c.member_id === me.id) || cals[0], isLocal = e ? !!e.local : !mine, pre = S._evDraft || {}; S._evDraft = null;
-  const whoSel = `<div class="evwho" ${isLocal ? '' : 'hidden'}><label class="lbl">Who's it for <select class="input" name="who"><option value="">Everyone</option>${S.members.map(m => `<option value="${m.id}" ${(e ? e.member_id : pre.who) === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></label>
+  const picked = e ? eventMembers(e).map(m => m.id) : [].concat(pre.who || []).filter(Boolean);
+  const whoSel = `<div class="evwho" ${isLocal ? '' : 'hidden'}><div class="lbl">Who's it for <span class="hint">tap one or more · none = everyone</span></div><input type="hidden" name="who" value="${picked.join(',')}">
+      <div class="chips2 forpick">${S.members.map(m => `<button type="button" class="chip2 ${picked.includes(m.id) ? 'on' : ''}" data-act="who-tog" data-m="${m.id}" aria-pressed="${picked.includes(m.id)}">${avatar(m)}${esc(m.name)}</button>`).join('')}</div>
       <textarea class="input" name="notes" rows="2" maxlength="600" placeholder="Notes (optional): bring a hat, RSVP by Friday…">${esc((e ? e.notes : pre.notes) || '')}</textarea></div>`;
   sheet(`<h2>${e ? 'Edit event' : 'Add an event'}</h2>
     <form data-form="ev-save" data-id="${e ? e.id : ''}" class="evform">
@@ -2770,15 +2871,15 @@ function eventForm(e, k) {
       ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
       ${whoSel}
       <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
-      <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
-      <input class="input" name="location" placeholder="Where? (optional, used for leave reminders)" value="${esc(e ? (e.location || '') : (pre0.location || ''))}" maxlength="200">
+      <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}" data-change="ev-start" data-prev="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
+      <div class="lbl">Where <span class="hint">optional, used for leave reminders</span></div>${locField(e ? e.location : pre0.location)}
       ${e && /@\\d+$/.test(e.event_id) && S.events.filter(x => x.event_id.replace(/@\\d+$/, '') === e.event_id.replace(/@\\d+$/, '')).length > 1 ? '<p class="help">This repeats: changes here only affect this one.</p>' : ''}
       <div class="row" style="margin-top:6px"><button class="btn">${e ? 'Save' : 'Add to calendar'}</button>${e ? `<button type="button" class="btn ghost danger" data-act="ev-del" data-id="${e.id}">Delete</button>` : ''}</div>
     </form>`, {focus: !e});
 }
 async function saveLocalEvent(r, undo) {
   if (DEMO) return toast('Sample data: nothing here is saved');
-  const row = {household_id: S.hid, title: r.title, starts_at: r.starts_at, ends_at: r.ends_at, all_day: !!r.all_day, location: r.location || null, notes: r.notes || null, member_id: r.member_id || null, updated_at: new Date().toISOString()};
+  const row = {household_id: S.hid, title: r.title, starts_at: r.starts_at, ends_at: r.ends_at, all_day: !!r.all_day, location: r.location || null, notes: r.notes || null, member_id: (r.member_ids && r.member_ids[0]) || r.member_id || null, member_ids: r.member_ids || (r.member_id ? [r.member_id] : []), updated_at: new Date().toISOString()};
   const q = r._new ? sb.from('local_events').insert(Object.assign({id: r.id}, row)) : sb.from('local_events').update(row).eq('id', r.id);
   const {error} = await q; delete r._new;
   if (error) { if (undo && undo.drop) S.localEvents = S.localEvents.filter(x => x !== r); else if (undo) Object.assign(r, {starts_at: undo.s, ends_at: undo.e2}); render(); return toast("Couldn't save the event. Try again.", 4000); }
@@ -2954,6 +3055,22 @@ const F = {
     S.aiOn = true; S.aiGemini = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
     if (r.error) { toast(r.error, 6000); } else { S.aiModel = r.model; toast('Connected ✓ Meals, pantry photos and the brain-dump are ready.', 4000); } render();
   },
+  async 'place-save'(f) {
+    const id = f.dataset.id, addr = f.location.value.trim(), lat = f.location_lat.value, lon = f.location_lon.value;
+    if (id === 'home') {
+      if (!addr) return toast('Type your address and pick it from the list.');
+      let g = lat ? {lat: +lat, lon: +lon} : geoCache()[addr];
+      if (!g) return toast('Pick your address from the list so the map knows where it is.', 4000);
+      await saveSettings({location: Object.assign({}, settings().location, {lat: +(+g.lat).toFixed(4), lon: +(+g.lon).toFixed(4), name: 'Home', address: addr, at: new Date().toISOString()})}, true);
+      travelTried.clear(); loadWeather(); computeTravel(); closeSheet(); return toast('Home saved. Driving times will update.', 3000);
+    }
+    const name = f.name.value.trim(); if (!name) return;
+    if (addr && lat) rememberGeo(addr, lat, lon);
+    const g = lat ? {lat: +lat, lon: +lon} : (addr && geoCache()[addr]) || null, list = (settings().places || []).slice(), i = list.findIndex(p => p.id === id);
+    const rec = {id: id || uid(), name, emoji: (f.emoji.value || '📍').trim(), address: addr, lat: g ? g.lat : null, lon: g ? g.lon : null};
+    if (i >= 0) list[i] = rec; else list.push(rec);
+    await saveSettings({places: list}, true); travelTried.clear(); closeSheet(); toast(`${name} saved`);
+  },
   'ev-text'(f) { const t = f.text.value.trim(); if (!t) return; readEvents({text: t}); },
   async 'ev-import-save'(f) {
     const picks = [...f.querySelectorAll('input[name="pick"]:checked')].map(x => +x.value), L = S._evReview || [], cal = f.calendar.value;
@@ -2961,7 +3078,7 @@ const F = {
     S._evReview = null; S._evFallback = ''; closeSheet();
     const times = d => { if (d.all_day) return {start: d.day, end: addDaysKey(d.day, 1), sa: d.day + 'T00:00:00Z', ea: addDaysKey(d.day, 1) + 'T00:00:00Z'}; const st = zonedISO(d.day, d.start); let en = d.end ? zonedISO(d.day, d.end) : new Date(new Date(st).getTime() + 3600e3).toISOString(); if (new Date(en) <= new Date(st)) en = new Date(new Date(st).getTime() + 3600e3).toISOString(); return {start: st, end: en, sa: st, ea: en}; };
     if (cal === 'skylike') {
-      const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day, location: d.location || null, notes: d.notes || null, member_id: d.who || null}; });
+      const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day, location: d.location || null, notes: d.notes || null, member_id: d.who || null, member_ids: d.who ? [d.who] : []}; });
       S.localEvents.push(...rows); render(); if (DEMO) return toast('Sample data: nothing here is saved');
       const {error} = await sb.from('local_events').insert(rows); if (error) { S.localEvents = S.localEvents.filter(r => !rows.includes(r)); render(); return toast("Couldn't add them. Try again.", 4000); }
       return toast(`Added ${rows.length} event${rows.length === 1 ? '' : 's'} ✓`, 3000);
@@ -3001,11 +3118,12 @@ const F = {
     let start, end;
     if (allDay) { start = day; end = addDaysKey(day, 1); }
     else { start = zonedISO(day, f.start.value || '09:00'); end = zonedISO(day, f.end.value || f.start.value || '10:00'); if (new Date(end) <= new Date(start)) end = new Date(new Date(start).getTime() + 3600e3).toISOString(); }
-    const location = f.location.value.trim(), who = f.who ? f.who.value || null : null, notes = f.notes ? f.notes.value.trim() || null : null;
+    const location = f.location.value.trim(), whoIds = f.who && f.who.value ? f.who.value.split(',').filter(Boolean) : [], who = whoIds[0] || null, notes = f.notes ? f.notes.value.trim() || null : null;
+    if (location && f.location_lat && f.location_lat.value) rememberGeo(location, f.location_lat.value, f.location_lon.value);
     const sa = allDay ? start + 'T00:00:00Z' : start, ea = allDay ? end + 'T00:00:00Z' : end;
     closeSheet();
-    if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, notes}); render(); return saveLocalEvent(r, old); }
-    if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, notes, created_at: new Date().toISOString()};
+    if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes}); render(); return saveLocalEvent(r, old); }
+    if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes, created_at: new Date().toISOString()};
       S.localEvents.push(r); render(); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); return saveLocalEvent(r, {drop: true}); }
     if (id) { const e = S.events.find(x => x.id === id); if (!e) return; const old = Object.assign({}, e);
       Object.assign(e, {title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end}); render();
@@ -3173,7 +3291,10 @@ function dragStop(commit) {
   if (drag.on) {
     dragEnd = Date.now(); const t = drag.t2, from = drag.c.dataset.k;
     drag.g.remove(); drag.c.classList.remove('drag-src'); if (t) t.classList.remove('drop-on'); document.body.classList.remove('dragging');
-    if (commit && t && t !== drag.c) { if (drag.slot === 'ev') moveEventToDay(drag.c.dataset.ev, t.dataset.k); else if (drag.slot === 'pev') { const id = drag.c.dataset.ev, mid = t.dataset.m; if (((eventMember(evById(id)) || {}).id || '') !== mid) { if (!unlocked()) askPin(() => setEventPeople(id, {for: mid || null})); else { setEventPeople(id, {for: mid || null}); const who = memberById(mid); toast(`${(evById(id) || {}).title || 'Event'} → ${who ? who.name : 'Everyone'}`); } } } else moveMeal(drag.slot, from, t.dataset.k); }
+    if (commit && t && t !== drag.c) { if (drag.slot === 'ev') moveEventToDay(drag.c.dataset.ev, t.dataset.k); else if (drag.slot === 'pev') { const id = drag.c.dataset.ev, mid = t.dataset.m, fromM = (drag.c.closest('.pcol') || {dataset: {}}).dataset.m || '';
+      if (fromM !== mid) { const cur = eventMembers(evById(id)).map(m => m.id), ids = mid ? cur.filter(x => x !== fromM && x !== mid).concat(mid) : [];
+        const go = () => { setEventPeople(id, {for: ids}); const who = memberById(mid); toast(`${(evById(id) || {}).title || 'Event'} → ${who ? andList(ids.map(x => memberById(x).name)) : 'Everyone'}`); };
+        if (!unlocked()) askPin(go); else go(); } } else moveMeal(drag.slot, from, t.dataset.k); }
   }
   drag = null;
 }
@@ -3221,6 +3342,8 @@ document.addEventListener('change', async e => {
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
   if (el.dataset.change === 'avatar-pick' && el.files && el.files[0]) { const f0 = el.files[0]; el.value = ''; return cropSheet(f0, el.dataset.id); }
   if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
+  if (el.dataset.change === 'ev-start') { const f = el.closest('form'), en = f.end, toM = v => { const [h, m] = String(v || '').split(':').map(Number); return h * 60 + m; }, fromM = n => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
+    if (el.value) { let dur = toM(en.value) - toM(el.dataset.prev); if (!(dur > 0)) dur = 60; en.value = fromM(Math.min(23 * 60 + 59, toM(el.value) + dur)); el.dataset.prev = el.value; } return; }
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
   if (el.dataset.change === 'lock-here') { LS.set('lockHere', el.checked); toast(el.checked ? 'This screen will ask for the PIN' : 'This screen won\'t ask for the PIN'); return; }
   if (el.dataset.change === 'ev-allday') { const t = el.closest('form').querySelector('.evtimes'); if (t) t.hidden = el.checked; }

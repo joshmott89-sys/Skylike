@@ -123,9 +123,9 @@ async function tick() {
     const { data: evs } = await admin.from("events_cache").select("event_id,calendar_id,title,starts_at,location,all_day").eq("household_id", hid).eq("all_day", false)
       .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString()).order("starts_at");
     // Skylike-only events (added on the screen, not in Google) get the same reminders.
-    const { data: lev } = await admin.from("local_events").select("id,title,starts_at,location,member_id").eq("household_id", hid).eq("all_day", false)
+    const { data: lev } = await admin.from("local_events").select("id,title,starts_at,location,member_id,member_ids").eq("household_id", hid).eq("all_day", false)
       .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString());
-    const all = (evs || []).concat((lev || []).map((r: any) => ({ event_id: "L-" + r.id, calendar_id: "skylike", member_id: r.member_id, title: r.title, starts_at: r.starts_at, location: r.location, all_day: false })));
+    const all = (evs || []).concat((lev || []).map((r: any) => ({ event_id: "L-" + r.id, calendar_id: "skylike", member_id: r.member_id, member_ids: r.member_ids || [], title: r.title, starts_at: r.starts_at, location: r.location, all_day: false })));
     const withPlace = all.filter((e: any) => e.location && String(e.location).trim());
     if (withPlace.length) {
       const { data: cals } = await admin.from("calendars").select("id,google_id,member_id").eq("household_id", hid);
@@ -133,6 +133,7 @@ async function tick() {
       let lookups = 0;
       for (const e of withPlace) {
         let t: any = (known || []).find((k: any) => k.event_id === e.event_id && k.location === e.location);
+        if ((t && t.status === "home") || /^home$/i.test(String(e.location).trim())) continue; // it's at home: nothing to leave for
         if (t && t.status !== "ok" && Date.now() - new Date(t.computed_at).getTime() > 30 * 60e3) t = null; // try again later
         if (!t && lookups < 3) { lookups++; t = await travel(hid, e, home); }
         const drive = t && t.status === "ok" && t.minutes != null ? t.minutes : null;
@@ -140,8 +141,11 @@ async function tick() {
         const toLeave = Math.round((leaveAt - now) / 60e3);
         const cal = (cals || []).find((c: any) => c.google_id === e.calendar_id || c.id === e.calendar_id);
         // Kids don't have phones: their events go to the grown-ups.
-        const mid = e.member_id || (cal && cal.member_id), mem = mid && (members || []).find((m: any) => m.id === mid);
-        const who = mem && mem.kind !== "kid" ? [mid] : adults;
+        // Whoever is taking them gets it; otherwise the grown-ups it's for; otherwise all grown-ups.
+        const ov = (st.people || {})[e.event_id] || {};
+        const ids: string[] = (ov.for !== undefined ? [].concat(ov.for || []) : e.member_ids && e.member_ids.length ? e.member_ids : [e.member_id || (cal && cal.member_id)]).filter(Boolean);
+        const grown = ids.filter(id => (members || []).some((m: any) => m.id === id && m.kind !== "kid"));
+        const who = ov.taker ? [ov.taker] : grown.length ? grown : adults;
         const how = drive != null ? ` · ${drive} min drive` : "";
         if (toLeave <= 32 && toLeave >= 18 && await once(`soon:${hid}:${e.event_id}:${e.starts_at}`, hid))
           sent += await send(await subsFor(hid, "leave", who), { title: `Leave at ${fmtTime(new Date(leaveAt).toISOString(), tz)}`, body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
