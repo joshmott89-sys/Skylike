@@ -277,6 +277,7 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .gcd .gm{grid-column:1/-1;font-size:26px;letter-spacing:2px;margin-top:6px}.gcd .gt{grid-column:1/-1;font-size:17px;font-weight:600;opacity:.85;margin-top:4px}
 .ntypes{display:grid;gap:4px}.ntype{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,rgba(0,0,0,.06));cursor:pointer}.ntype:first-child{border-top:0}
 .ntype input{width:24px;height:24px;margin-top:2px;accent-color:var(--ocean-2);flex:none}.ntype b{display:block;font-size:16px}.ntype small{display:block;color:var(--muted);font-size:14px;line-height:1.35}
+.nlist{list-style:none;padding:0;margin:4px auto 10px;display:grid;gap:8px;text-align:left;max-width:340px;font-size:16.5px}
 ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1.4}
 .allow{margin:6px 0 14px}.allow summary{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:700;cursor:pointer;list-style:none}.allow summary::-webkit-details-marker{display:none}.allow summary svg{width:18px;height:18px;transition:transform .2s}.allow[open] summary svg{transform:rotate(90deg)}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
@@ -699,7 +700,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1135'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1145'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1633,6 +1634,21 @@ function tourSheet(i = 0) {
   sheet(`<div class="tour"><div class="te">${e}</div><h2>${t}</h2><p>${d}</p><div class="tdots">${TOUR.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>
     <div class="row" style="justify-content:center">${i < TOUR.length - 1 ? `<button class="btn ghost" data-act="tour-end">Skip</button><button class="btn" data-act="tour" data-i="${i + 1}">Next</button>` : `<button class="btn" data-act="tour-end">Let's go</button>`}</div></div>`);
 }
+// First open on a phone: offer notifications straight after "Whose phone is this?", then the quick tour.
+function afterIntro() { if (!LS.get('toured', 0)) setTimeout(() => tourSheet(0), 400); }
+function notifyIntro(force) {
+  if ((DEMO && !force) || LS.get('pushOn', false)) return afterIntro();
+  const ios = isIOS(), needsInstall = ios && !isStandalone(), ok = pushSupported() && !needsInstall && Notification.permission !== 'denied';
+  if (!ok && !needsInstall) return afterIntro();
+  const me = meMember();
+  sheet(`<div class="tour"><div class="te">🔔</div><h2>Get a nudge on your phone</h2>
+    <ul class="nlist"><li>✅ When someone gives you a to-do</li><li>🚗 About 10 minutes before you need to leave</li><li>🗑️ Bins out, lunchboxes and defrosting, the night before</li></ul>
+    ${needsInstall ? `<p class="help" style="text-align:left"><b>On iPhone, add Skylike to your Home Screen first:</b> tap Share, then <b>Add to Home Screen</b>, open it from the new icon, and turn notifications on in Settings → Notifications.</p>
+      <div class="row" style="justify-content:center"><button class="btn" data-act="intro-push-skip">Got it</button></div>`
+    : `<p class="help">${me ? esc(me.name) + ', your' : 'Your'} phone will ask to allow them. Tap <b>Allow</b>.</p>
+      <div class="row" style="justify-content:center"><button class="btn ghost" data-act="intro-push-skip">Not now</button><button class="btn" data-act="intro-push-on">${icon('bell')}Turn on notifications</button></div>`}
+    <p class="help">You can change this any time in Settings → Notifications.</p></div>`, {focus: false});
+}
 function deviceSheet(step = 'kind') {
   const adults = S.members.filter(m => m.kind !== 'kid');
   if (step === 'kind') return sheet(`<h2>What is this device?</h2><p class="help">You can change this later in Settings → Screen.</p>
@@ -2287,7 +2303,9 @@ const A = {
   'tour-end'() { LS.set('toured', 1); closeSheet(); },
   'device-setup'() { deviceSheet('kind'); },
   'dev-kind'(el) { LS.set('deviceKind', el.dataset.k); if (el.dataset.k === 'tablet') { LS.set('deviceName', 'Family screen'); heartbeat(); keepAwake(); deviceSheet('kiosk'); } else deviceSheet('phone'); },
-  'dev-who'(el) { const m = memberById(el.dataset.id); LS.set('deviceName', (m ? m.name + "'s " : '') + 'phone'); LS.set('deviceSetup', 1); heartbeat(); closeSheet(); if (m && m.home_view !== 'family') { S.activeMember = m.id; S.view = m.home_view; } render(); if (!LS.get('toured', 0)) setTimeout(() => tourSheet(0), 300); },
+  'dev-who'(el) { const m = memberById(el.dataset.id); LS.set('deviceName', (m ? m.name + "'s " : '') + 'phone'); LS.set('deviceSetup', 1); heartbeat(); closeSheet(); if (m && m.home_view !== 'family') { S.activeMember = m.id; S.view = m.home_view; } render(); setTimeout(() => notifyIntro(), 300); },
+  async 'intro-push-on'() { closeSheet(); await pushEnable(); afterIntro(); },
+  'intro-push-skip'() { closeSheet(); afterIntro(); },
   'kiosk-tab'(el) { LS.set('kioskTab', el.dataset.k); deviceSheet('kiosk'); },
   'dev-done'() { LS.set('deviceSetup', 1); closeSheet(); render(); if (!LS.get('toured', 0)) setTimeout(() => tourSheet(0), 300); },
   'home-list'(el) { LS.set('homeList', el.dataset.kind); render(); },
