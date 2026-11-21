@@ -161,15 +161,20 @@ function wav(pcm: Uint8Array, rate = 24000) {
   v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, pcm.length, true);
   const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h), 0); out.set(pcm, 44); return out;
 }
-const VOICES: Record<string, [string, string]> = {
-  bubbly: ["Zephyr", "Read this like a cheerful, upbeat friend with a warm Australian accent, smiling as you speak"],
-  sassy: ["Kore", "Read this with dry, cheeky Australian humour and a little attitude, warm underneath"],
-  plain: ["Charon", "Read this clearly and briskly, like a friendly Australian radio newsreader"],
-  calm: ["Sulafat", "Read this slowly, gently and calmly, with a soft, warm Australian voice"],
+// Assistant personalities: a Gemini voice, how it speaks (director's notes, never read aloud) and how it writes the brief.
+const PERSONAS: Record<string, { voice: string; speak: string; write: string }> = {
+  sunny: { voice: "Laomedeia", speak: "cheerful and upbeat, smiling as you speak", write: "bubbly and upbeat, warm, encouraging, a little playful, one light joke at most" },
+  mate: { voice: "Zubenelgenubi", speak: "relaxed and casual, like a laid-back Aussie mate", write: "a laid-back Australian mate: relaxed and friendly, a touch of Aussie slang (at most two words like reckon or arvo), keeps it real" },
+  sass: { voice: "Kore", speak: "dry and cheeky with a little attitude, warm underneath", write: "cheeky and a bit sassy, dry Aussie humour, playful teasing, still kind" },
+  willow: { voice: "Vindemiatrix", speak: "slow, gentle and calm, soft and reassuring", write: "calm, gentle and reassuring: short simple sentences, one thing at a time, never rushed" },
+  news: { voice: "Charon", speak: "clear and brisk, like a friendly radio newsreader", write: "a matter-of-fact radio newsreader: brisk, clear, no fluff" },
+  coach: { voice: "Sadachbia", speak: "energetic and motivating, punchy and upbeat", write: "an energetic coach: motivating, short punchy sentences, celebrates small wins" },
 };
-async function speak(key: string, hid: string, text: string, tone: string) {
-  const [voice, style] = VOICES[tone] || VOICES.bubbly;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + text));
+const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", plain: "news", calm: "willow" };
+async function speak(key: string, hid: string, text: string, pid: string) {
+  const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voice;
+  const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with a warm Australian accent: ${P.speak}. These are directions only: never say them out loud.`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v2|" + voice + "|" + P.speak + "|" + text));
   const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
   const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
   const signed = async () => (await store.createSignedUrl(path, 12 * 3600)).data?.signedUrl;
@@ -179,11 +184,14 @@ async function speak(key: string, hid: string, text: string, tone: string) {
   for (const model of (await ttsModels(key)).slice(0, 3)) {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 45000);
     try {
-      const r = await fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
+      // Directions go in the system instruction so they shape the voice without being spoken. If a model won't take one, read it plainly.
+      const call = (withNotes: boolean) => fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
         method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: `${style}:\n\n${text}` }] }],
+        body: JSON.stringify({ ...(withNotes ? { systemInstruction: { parts: [{ text: notes }] } } : {}), contents: [{ role: "user", parts: [{ text }] }],
           generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } } } }),
       });
+      let r = await call(true);
+      if (r.status === 400) { const peek = await r.clone().text(); console.log(JSON.stringify({ tts_notes_rejected: peek.slice(0, 160) })); r = await call(false); }
       const d = await r.json().catch(() => ({}));
       console.log(JSON.stringify({ tts: model, status: r.status, err: d?.error?.message?.slice(0, 120) }));
       if (!r.ok) { lastErr = r.status === 429 ? "limit" : "busy"; continue; }
@@ -284,7 +292,7 @@ Deno.serve(async (req) => {
       return json(out);
     }
     if (a === "brief") {
-      const tone = ({ bubbly: "bubbly and upbeat, warm, a little playful, one light joke at most", sassy: "cheeky and a bit sassy, dry Aussie humour, still kind", plain: "matter-of-fact and brisk, no fluff", calm: "calm, gentle and reassuring, slow pace" } as any)[body.tone] || "warm and friendly";
+      const P = PERSONAS[String(body.persona || "")] || PERSONAS[TONE_PERSONA[String(body.tone || "")]], tone = P ? P.write : "warm and friendly";
       const { out } = await ask(`Write a spoken morning briefing for ${String(body.name || "the family").slice(0, 40)} in Perth, Australia. Tone: ${tone}.
 It will be read aloud, so: plain sentences, no lists, no emoji, no markdown, times like "nine thirty" are fine as "9:30". 50 to 110 words. Australian English.
 Lead with what needs doing first (leave times, lunches to pack, defrosting), then the rest of the day, then one nice thing to look forward to. Only use these facts, don't invent any: ${JSON.stringify(body.facts || {}).slice(0, 3500)}
@@ -295,7 +303,7 @@ Return JSON: {"text":"..."}`);
       if (!keys.g) return json({ error: "voice-nokey" }, 400);
       const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 1400);
       if (!text) return json({ error: "Nothing to read." }, 400);
-      try { return json(await speak(keys.g, hid, text, String(body.tone || "bubbly"))); }
+      try { return json(await speak(keys.g, hid, text, String(body.persona || body.tone || "sunny"))); }
       catch (e) { return json({ error: String((e as Error).message) }, 502); }
     }
     if (a === "event_parse") {

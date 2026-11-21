@@ -431,6 +431,11 @@ body[data-drag="pev"] .pcol{transition:outline .1s}
 .plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .smarthint{margin:-4px 0 0;font-size:14px;font-weight:700;color:var(--pick)}body.night .smarthint{color:#8CC3DC}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
+.pcard{position:relative;border-radius:18px;border:1.5px solid var(--line);background:var(--surface);transition:border-color .15s,box-shadow .15s}.pcard.on{border-color:var(--pick);box-shadow:0 0 0 2px var(--pick) inset;background:color-mix(in srgb,var(--pick) 10%,var(--surface))}
+.pmain{display:grid;gap:3px;justify-items:start;width:100%;text-align:left;padding:14px 14px 14px;border:0;background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:118px}.pmain .pe{font-size:30px;line-height:1}.pmain b{font-size:17px;margin-top:4px}.pmain small{color:var(--ink-2);font-size:13.5px;line-height:1.3;padding-right:34px}
+.psample{position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;border:0;background:var(--pick);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center}.psample.on{background:#C9473A}
+.pcard.on .pmain b::after{content:' ✓';color:var(--pick)}
 .micbtn{flex:none;box-shadow:none;background:color-mix(in srgb,var(--ink) 6%,transparent)}.micbtn.on{background:#C9473A;color:#fff;animation:micpulse 1.2s infinite}@keyframes micpulse{50%{box-shadow:0 0 0 8px rgba(201,71,58,.18)}}
 .evimp{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.evimp .btn{min-height:44px}.evtitle{gap:8px;flex-wrap:nowrap}
 .evrev{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.evrev li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}
@@ -767,7 +772,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0720'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0740'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1777,9 +1782,46 @@ function lockPanelHTML() {
 }
 /* Morning briefing: a short spoken-style summary of today. Built instantly from the household's own data,
    then (if the AI helper is on) rewritten in the chosen tone. Read aloud with the device's own voice. */
-const BRIEF_TONES = [['bubbly', 'Bubbly', '🎉'], ['sassy', 'Sassy', '😏'], ['plain', 'Straight', '📋'], ['calm', 'Calm', '🌿']];
-const briefTone = () => LS.get('briefTone', 'bubbly');
+/* Assistant personalities: each has its own voice and its own way of writing the brief. Picked per person (the family screen has its own). */
+const PERSONAS = [
+  {id: 'sunny', name: 'Sunny', emoji: '☀️', blurb: 'Bright and bubbly, cheers you on', tone: 'bubbly', sample: "Morning! Big day, but you've totally got this. Swimming's at nine, so let's get those hats on!"},
+  {id: 'mate', name: 'Mate', emoji: '🦘', blurb: 'Laid-back Aussie, keeps it real', tone: 'plain', sample: "G'day. Pretty easy one today. Swimming at nine, bins out tonight, and that's about it, mate."},
+  {id: 'sass', name: 'Sass', emoji: '💅', blurb: 'Cheeky, dry humour, still kind', tone: 'sassy', sample: "Rise and shine. Swimming's at nine, and no, the bins won't take themselves out tonight."},
+  {id: 'willow', name: 'Willow', emoji: '🌿', blurb: 'Calm and gentle, one thing at a time', tone: 'calm', sample: "Good morning. Take a breath. First, swimming at nine. That's all you need to think about for now."},
+  {id: 'news', name: 'Newsreader', emoji: '📻', blurb: 'Straight to the point', tone: 'plain', sample: "Good morning. Swimming at nine. Lunchboxes to pack. Bins out tonight. Top of twenty-eight."},
+  {id: 'coach', name: 'Coach', emoji: '💪', blurb: 'Energetic, gets you moving', tone: 'bubbly', sample: "Let's go! Swimming at nine, lunches packed by eight thirty. Three things today, and we'll smash every one."},
+];
 const briefWho = () => S.activeMember ? memberById(S.activeMember) : (isPhone() ? meMember() : null);
+const personaKey = () => (briefWho() || {}).id || 'family';
+const personaId = () => (settings().persona || {})[personaKey()] || ({bubbly: 'sunny', sassy: 'sass', plain: 'news', calm: 'willow'})[LS.get('briefTone', '')] || 'sunny';
+const persona = (id = personaId()) => PERSONAS.find(p => p.id === id) || PERSONAS[0];
+const briefTone = () => persona().tone;
+function personaPickerHTML() {
+  const cur = personaId(), who = briefWho();
+  return `<div class="pgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}"><span class="pe">${p.emoji}</span><b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
+    <p class="help">${who ? `This is ${esc(who.name)}'s assistant.` : 'This is the family screen\'s assistant.'} Each person can pick their own.</p>
+    <h3 style="margin-top:14px">Voice</h3><div class="chips2">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
+    <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`;
+}
+// Play text in a personality's voice: the natural recording if we can, otherwise the device's best voice.
+function playSpeech(text, pid, onStart, onEnd) {
+  const P = persona(pid); S._speaking = true; onStart && onStart();
+  const done = () => { S._speaking = false; onEnd && onEnd(); };
+  if (!DEMO && S.aiOn && S.aiGemini !== false && LS.get('briefVoice', 'natural') === 'natural') {
+    const a = S._audio || (S._audio = new Audio()); a.onended = a.onerror = null;
+    try { a.src = silentWav(); a.play().catch(() => {}); } catch {}
+    const slow = setTimeout(() => S._speaking && toast('Getting the voice ready…', 3000), 900);
+    callAI({action: 'speak', text, persona: P.id}).then(r => {
+      clearTimeout(slow); if (!S._speaking) return;
+      const fallback = msg => { if (!S._speaking) return; if (msg) toast(msg, 4000); if (!speak(text, P.tone, done)) done(); };
+      if (!r || !r.url) return fallback(r && r.error === 'voice-limit' ? "The natural voice is used up for today, so this device's voice is reading it." : r && r.error === 'voice-nokey' ? '' : "The natural voice isn't answering, so this device's voice is reading it.");
+      a.onended = done; a.onerror = () => fallback("Couldn't play the natural voice, so this device's voice is reading it.");
+      a.src = r.url; a.play().catch(() => fallback('Tap play again to hear it.'));
+    });
+    return;
+  }
+  if (!speak(text, P.tone, done)) done();
+}
 const andList = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 const sayTime = d => fmtTime(d).replace(':00', '');
 function briefFacts(now = new Date()) {
@@ -1821,20 +1863,20 @@ function briefTemplate(f) {
 }
 const briefHash = f => { const t = JSON.stringify(f); let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); };
 function briefText() {
-  const f = briefFacts(), tone = briefTone(), who = (briefWho() || {}).id || 'family', key = `brief:${dayKey(new Date())}:${who}:${tone}`, hash = briefHash(f), c = LS.get(key, null);
+  const f = briefFacts(), pid = personaId(), who = (briefWho() || {}).id || 'family', key = `brief:${dayKey(new Date())}:${who}:${pid}`, hash = briefHash(f), c = LS.get(key, null);
   if (S.aiOn && !DEMO && (!c || (c.hash !== hash && Date.now() - c.at > 90 * 60e3)) && S._briefReq !== key + hash) {
     S._briefReq = key + hash;
-    callAI({action: 'brief', tone, name: f.name, facts: f}).then(r => { if (r && r.text) { LS.set(key, {hash, text: r.text, at: Date.now()}); const el = $('.brief .btxt'); if (el) el.textContent = r.text; } });
+    callAI({action: 'brief', persona: pid, tone: persona(pid).tone, name: f.name, facts: f}).then(r => { if (r && r.text) { LS.set(key, {hash, text: r.text, at: Date.now()}); const el = $('.brief .btxt'); if (el) el.textContent = r.text; } });
   }
   return c && c.text ? c.text : briefTemplate(f);
 }
 function briefShow(now = new Date()) { const hr = hoursFloat(now); return hr >= 4.5 && hr < 11 && LS.get('briefHide', '') !== dayKey(now) && settings().brief !== false; }
 function briefCardHTML(force) {
   if (!force && !briefShow()) return '';
-  const tone = BRIEF_TONES.find(t => t[0] === briefTone()) || BRIEF_TONES[0];
+  const P = persona();
   return `<section class="brief ${force || S._briefOpen ? 'open' : ''}" aria-label="Morning briefing"><div class="bhead"><span class="bk">☀️ <span class="bkl">Morning brief</span><span class="bks">Brief</span></span><span class="sp"></span>
     <button class="btn bplay ${S._speaking ? 'on' : ''}" data-act="brief-say">${S._speaking ? '■ Stop' : '▶ <span class="rl">Read it to me</span><span class="rs">Listen</span>'}</button>
-    <button class="btn soft sm" data-act="brief-tone" aria-label="Tone: ${tone[1]}. Change it">${tone[2]}<span class="tl"> ${tone[1]}</span></button>
+    <button class="btn soft sm" data-act="brief-tone" aria-label="Assistant: ${P.name}. Change it">${P.emoji}<span class="tl"> ${P.name}</span></button>
     ${force ? '' : `<button class="icon-btn sm" data-act="brief-hide" aria-label="Hide for today">${icon('x')}</button>`}</div>
     <p class="btxt" ${force ? '' : 'data-act="brief-more" role="button" tabindex="0" aria-label="Show the whole brief"'}>${esc(briefText())}</p></section>`;
 }
@@ -2245,7 +2287,7 @@ V.sitter = () => {
 };
 
 /* ----- settings ----- */
-const STABS = [['household','Household'],['family','Family'],['kids','Kids'],['kitchen','Kitchen'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['notify','Notifications'],['photos','Photos'],['admin','Devices']];
+const STABS = [['household','Household'],['family','Family'],['assistant','Assistant'],['kids','Kids'],['kitchen','Kitchen'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['notify','Notifications'],['photos','Photos'],['admin','Devices']];
 const FB_MODULES = [['family', 'Home screen'], ['calendar', 'Calendar'], ['lists', 'Lists & groceries'], ['meals', 'Meals & lunches'], ['pantry', 'Fridge & pantry'], ['kids', 'Kids'], ['notes', 'Notes'], ['photos', 'Photos & idle screen'], ['sitter', 'Sitter'], ['setup', 'Setup & settings'], ['other', 'Other']];
 const FB_KINDS = [['bug', '🐞 Something\'s wrong'], ['idea', '💡 Idea'], ['confusing', '🤔 Confusing'], ['love', '❤️ Love this']];
 function feedbackSheet() {
@@ -2355,6 +2397,7 @@ V.settings = () => {
         <div class="row" style="margin-top:12px"><button class="btn soft" data-act="push-test">Send a test</button><button class="btn ghost" data-act="push-off">Turn off on this phone</button></div>`}
     </div>`;
   }
+  if (t === 'assistant') body = `<div class="panel"><h2>Your assistant</h2><p class="help">The voice and personality that reads your morning brief. Tap ▶ to hear each one.</p>${personaPickerHTML()}</div>`;
   if (t === 'screen') body = `<div class="panel"><h2>Appearance</h2><p class="help">Auto is light by day and switches to dusk colours during the night hours below. Applies to this device only.</p>
       <span class="seg" role="radiogroup" aria-label="Appearance">${[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => `<button class="${LS.get('theme', 'auto') === k ? 'on' : ''}" data-act="theme" data-theme="${k}" role="radio" aria-checked="${LS.get('theme', 'auto') === k}">${l}</button>`).join('')}</span></div>
     <div class="panel"><h2>Calm layout</h2><p class="help">Folds extra tools away and adds space on Lists and Meals. Auto turns it on for anyone whose home view is Focus. This device only.</p>
@@ -2687,32 +2730,21 @@ const A = {
   async 'fq-as-todo'() { const t = S._fqText || S._evFallback; S._evReview = null; S._evFallback = ''; closeSheet(); if (!t) return; const f = document.createElement('form'); const i = document.createElement('input'); i.name = 'text'; i.value = t; f.appendChild(i); f.text = i; S._fqForce = true; await F.fquick(f); S._fqForce = false; },
   'brief-say'() {
     if (S._speaking) return stopSpeech();
-    const t = ($('.brief .btxt') || {}).textContent || briefText(), tone = briefTone();
-    sayBtn(true); S._speaking = true;
-    if (!DEMO && S.aiOn && S.aiGemini !== false && LS.get('briefVoice', 'natural') === 'natural') {
-      const a = S._audio || (S._audio = new Audio()); a.onended = a.onerror = null;
-      try { a.src = silentWav(); a.play().catch(() => {}); } catch {} // unlock audio while we still have the tap (iPhone/iPad)
-      const slow = setTimeout(() => S._speaking && toast('Getting the voice ready…', 3000), 900);
-      callAI({action: 'speak', text: t, tone}).then(r => {
-        clearTimeout(slow); if (!S._speaking) return;
-        const fallback = msg => { if (!S._speaking) return; if (msg) toast(msg, 4000); if (!speak(t, tone, () => { S._speaking = false; sayBtn(false); })) { S._speaking = false; sayBtn(false); } };
-        if (!r || !r.url) return fallback(r && r.error === 'voice-limit' ? "The natural voice is used up for today, so this device's voice is reading it." : r && r.error === 'voice-nokey' ? '' : "The natural voice isn't answering, so this device's voice is reading it.");
-        a.onended = () => { S._speaking = false; sayBtn(false); }; a.onerror = () => fallback("Couldn't play the natural voice, so this device's voice is reading it.");
-        a.src = r.url; a.play().catch(() => fallback("Tap Listen again to play it."));
-      });
-      return;
-    }
-    if (!speak(t, tone, () => { S._speaking = false; sayBtn(false); })) { S._speaking = false; sayBtn(false); }
+    playSpeech(($('.brief .btxt') || {}).textContent || briefText(), personaId(), () => sayBtn(true), () => sayBtn(false));
+  },
+  'persona-sample'(el) {
+    if (S._speaking) stopSpeech();
+    const P = persona(el.dataset.v); el.classList.add('on'); el.textContent = '■';
+    playSpeech(P.sample, P.id, null, () => { el.classList.remove('on'); el.textContent = '▶'; });
+  },
+  async 'persona-set'(el) {
+    const v = el.dataset.v; document.querySelectorAll('.pcard').forEach(c => { const on = c.dataset.pid === v; c.classList.toggle('on', on); const m = c.querySelector('.pmain'); m && m.setAttribute('aria-pressed', on); });
+    await saveSettings({persona: Object.assign({}, settings().persona, {[personaKey()]: v})}, true); toast(`${persona(v).emoji} ${persona(v).name} is your assistant`, 2200);
   },
   'brief-more'() { S._briefOpen = !S._briefOpen; const b = $('.brief'); if (b) b.classList.toggle('open', S._briefOpen); },
   'brief-hide'() { LS.set('briefHide', dayKey(new Date())); stopSpeech(); render(); toast('Hidden until tomorrow morning'); },
-  'brief-tone'() { const cur = briefTone();
-    sheet(`<h2>How should the brief sound?</h2><p class="help">${S.aiOn ? 'The AI helper rewrites the brief in this tone.' : 'Turn on the AI helper (Settings → Kitchen) for the tones to really come through. The plain version still works.'}</p>
-      <div class="tones">${BRIEF_TONES.map(([k, l, e]) => `<button class="tone ${k === cur ? 'on' : ''}" data-act="brief-tone-set" data-v="${k}"><span>${e}</span>${l}</button>`).join('')}</div>
-      <h3 style="margin-top:18px">Voice</h3><div class="chips2">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
-      <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new briefs a day, and every screen reuses the same recording. When it runs out, this device\'s voice takes over.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`); },
+  'brief-tone'() { sheet(`<h2>Choose your assistant</h2><p class="help">Each one has its own voice and its own way of telling you about your day. Tap ▶ to hear them.</p>${personaPickerHTML()}`, {focus: false}); },
   'brief-voice'(el) { LS.set('briefVoice', el.dataset.v); document.querySelectorAll('#sheet-root [data-act="brief-voice"]').forEach(b => b.classList.toggle('on', b === el)); },
-  'brief-tone-set'(el) { LS.set('briefTone', el.dataset.v); closeSheet(); render(); },
   'brief-open'() { sheet(`<h2>Today's brief</h2>${briefCardHTML(true).replace('class="brief"', 'class="brief insheet"')}`); },
   'fq-mic'(el) { const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return; const r = new R(); r.lang = 'en-AU'; r.interimResults = false; el.classList.add('on');
     r.onresult = ev => { const t = ev.results[0][0].transcript; const f = document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } };
