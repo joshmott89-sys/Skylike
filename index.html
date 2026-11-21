@@ -277,7 +277,8 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .gcd .gm{grid-column:1/-1;font-size:26px;letter-spacing:2px;margin-top:6px}.gcd .gt{grid-column:1/-1;font-size:17px;font-weight:600;opacity:.85;margin-top:4px}
 .ntypes{display:grid;gap:4px}.ntype{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,rgba(0,0,0,.06));cursor:pointer}.ntype:first-child{border-top:0}
 .ntype input{width:24px;height:24px;margin-top:2px;accent-color:var(--ocean-2);flex:none}.ntype b{display:block;font-size:16px}.ntype small{display:block;color:var(--muted);font-size:14px;line-height:1.35}
-ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:4px 0}
+ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1.4}
+.allow{margin:6px 0 14px}.allow summary{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:700;cursor:pointer;list-style:none}.allow summary::-webkit-details-marker{display:none}.allow summary svg{width:18px;height:18px;transition:transform .2s}.allow[open] summary svg{transform:rotate(90deg)}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -698,7 +699,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1100'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1120'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -731,6 +732,16 @@ async function pushEnable() {
   const {error} = await sb.from('push_subscriptions').upsert({household_id: S.hid, member_id: me.id, device_id: S.deviceId, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth}, {onConflict: 'endpoint'});
   if (error) return toast("Couldn't save that. Try again.");
   LS.set('pushOn', true); S._push = null; render(); pushTest();
+}
+// Step-by-step help for allowing notifications (a web app can't open the phone's settings itself).
+function allowStepsHTML(open) {
+  const ua = navigator.userAgent, android = /Android/i.test(ua), samsung = /SamsungBrowser/i.test(ua), ios = isIOS(), inst = isStandalone();
+  const steps = ios ? ['Open the iPhone <b>Settings</b> app.', 'Tap <b>Notifications</b>, then <b>Skylike</b> (it shows once Skylike is on your Home Screen).', 'Turn on <b>Allow Notifications</b>. Banners and Sounds on is best.', 'Come back to Skylike and tap <b>check again</b>.']
+    : android && inst ? ['Press and hold the <b>Skylike</b> icon on your home screen.', 'Tap <b>App info</b> (or the ⓘ).', 'Tap <b>Notifications</b> and turn them on.', 'Come back to Skylike and tap <b>check again</b>.']
+    : android && samsung ? ['Tap the <b>☰ menu</b> → <b>Settings</b> → <b>Sites and downloads</b> → <b>Notifications</b>.', 'Find Skylike (joshmott89-sys.github.io) and set it to <b>Allow</b>.', 'Come back and tap <b>check again</b>.']
+    : android ? ['In Chrome, tap the <b>settings icon</b> to the left of the web address (it looks like two sliders or a lock).', 'Tap <b>Permissions</b> (or Site settings), then <b>Notifications</b>, and choose <b>Allow</b>.', 'Still nothing? Open the phone’s <b>Settings</b> → <b>Apps</b> → <b>Chrome</b> → <b>Notifications</b> and turn them on.', 'Come back to Skylike and tap <b>check again</b>.']
+    : ['Click the icon to the left of the web address.', 'Set <b>Notifications</b> to <b>Allow</b>.', 'Reload Skylike.'];
+  return `<details class="allow" ${open ? 'open' : ''}><summary>${icon('right')}How to allow notifications on ${ios ? 'iPhone' : android ? 'Android' : 'this device'}</summary><ol class="help steps">${steps.map(t => `<li>${t}</li>`).join('')}</ol></details>`;
 }
 async function pushTest() {
   const {data: {session}} = await sb.auth.getSession();
@@ -888,6 +899,8 @@ async function checkForUpdate(reopened) {
 }
 setTimeout(() => checkForUpdate(true), 8000); setInterval(() => checkForUpdate(false), 10 * 60e3);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(true); });
+// coming back from the phone's settings: re-check notification permission if that screen is open
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.view === 'settings' && S.settingsTab === 'notify') { S._push = null; render(); } });
 setInterval(() => { // quiet nightly refresh on the family screen
   const p = tzParts(new Date());
   if (deviceKind() === 'tablet' && p.h === 3 && p.min < 6 && Date.now() - bootAt > 3600e3) freshReload();
@@ -1861,8 +1874,8 @@ V.settings = () => {
       : P.state === 'demo' ? '<p class="help">Notifications are off in the sample.</p>'
       : P.state === 'ios-install' ? `<p class="help"><b>First, add Skylike to your Home Screen.</b> iPhones only allow notifications from apps on the Home Screen.</p><ol class="help steps"><li>Open Skylike in Safari.</li><li>Tap Share, then <b>Add to Home Screen</b>.</li><li>Open Skylike from the new icon and come back here.</li></ol>`
       : P.state === 'unsupported' ? '<p class="help">This browser can’t show notifications. On Android use Chrome; on iPhone add Skylike to the Home Screen first.</p>'
-      : P.state === 'denied' ? '<p class="help">Notifications are blocked for Skylike. Turn them on in your phone’s settings (Settings → Notifications → Skylike), then come back.</p>'
-      : P.state === 'off' ? `<p class="help">Get a nudge on this phone for ${me ? esc(me.name) : 'you'}: to-dos given to you, time to leave, and a heads-up the night before.</p><button class="btn" data-act="push-on">${icon('bell')}Turn on for this phone</button>`
+      : P.state === 'denied' ? `<p class="help"><b>Notifications are blocked for Skylike on this phone.</b> Phones don’t let apps open this setting for you, so here’s where to find it:</p>${allowStepsHTML(true)}<button class="btn" data-act="push-recheck">I’ve allowed them, check again</button>`
+      : P.state === 'off' ? `<p class="help">Get a nudge on this phone for ${me ? esc(me.name) : 'you'}: to-dos given to you, time to leave, and a heads-up the night before.</p><button class="btn" data-act="push-on">${icon('bell')}Turn on for this phone</button><p class="help" style="margin-top:12px">Your phone will ask to allow notifications. Tap <b>Allow</b>.</p>${allowStepsHTML(false)}`
       : `<p class="help">On for ${esc((memberById(P.row.member_id) || me || {}).name || 'this phone')}. Choose what you get:</p>
         <div class="ntypes">${types.map(([k, l, d]) => `<label class="ntype"><input type="checkbox" data-change="push-pref" data-k="${k}" ${pr[k] !== false ? 'checked' : ''}><span><b>${l}</b><small>${d}</small></span></label>`).join('')}</div>
         <div class="row" style="margin-top:12px"><button class="btn soft" data-act="push-test">Send a test</button><button class="btn ghost" data-act="push-off">Turn off on this phone</button></div>`}
@@ -2142,6 +2155,7 @@ const A = {
   'lunch-faves'() { favesSheet(); },
   'push-on'() { pushEnable(); },
   'push-test'() { pushTest(); },
+  'push-recheck'() { S._push = null; render(); },
   async 'push-off'() { const reg = await swReg(), sub = reg && await reg.pushManager.getSubscription(); if (sub) { await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint); try { await sub.unsubscribe(); } catch {} } LS.set('pushOn', false); S._push = null; render(); toast('Notifications are off on this phone.'); },
   assign(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return;
     sheet(`<h2>Who's this for?</h2><p class="help">${esc(it.text)}</p><div class="whopick">${S.members.map(m => `<button class="${it.assignee === m.id ? 'on' : ''}" data-act="assign-set" data-id="${it.id}" data-m="${m.id}">${avatar(m)}<span>${esc(m.name)}</span></button>`).join('')}<button class="${!it.assignee ? 'on' : ''}" data-act="assign-set" data-id="${it.id}" data-m=""><span class="face" style="background:var(--line)">${icon('user')}</span><span>Anyone</span></button></div>`, {focus: false}); },
