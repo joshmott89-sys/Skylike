@@ -155,6 +155,16 @@ async function ttsModels(key: string): Promise<string[]> {
     .sort((a: string, b: string) => (Number(/lite/.test(a)) - Number(/lite/.test(b))) || ver(b) - ver(a));
   ttsCache.set(key, { list, at: Date.now() }); return list;
 }
+// Smooth the edges: a short fade in, a gentle fade out and a little silence after, so speakers don't thump when it stops.
+function soften(raw: Uint8Array, rate: number) {
+  const n = Math.floor(raw.length / 2), src = new DataView(raw.buffer, raw.byteOffset, n * 2), tail = Math.round(rate * 0.25);
+  const out = new Uint8Array((n + tail) * 2), dv = new DataView(out.buffer), fin = Math.min(n, Math.round(rate * 0.015)), fout = Math.min(n, Math.round(rate * 0.12));
+  for (let i = 0; i < n; i++) {
+    let g = 1; if (i < fin) g = i / fin; const left = n - 1 - i; if (left < fout) g = Math.min(g, left / fout);
+    dv.setInt16(i * 2, Math.round(src.getInt16(i * 2, true) * g), true);
+  }
+  return out; // the tail stays zero: silence
+}
 function wav(pcm: Uint8Array, rate = 24000) {
   const h = new ArrayBuffer(44), v = new DataView(h), w = (o: number, t: string) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   w(0, "RIFF"); v.setUint32(4, 36 + pcm.length, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
@@ -174,7 +184,7 @@ const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", p
 async function speak(key: string, hid: string, text: string, pid: string) {
   const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voice;
   const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with a warm Australian accent: ${P.speak}. These are directions only: never say them out loud.`;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v2|" + voice + "|" + P.speak + "|" + text));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v3|" + voice + "|" + P.speak + "|" + text));
   const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
   const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
   const signed = async () => (await store.createSignedUrl(path, 12 * 3600)).data?.signedUrl;
@@ -199,7 +209,7 @@ async function speak(key: string, hid: string, text: string, pid: string) {
       const b64 = (part?.inlineData || part?.inline_data)?.data; if (!b64) { lastErr = "busy"; continue; }
       const mime = String((part.inlineData || part.inline_data).mimeType || ""), rate = +((mime.match(/rate=(\d+)/) || [])[1] || 24000);
       const bin = atob(b64), pcm = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) pcm[i] = bin.charCodeAt(i);
-      const up = await store.upload(path, wav(pcm, rate), { contentType: "audio/wav", upsert: true });
+      const up = await store.upload(path, wav(soften(pcm, rate), rate), { contentType: "audio/wav", upsert: true });
       if (up.error) throw new Error("couldn't save the audio");
       // tidy: keep only the last few days of briefs
       const { data: old } = await store.list(`${hid}/brief`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
