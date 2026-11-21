@@ -190,6 +190,28 @@ Deno.serve(async (req) => {
   if (!m) return json({ error: "not a member" }, 403);
 
   const action = body.action || "sync";
+  // Two-way editing through the household's Apps Script bridge, then a fresh sync so every screen updates.
+  if (action === "create" || action === "update" || action === "delete") {
+    const b = await getBridge(hid);
+    if (!b) return json({ error: "Two-way editing isn't connected yet (Settings → Calendar)." }, 400);
+    const p: Record<string, string> = { action };
+    if (action !== "create") {
+      const { data: ev } = await admin.from("events_cache").select("calendar_id,event_id,starts_at").eq("household_id", hid).eq("id", String(body.id || "")).maybeSingle();
+      if (!ev) return json({ error: "That event has changed. Refresh and try again." }, 404);
+      if (String(ev.calendar_id).startsWith("ics:")) return json({ error: "That calendar is a read-only link. Edit it in Google Calendar." }, 400);
+      const at = String(ev.event_id).lastIndexOf("@");
+      p.calendarId = ev.calendar_id; p.id = at > 0 ? String(ev.event_id).slice(0, at) : ev.event_id; p.originalStart = ev.starts_at;
+    } else {
+      const { data: cal } = await admin.from("calendars").select("google_id").eq("household_id", hid).eq("id", String(body.calendar || "")).maybeSingle();
+      if (!cal || String(cal.google_id).startsWith("ics:")) return json({ error: "Pick a two-way calendar to add it to." }, 400);
+      p.calendarId = cal.google_id;
+    }
+    for (const k of ["title", "start", "end", "location"]) if (body[k] !== undefined && body[k] !== null) p[k] = String(body[k]).slice(0, 500);
+    if (body.allDay !== undefined) p.allDay = body.allDay ? "true" : "false";
+    try { await callBridge(b, p); } catch (err) { return json({ error: String((err as Error).message || err) }, 502); }
+    const r = await syncHousehold(hid);
+    return json({ ok: true, sync: r });
+  }
   if (action === "test" || action === "calendars") {
     const b = await getBridge(hid);
     if (!b) return json({ error: "Calendar not connected yet" }, 400);

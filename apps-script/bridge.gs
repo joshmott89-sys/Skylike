@@ -1,6 +1,8 @@
 /**
  * Skylike calendar bridge
- * Lets your family screen read (and later edit) your Google Calendars.
+ * Lets your family screen read and edit your Google Calendars (two-way).
+ * Other people's calendars work too: they share their calendar with this Google account
+ * (Google Calendar > Settings and sharing > Share with specific people > "Make changes to events").
  *
  * Setup (about 5 minutes):
  * 1. Go to script.google.com, click "New project", delete everything, paste this whole file.
@@ -61,18 +63,23 @@ function handle_(p) {
         return out_({ ok: true, events: events });
       }
       case 'create': {
-        const cal = CalendarApp.getCalendarById(p.calendarId);
-        const ev = p.allDay
-          ? cal.createAllDayEvent(p.title, new Date(p.start), new Date(p.end))
-          : cal.createEvent(p.title, new Date(p.start), new Date(p.end), { location: p.location || '' });
+        const cal = CalendarApp.getCalendarById(p.calendarId) || CalendarApp.getDefaultCalendar();
+        const opts = { location: p.location || '', description: p.description || '' };
+        const ev = bool_(p.allDay)
+          ? cal.createAllDayEvent(p.title, date_(p.start), date_(p.end), opts)
+          : cal.createEvent(p.title, date_(p.start), date_(p.end), opts);
         return out_({ ok: true, id: ev.getId() });
       }
-      case 'move': {
+      case 'move':
+      case 'update': {
         const ev = findEvent_(CalendarApp.getCalendarById(p.calendarId), p.id, p.originalStart);
         if (!ev) return out_({ ok: false, error: 'event not found' });
-        if (p.allDay) ev.setAllDayDates(new Date(p.start), new Date(p.end));
-        else ev.setTime(new Date(p.start), new Date(p.end));
-        if (p.title) ev.setTitle(p.title);
+        if (p.start && p.end) {
+          if (bool_(p.allDay)) ev.setAllDayDates(date_(p.start), date_(p.end));
+          else ev.setTime(date_(p.start), date_(p.end));
+        }
+        if (p.title !== undefined && p.title !== '') ev.setTitle(p.title);
+        if (p.location !== undefined) ev.setLocation(p.location);
         return out_({ ok: true });
       }
       case 'delete': {
@@ -87,6 +94,14 @@ function handle_(p) {
   } catch (err) {
     return out_({ ok: false, error: String(err) });
   }
+}
+
+// "true"/"false" arrive as text from web requests
+function bool_(v) { return v === true || v === 'true' || v === '1'; }
+// A plain date (YYYY-MM-DD) is a calendar day in this script's time zone; anything else is an exact time.
+function date_(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(s);
 }
 
 function findEvent_(cal, id, originalStart) {

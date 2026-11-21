@@ -281,6 +281,10 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .nlist{list-style:none;padding:0;margin:4px auto 10px;display:grid;gap:8px;text-align:left;max-width:340px;font-size:16.5px}
 ol.steps{padding-left:22px;margin:8px 0 0}ol.steps li{margin:6px 0;line-height:1.4}
 .allow{margin:6px 0 14px}.allow summary{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:700;cursor:pointer;list-style:none}.allow summary::-webkit-details-marker{display:none}.allow summary svg{width:18px;height:18px;transition:transform .2s}.allow[open] summary svg{transform:rotate(90deg)}
+.evform{display:grid;gap:12px}.evrow{gap:12px;align-items:end}.evrow .lbl{display:grid;gap:4px}.evad{display:flex!important;grid-auto-flow:column;align-items:center;gap:8px;min-height:48px}.evad input{width:22px;height:22px;accent-color:var(--ocean-2)}
+.cal-add{flex:none}@media (max-width:700px){.cal-add span{display:none}.cal-add{min-width:48px;padding:0;justify-content:center}}
+.btn.danger{color:#B3261E}.btn.danger:not(.ghost){background:#B3261E;color:#fff}
+.week .day.drop-on{outline:3px dashed var(--ocean-2);outline-offset:-3px}
 .ratebtn{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:16px;cursor:pointer}.ratebtn:active{transform:scale(.92)}
 .kt.fk{display:flex;align-items:center;gap:8px}.kt.fk .face{width:30px;height:30px;font-size:16px;flex:none}
 .scanpick{display:grid;gap:10px;margin-top:6px}.scanpick .btn{justify-content:center;min-height:52px}
@@ -655,7 +659,7 @@ body.night .hero .leave{color:var(--apricot)}
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M9.5 6.5h10M9.5 12h10M9.5 17.5h10"/><path d="m3.8 6.4 1.3 1.3 2.4-2.6M3.8 11.9l1.3 1.3 2.4-2.6M4.2 17.5h2.6"/></symbol>
   <symbol id="i-meal" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16.5 21V3c-2.2 1.2-3.5 3.6-3.5 6.5V13h3.5"/></symbol>
-  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2H4.5z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.3 3.8-5 7-5s5.8 1.7 7 5"/></symbol><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol><symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
   <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 17.7l-1.6-5.5L5 10.6 10.4 9zM18.5 15.5l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z"/></symbol>
   <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></symbol>
   <symbol id="i-sitter" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.6 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10z"/></symbol>
@@ -701,7 +705,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-2015'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2045'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1540,6 +1544,7 @@ V.calendar = () => {
   const title = mode === 'day' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
   const head = `<h1>${title}<span class="sp"></span>
     <button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button>
+    <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
     <button class="icon-btn" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button>
     <button class="btn soft" data-act="cal-shift" data-n="0">Today</button>
     <button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button>
@@ -1565,11 +1570,11 @@ V.calendar = () => {
       const term = settings().school && !WA_TERMS.some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0;
       let lastBand = '';
       const timedHTML = timed.map(e => { const b = bandOf(e); const head = b[0] !== lastBand ? `<div class="wband">${b[1]}</div>` : ''; lastBand = b[0];
-        return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');
-      return `<div class="day ${k === today ? 'today' : ''}"><button class="dh" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}">${esc(fmtDay(k, {weekday: 'short'}))}<b class="num">${keyToDate(k).getUTCDate()}</b></button>
+        return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}" ${canEdit(e) ? `data-ev="${e.id}"` : ''}><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');
+      return `<div class="day ${k === today ? 'today' : ''}" data-k="${k}"><button class="dh" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}">${esc(fmtDay(k, {weekday: 'short'}))}<b class="num">${keyToDate(k).getUTCDate()}</b></button>
         ${(w => w ? `<div class="dwx" title="${esc(wxWords(w.code))}">${icon(wxIcon(w.code, 1))}<span class="num"><b>${w.hi}°</b> ${w.lo}°</span>${w.mm >= 1 ? `<span class="mm num">${Math.round(w.mm)}mm</span>` : ''}</div>` : '')(k >= today ? dayWx(k) : null)}
         ${WA_HOLIDAYS[k] && settings().holidays ? `<div class="hol">${esc(WA_HOLIDAYS[k])}</div>` : term ? '<div class="hol" style="background:color-mix(in srgb,#3A9AA0 18%,transparent);color:#246B70">School holidays</div>' : ''}
-        ${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}">${esc(e.title)}</button>`).join('')}${timedHTML}</div>`; }).join('');
+        ${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}" ${canEdit(e) ? `data-ev="${e.id}"` : ''}>${esc(e.title)}</button>`).join('')}${timedHTML}</div>`; }).join('');
     return `<div class="page" style="max-width:none">${head}${noCal}<div class="week">${cols}</div></div>`;
   }
   const p = tzParts(new Date()); let y = p.y, m = p.m - 1 + S.calOffset; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
@@ -1992,12 +1997,13 @@ function calendarSettingsInner() {
       <li>Paste it below with a name, like "Josh" or "Kids".</li></ol>
     <form data-form="add-feed"><div class="row"><input class="input" name="name" placeholder="Name" maxlength="40" style="width:160px" required><input class="input grow" name="url" placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" required></div><button class="btn" style="margin-top:10px">${icon('plus')}Add calendar</button></form></div>
   ${S.calendars.length ? `<div class="panel"><h2>Calendars</h2><p class="help">Choose which show, and whose colour each one uses.</p>
-    ${S.calendars.map(c => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><button class="toggle ${c.enabled ? 'on' : ''}" data-act="cal-toggle" data-id="${c.id}" aria-label="Show ${esc(c.name)}"></button><div class="grow"><b>${esc(c.name)}</b><div class="lbl">${c.google_id.startsWith('ics:') ? 'Calendar link' : 'Two-way'}</div></div>
+    ${S.calendars.map(c => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><button class="toggle ${c.enabled ? 'on' : ''}" data-act="cal-toggle" data-id="${c.id}" aria-label="Show ${esc(c.name)}"></button><div class="grow"><b>${esc(c.name)}</b> <span class="mb">${c.google_id.startsWith('ics:') ? 'Read-only link' : 'Two-way'}</span><div class="lbl">${c.google_id.startsWith('ics:') ? 'Calendar link' : 'Two-way'}</div></div>
       <select class="input" style="width:auto" data-act="cal-member" data-id="${c.id}" aria-label="Whose calendar"><option value="">Whole family</option>${S.members.map(m => `<option value="${m.id}" ${c.member_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
       ${c.google_id.startsWith('ics:') ? `<button class="icon-btn" data-act="del-feed" data-gid="${esc(c.google_id)}" aria-label="Remove ${esc(c.name)}">${icon('trash')}</button>` : ''}</div>`).join('')}
+    ${hasBridge && S.calendars.some(c => c.google_id.startsWith('ics:') && c.enabled) ? '<p class="help" style="margin-top:10px">If a read-only link shows the same calendar as a two-way one, switch the link off so events don’t show twice.</p>' : ''}
     ${hasBridge ? '<button class="btn ghost" style="margin-top:10px" data-act="cal-refresh-list">Look for new calendars</button>' : ''}</div>` : ''}
   <details class="panel"><summary style="font-weight:700;font-size:19px;cursor:pointer">Two-way editing (do this on a computer)</summary>
-    <p class="help" style="margin-top:12px">Lets this screen add and move events in Google Calendar later. It needs a short script set up once at script.google.com, which is much easier on a computer.</p>
+    <p class="help" style="margin-top:12px">Lets Skylike add, edit, move and delete events in Google Calendar, showing on everyone's phones. It needs a short script set up once at script.google.com, which is much easier on a computer. One person's Google account hosts it; everyone else shares their calendar with that account (Google Calendar → Settings and sharing → Share with specific people → <b>Make changes to events</b>).</p>
     ${hasBridge && !key ? `<p><span class="status ok">Two-way link connected</span></p><button class="btn soft" data-act="cal-reconnect">Reconnect</button>` : `
     <ol class="steps"><li>On the computer, open Skylike and come to this page, then tap <b>Copy script</b>.</li><li>Open <b>script.new</b>, signed in as the calendar's owner. Select all, paste, and save.</li>
       <li><b>Deploy → New deployment → Web app</b>. Execute as <b>Me</b>, access <b>Anyone</b>, then Deploy.</li><li>Approve access. Google warns the app is unverified because it's your own script: choose <b>Advanced → Go to project</b>.</li><li>Copy the <b>Web app URL</b> and paste it here, on the same computer.</li></ol>
@@ -2380,7 +2386,13 @@ const A = {
   'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
   'open-event'(el) { const e = S.events.find(x => x.id === el.dataset.id); if (!e) return; const m = eventMember(e);
-    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}<p class="help" style="color:var(--ink-3)">To change it, edit it in Google Calendar for now. Editing here is coming.</p><button class="btn" data-act="close-sheet">Close</button>`); },
+    sheet(`<h2>${esc(e.title || 'Busy')}</h2><p style="font-size:20px;font-weight:650;margin:0 0 6px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at))) + ' – ' + esc(fmtTime(new Date(e.ends_at)))}</p>${e.location ? `<p class="help" style="color:var(--ink-2)">${esc(e.location)}</p>` : ''}${m ? `<p class="row">${avatar(m)} ${esc(m.name)}</p>` : ''}${canEdit(e) ? `<div class="row" style="margin-top:10px"><button class="btn" data-act="ev-edit" data-id="${e.id}">${icon('edit')}Edit</button><button class="btn ghost" data-act="ev-del" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Close</button></div>` : `<p class="help" style="color:var(--ink-3)">${twoWayCals().length ? 'This calendar is a read-only link, so change it in Google Calendar.' : 'To edit events here, connect two-way editing in Settings → Calendar.'}</p><button class="btn" data-act="close-sheet">Close</button>`}`); },
+  'ev-add'(el) { eventForm(null, el.dataset.k); },
+  'ev-setup'() { closeSheet(); A.go({dataset: {view: 'settings', tab: 'calendar'}}); },
+  'ev-edit'(el) { eventForm(S.events.find(x => x.id === el.dataset.id)); },
+  'ev-del'(el) { const e = S.events.find(x => x.id === el.dataset.id); if (!e) return;
+    sheet(`<h2>Delete “${esc(e.title || 'this event')}”?</h2><p class="help">It's removed from Google Calendar for everyone.</p><div class="row"><button class="btn danger" data-act="ev-del-go" data-id="${e.id}">Delete</button><button class="btn ghost" data-act="close-sheet">Keep it</button></div>`); },
+  'ev-del-go'(el) { const i = S.events.findIndex(x => x.id === el.dataset.id); if (i < 0) return; const [e] = S.events.splice(i, 1); closeSheet(); render(); calWrite({action: 'delete', id: e.id}, () => S.events.splice(i, 0, e)); },
   'edit-member'(el) { memberSheet(el.dataset.id); },
   async 'del-row'(el) { if (el.dataset.table === 'members' && !confirm('Remove this person?')) return; const t = el.dataset.table, key = KEY_OF[t]; S[key] = S[key].filter(r => r.id !== el.dataset.id); closeSheet(); render(); await db(sb.from(t).delete().eq('id', el.dataset.id)); },
   async 'toggle-setting'(el) { const k = el.dataset.key; await saveSettings({[k]: !settings()[k]}); },
@@ -2424,6 +2436,52 @@ async function refreshCalendar(loud) {
   if (ev.data) S.events = ev.data;
   refreshCalStatus(); render();
   if (loud) toast(r.error ? 'Calendar problem: ' + r.error : 'Calendar up to date', 3000);
+}
+/* ---- two-way calendar: add, edit, move and delete events through the household's Apps Script bridge ---- */
+const calOf = e => S.calendars.find(c => c.google_id === e.calendar_id);
+const twoWayCals = () => S.calendars.filter(c => !c.google_id.startsWith('ics:') && c.enabled);
+const canEdit = e => !!e && !DEMO_EDIT_BLOCK() && !!calOf(e) && !calOf(e).google_id.startsWith('ics:');
+const DEMO_EDIT_BLOCK = () => false;
+function zonedISO(k, hhmm) { // a wall-clock time in the household's zone → exact time
+  const [y, m, d] = k.split('-').map(Number), [H, M] = String(hhmm || '09:00').split(':').map(Number), want = Date.UTC(y, m - 1, d, H, M); let t = want;
+  for (let i = 0; i < 3; i++) { const p = tzParts(new Date(t)); t += want - Date.UTC(p.y, p.m - 1, p.d, p.h, p.min); }
+  return new Date(t).toISOString();
+}
+const hhmmOf = d => { const p = tzParts(d); return String(p.h).padStart(2, '0') + ':' + String(p.min).padStart(2, '0'); };
+async function reloadEvents() { const since = new Date(Date.now() - 3 * 864e5).toISOString(); const {data} = await sb.from('events_cache').select('*').eq('household_id', S.hid).gte('ends_at', since).order('starts_at'); if (data) { S.events = data; render(); } }
+function eventForm(e, k) {
+  const cals = twoWayCals(), me = meMember();
+  if (!e && !cals.length) return sheet(`<h2>Add an event</h2><p class="help">To add events from Skylike, connect two-way editing once (Settings → Calendar → Two-way editing). It takes about 5 minutes on a computer.</p><div class="row"><button class="btn" data-act="ev-setup">Set it up</button><button class="btn ghost" data-act="close-sheet">Not now</button></div>`);
+  const day = e ? (e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at))) : (k || S.dayKey || dayKey(new Date()));
+  const nowH = tzParts(new Date()).h, st = e && !e.all_day ? hhmmOf(new Date(e.starts_at)) : String(Math.min(22, nowH + 1)).padStart(2, '0') + ':00';
+  const en = e && !e.all_day ? hhmmOf(new Date(e.ends_at)) : String(Math.min(23, +st.slice(0, 2) + 1)).padStart(2, '0') + ':00';
+  const mine = cals.find(c => me && c.member_id === me.id) || cals[0];
+  sheet(`<h2>${e ? 'Edit event' : 'Add an event'}</h2>
+    <form data-form="ev-save" data-id="${e ? e.id : ''}" class="evform">
+      <input class="input" name="title" placeholder="What's on? e.g. Swimming" value="${esc(e ? e.title : '')}" maxlength="120" required>
+      ${e ? `<p class="help">In ${esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`}
+      <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required></label><label class="lbl evad"><input type="checkbox" name="allday" ${e && e.all_day ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
+      <div class="row evrow evtimes" ${e && e.all_day ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
+      <input class="input" name="location" placeholder="Where? (optional, used for leave reminders)" value="${esc(e && e.location ? e.location : '')}" maxlength="200">
+      ${e && /@\\d+$/.test(e.event_id) && S.events.filter(x => x.event_id.replace(/@\\d+$/, '') === e.event_id.replace(/@\\d+$/, '')).length > 1 ? '<p class="help">This repeats: changes here only affect this one.</p>' : ''}
+      <div class="row" style="margin-top:6px"><button class="btn">${e ? 'Save' : 'Add to calendar'}</button>${e ? `<button type="button" class="btn ghost danger" data-act="ev-del" data-id="${e.id}">Delete</button>` : ''}</div>
+    </form>`, {focus: !e});
+}
+async function calWrite(body, undo) {
+  if (DEMO) { toast('Sample data: nothing is sent to Google.'); return; }
+  const r = await callFn(body);
+  if (r.error) { if (undo) undo(); render(); return toast('Couldn’t update Google Calendar: ' + r.error, 5000); }
+  toast(body.action === 'delete' ? 'Deleted from Google Calendar' : 'Saved to Google Calendar', 2500); reloadEvents();
+}
+function moveEventToDay(id, k) {
+  const e = S.events.find(x => x.id === id); if (!e || !canEdit(e)) return toast('That calendar is read-only here.');
+  const fromK = e.all_day ? e.starts_at.slice(0, 10) : dayKey(new Date(e.starts_at)); if (fromK === k) return;
+  const old = {s: e.starts_at, e2: e.ends_at}, shift = daysBetween(fromK, k) * 864e5;
+  let body;
+  if (e.all_day) { const len = Math.max(1, daysBetween(e.starts_at.slice(0, 10), e.ends_at.slice(0, 10))); const endK = addDaysKey(k, len); e.starts_at = k + 'T00:00:00Z'; e.ends_at = endK + 'T00:00:00Z'; body = {action: 'update', id, start: k, end: endK, allDay: true}; }
+  else { const ns = zonedISO(k, hhmmOf(new Date(e.starts_at))), ne = new Date(new Date(ns).getTime() + (new Date(e.ends_at) - new Date(e.starts_at))).toISOString(); e.starts_at = ns; e.ends_at = ne; body = {action: 'update', id, start: ns, end: ne, allDay: false}; }
+  render(); toast(`Moving ${e.title} to ${fmtDay(k, {weekday: 'long'})}…`);
+  calWrite(body, () => { e.starts_at = old.s; e.ends_at = old.e2; });
 }
 async function callFn(body) {
   const {data: {session}} = await sb.auth.getSession();
@@ -2588,6 +2646,19 @@ const F = {
     if (error) { if (btn) { btn.disabled = false; btn.textContent = 'Send'; } return toast("Couldn't send that. Check your connection and try again.", 4500); }
     S._fb = null; closeSheet(); toast('Thanks! Your feedback has been sent.', 3500);
   },
+  async 'ev-save'(f) {
+    const id = f.dataset.id, title = f.title.value.trim(), day = f.day.value, allDay = f.allday.checked; if (!title || !day) return;
+    let start, end;
+    if (allDay) { start = day; end = addDaysKey(day, 1); }
+    else { start = zonedISO(day, f.start.value || '09:00'); end = zonedISO(day, f.end.value || f.start.value || '10:00'); if (new Date(end) <= new Date(start)) end = new Date(new Date(start).getTime() + 3600e3).toISOString(); }
+    const location = f.location.value.trim();
+    closeSheet();
+    if (id) { const e = S.events.find(x => x.id === id); if (!e) return; const old = Object.assign({}, e);
+      Object.assign(e, {title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end}); render();
+      calWrite({action: 'update', id, title, start, end, allDay, location}, () => Object.assign(e, old)); }
+    else { const cal = S.calendars.find(c => c.id === f.calendar.value), tmp = {id: 'tmp-' + uid(), household_id: S.hid, calendar_id: cal ? cal.google_id : '', event_id: 'tmp', title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end};
+      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location}, () => { S.events = S.events.filter(x => x !== tmp); }); }
+  },
   async fquick(f) {
     const raw0 = f.text.value.trim(); if (!raw0) return; const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
     const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
@@ -2738,7 +2809,7 @@ function dragStart() {
 }
 function dragMove(x, y) {
   drag.g.style.transform = `translate(${x - drag.dx}px,${y - drag.dy}px) rotate(-2deg)`;
-  const el = document.elementFromPoint(x, y), t = el && el.closest(`.mday[data-slot="${drag.slot}"]`);
+  const el = document.elementFromPoint(x, y), t = el && el.closest(drag.slot === 'ev' ? '.week .day[data-k]' : `.mday[data-slot="${drag.slot}"]`);
   if (drag.t2 !== t) { if (drag.t2) drag.t2.classList.remove('drop-on'); if (t && t !== drag.c) t.classList.add('drop-on'); drag.t2 = t; }
 }
 function dragStop(commit) {
@@ -2746,11 +2817,13 @@ function dragStop(commit) {
   if (drag.on) {
     dragEnd = Date.now(); const t = drag.t2, from = drag.c.dataset.k;
     drag.g.remove(); drag.c.classList.remove('drag-src'); if (t) t.classList.remove('drop-on'); document.body.classList.remove('dragging');
-    if (commit && t && t !== drag.c) moveMeal(drag.slot, from, t.dataset.k);
+    if (commit && t && t !== drag.c) { if (drag.slot === 'ev') moveEventToDay(drag.c.dataset.ev, t.dataset.k); else moveMeal(drag.slot, from, t.dataset.k); }
   }
   drag = null;
 }
 document.addEventListener('pointerdown', e => {
+  const ce = e.target.closest('.wev[data-ev]');
+  if (ce && e.button <= 0) { drag = {c: ce, slot: 'ev', x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse'}; if (drag.touch) drag.timer = setTimeout(() => drag && !drag.on && dragStart(), 320); return; }
   const c = e.target.closest('.mday[data-slot]'); if (!c || e.button > 0 || !mealOn(c.dataset.k, c.dataset.slot)) return;
   drag = {c, slot: c.dataset.slot, x: e.clientX, y: e.clientY, on: false, touch: e.pointerType !== 'mouse'};
   if (drag.touch) drag.timer = setTimeout(() => drag && !drag.on && dragStart(), 320);
@@ -2763,11 +2836,11 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('touchmove', e => { if (drag && drag.on) e.preventDefault(); }, {passive: false}); // hold the page still while dragging
 document.addEventListener('pointerup', () => dragStop(true));
 document.addEventListener('pointercancel', () => dragStop(false));
-document.addEventListener('contextmenu', e => { if (e.target.closest('.mday[data-slot]')) e.preventDefault(); });
+document.addEventListener('contextmenu', e => { if (e.target.closest('.mday[data-slot], .wev[data-ev]')) e.preventDefault(); });
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT') return;
-  if (Date.now() - dragEnd < 450 && el.closest('.mday')) return; // the tap that ended a drag
+  if (Date.now() - dragEnd < 450 && el.closest('.mday, .wev')) return; // the tap that ended a drag
   const fn = A[el.dataset.act]; if (fn) { if (el.tagName === 'BUTTON' && el.type !== 'submit') e.preventDefault(); fn(el, e); }
 });
 document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (!f) return; e.preventDefault(); const fn = F[f.dataset.form]; if (fn) fn(f); });
@@ -2788,6 +2861,7 @@ document.addEventListener('change', async e => {
   }
   if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
+  if (el.dataset.change === 'ev-allday') { const t = el.closest('form').querySelector('.evtimes'); if (t) t.hidden = el.checked; }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
     else S.uploadAlbum = el.value;
