@@ -701,7 +701,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1215'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1235'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -930,15 +930,40 @@ async function loadAll() {
   S.household = hh.data; TZ = hh.data.timezone || TZ;
   TABLES.forEach((t, i) => { if (!rest[i].error) S[KEY_OF[t]] = rest[i].data || []; });
   S.lastData = Date.now(); saveSnap();
-  refreshCalStatus(); loadHistory(); loadBalances(); loadTravel();
+  refreshCalStatus(); loadHistory(); loadBalances(); loadTravel().then(() => setTimeout(computeTravel, 3000));
   sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; });
   return true;
 }
 // Driving times worked out on the server (home → event address), used for "leave in" countdowns.
-async function loadTravel() { const {data} = await sb.from('event_travel').select('event_id,location,minutes,km,status').eq('household_id', S.hid); if (data) S.travel = data; }
+async function loadTravel() { const {data} = await sb.from('event_travel').select('event_id,location,minutes,km,status,computed_at').eq('household_id', S.hid); if (data) S.travel = data; }
 const driveFor = e => { const t = (S.travel || []).find(x => x.event_id === e.event_id && x.location === e.location && x.status === 'ok'); return t ? t.minutes : null; };
 const leaveBufferFor = e => { if (!e.location) return 0; const d = driveFor(e); return d != null ? d + 5 : settings().leaveBuffer; };
-setInterval(() => { if (S.household && !DEMO) loadTravel(); }, 10 * 60e3);
+// Work out drives here on the device (the free map services block cloud servers), then share them via the database.
+let travelBusy = false;
+async function computeTravel() {
+  if (DEMO || travelBusy || !S.hid || !navigator.onLine) return; travelBusy = true;
+  try {
+    const st = settings(), home = st.location || {lat: -31.9523, lon: 115.8613}, now = Date.now();
+    const todo = S.events.filter(e => !e.all_day && e.location && String(e.location).trim() && new Date(e.starts_at) > now && new Date(e.starts_at) - now < 2 * 864e5)
+      .filter(e => !(S.travel || []).some(t => t.event_id === e.event_id && t.location === e.location && (t.status === 'ok' || now - new Date(t.computed_at || 0) < 6 * 3600e3)))
+      .slice(0, 4);
+    for (const e of todo) {
+      const row = {household_id: S.hid, event_id: e.event_id, location: e.location, minutes: null, km: null, status: 'nogeo', computed_at: new Date().toISOString()};
+      let to = null;
+      try { const box = [home.lon - 1, home.lat + 1, home.lon + 1, home.lat - 1].join(','); const g = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&viewbox=${box}&q=${encodeURIComponent(String(e.location).slice(0, 200))}`)).json(); if (g && g[0]) to = {lat: +g[0].lat, lon: +g[0].lon}; } catch {}
+      if (!to) { try { const g = await (await fetch(`https://photon.komoot.io/api/?limit=1&lang=en&lat=${home.lat}&lon=${home.lon}&q=${encodeURIComponent(String(e.location).slice(0, 200))}`)).json(); const f = g && g.features && g.features[0]; if (f) to = {lon: +f.geometry.coordinates[0], lat: +f.geometry.coordinates[1]}; } catch {} }
+      if (to) {
+        try { const r = await (await fetch(`https://router.project-osrm.org/route/v1/driving/${home.lon},${home.lat};${to.lon},${to.lat}?overview=false`)).json(); const rt = r && r.routes && r.routes[0]; if (rt) { row.minutes = Math.max(1, Math.ceil(rt.duration / 60 * 1.25)); row.km = Math.round(rt.distance / 100) / 10; row.status = 'ok'; } } catch {}
+        if (row.status !== 'ok') { const R = 6371, dLat = (to.lat - home.lat) * Math.PI / 180, dLon = (to.lon - home.lon) * Math.PI / 180, x = Math.sin(dLat / 2) ** 2 + Math.cos(home.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2, km = 2 * R * Math.asin(Math.sqrt(x)) * 1.35; row.km = Math.round(km * 10) / 10; row.minutes = Math.max(3, Math.ceil(km / 45 * 60 + 3)); row.status = 'ok'; }
+      }
+      S.travel = (S.travel || []).filter(t => !(t.event_id === row.event_id && t.location === row.location)).concat(row);
+      await sb.from('event_travel').upsert(row, {onConflict: 'household_id,event_id,location'});
+      await new Promise(r => setTimeout(r, 1500)); // be polite to the free map services
+    }
+    if (todo.length && ['family', 'focus', 'planner'].includes(S.view)) render();
+  } finally { travelBusy = false; }
+}
+setInterval(() => { if (S.household && !DEMO) loadTravel().then(computeTravel); }, 10 * 60e3);
 let balT = 0;
 async function loadBalances() {
   clearTimeout(balT);
