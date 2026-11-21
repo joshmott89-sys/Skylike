@@ -701,7 +701,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1235'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-2015'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1690,10 +1690,11 @@ function deviceSheet(step = 'kind') {
     <div class="dkinds"><button class="dkind" data-act="dev-kind" data-k="tablet"><span>🖼️</span><b>The family screen</b><small>A tablet on the wall or bench that stays on</small></button>
     <button class="dkind" data-act="dev-kind" data-k="phone"><span>📱</span><b>My phone</b><small>For checking and adding things on the go</small></button></div>`);
   if (step === 'phone') return sheet(`<h2>Whose phone is this?</h2><div class="dkinds">${adults.map(m => `<button class="dkind" data-act="dev-who" data-id="${m.id}">${avatar(m, 'lg')}<b>${esc(m.name)}</b></button>`).join('')}</div>`);
-  const tabs = LS.get('kioskTab', /iPad|Macintosh/.test(navigator.userAgent) ? 'ipad' : 'android');
+  const tabs = LS.get('kioskTab', /Windows/.test(navigator.userAgent) ? 'windows' : /iPad|Macintosh/.test(navigator.userAgent) ? 'ipad' : 'android');
   sheet(`<h2>Keep the family screen on</h2><p class="help">Plug it in for good. Then:</p>
-    <span class="seg" style="margin-bottom:12px">${[['ipad', 'iPad'], ['android', 'Android']].map(([k, l]) => `<button class="${tabs === k ? 'on' : ''}" data-act="kiosk-tab" data-k="${k}">${l}</button>`).join('')}</span>
-    ${tabs === 'ipad' ? `<ol class="steps"><li><b>Settings → Display &amp; Brightness → Auto-Lock → Never.</b></li><li>In Safari, tap <b>Share → Add to Home Screen</b>, then open Skylike from that icon.</li><li><b>Settings → Accessibility → Guided Access</b>: turn it on, set a passcode, set Display Auto-Lock to Never.</li><li>Open Skylike, <b>triple-click</b> the top (or home) button, tap <b>Start</b>.</li></ol>`
+    <span class="seg" style="margin-bottom:12px">${[['ipad', 'iPad'], ['android', 'Android'], ['windows', 'Windows / Surface']].map(([k, l]) => `<button class="${tabs === k ? 'on' : ''}" data-act="kiosk-tab" data-k="${k}">${l}</button>`).join('')}</span>
+    ${tabs === 'windows' ? `<ol class="steps"><li><b>Windows Settings → System → Power</b> (Power &amp; battery): set <b>When plugged in, turn off my screen</b> and <b>put my device to sleep</b> to <b>Never</b>.</li><li>In <b>Edge</b>, open Skylike, then <b>⋯ → Apps → Install this site as an app</b>. It opens in its own window without browser bars. Press <b>F11</b> for full screen.</li><li>To open it when the PC starts: press <b>Win + R</b>, type <b>shell:startup</b>, and drag the Skylike app shortcut (from the Start menu) into that folder.</li><li>Optional, lock it to Skylike: <b>Settings → Accounts → Other users → Set up a kiosk</b>, choose <b>Microsoft Edge</b>, “As a digital sign or interactive display”, and paste the Skylike address. Sign in to Skylike inside the kiosk once: read the sign-in code on your phone and type it in.</li><li>On a Surface, turn on <b>Tablet mode</b> or detach the keyboard for bigger touch targets.</li></ol>`
+    : tabs === 'ipad' ? `<ol class="steps"><li><b>Settings → Display &amp; Brightness → Auto-Lock → Never.</b></li><li>In Safari, tap <b>Share → Add to Home Screen</b>, then open Skylike from that icon.</li><li><b>Settings → Accessibility → Guided Access</b>: turn it on, set a passcode, set Display Auto-Lock to Never.</li><li>Open Skylike, <b>triple-click</b> the top (or home) button, tap <b>Start</b>.</li></ol>`
       : `<ol class="steps"><li><b>Settings → Developer options → Stay awake</b> (while charging). To show Developer options, tap Build number 7 times in About phone/tablet.</li><li>In Chrome, tap <b>⋮ → Add to Home screen</b>, then open Skylike from that icon.</li><li><b>Settings → Security → App pinning</b>: turn it on.</li><li>Open Skylike, open Recent apps, tap its icon and choose <b>Pin</b>.</li></ol>`}
     <p class="help">Check later from your phone in Settings → Devices: it should say “seen just now”.</p><button class="btn" data-act="dev-done">Done</button>`);
 }
