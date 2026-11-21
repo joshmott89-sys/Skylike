@@ -63,6 +63,42 @@ const norm = (t: string) => String(t || "").toLowerCase().normalize("NFD").repla
 const thaw = (n: string) => /chicken|beef|mince|pork|lamb|sausage|bacon|steak|fish|salmon|prawn|turkey|thigh|breast|fillet|stock|pastry|bread|soup|sauce|bolognese|curry|casserole|leftover/.test(norm(n));
 const same = (a: string, b: string) => { const A = norm(a).split(" "), B = norm(b).split(" "); const [s, l] = A.length <= B.length ? [A, B] : [B, A]; return s.length > 0 && s.every(w => l.some(x => x === w || x.replace(/s$/, "") === w.replace(/s$/, ""))); };
 
+// Driving time from home to an event's address. Geocode with Photon (OpenStreetMap, no key), route with OSRM.
+// If routing is unavailable, estimate from distance (road factor 1.35, about 45 km/h average around town).
+async function getJSON(url: string, headers: Record<string, string> = {}) {
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+  try { const r = await fetch(url, { headers: { "User-Agent": "Skylike family planner (joshmott89-sys.github.io/Skylike)", ...headers }, signal: ctrl.signal }); const txt = await r.text(); return JSON.parse(txt); }
+  finally { clearTimeout(t); }
+}
+async function geocode(q: string, home: { lat: number; lon: number }) {
+  try {
+    const g = await getJSON(`https://photon.komoot.io/api/?limit=1&lang=en&lat=${home.lat}&lon=${home.lon}&q=${encodeURIComponent(q.slice(0, 200))}`);
+    const f = g && g.features && g.features[0];
+    if (f) return { lon: +f.geometry.coordinates[0], lat: +f.geometry.coordinates[1] };
+  } catch (e) { console.log(JSON.stringify({ photon_error: String(e).slice(0, 100) })); }
+  try {
+    const box = [home.lon - 1, home.lat + 1, home.lon + 1, home.lat - 1].join(",");
+    const g = await getJSON(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=au&viewbox=${box}&q=${encodeURIComponent(q.slice(0, 200))}`, { "Accept-Language": "en-AU" });
+    if (Array.isArray(g) && g[0]) return { lat: +g[0].lat, lon: +g[0].lon };
+  } catch (e) { console.log(JSON.stringify({ nominatim_error: String(e).slice(0, 100) })); }
+  return null;
+}
+const haversine = (a: any, b: any) => { const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLon = (b.lon - a.lon) * Math.PI / 180, x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
+async function travel(hid: string, e: any, home: { lat: number; lon: number }) {
+  const row: any = { household_id: hid, event_id: e.event_id, location: e.location, minutes: null, km: null, status: "nogeo", computed_at: new Date().toISOString() };
+  const to = await geocode(String(e.location), home);
+  if (to) {
+    try {
+      const r = await getJSON(`https://router.project-osrm.org/route/v1/driving/${home.lon},${home.lat};${to.lon},${to.lat}?overview=false`);
+      const sec = r && r.routes && r.routes[0] && r.routes[0].duration;
+      if (sec != null) { row.minutes = Math.max(1, Math.ceil(sec / 60 * 1.25)); row.km = Math.round(r.routes[0].distance / 100) / 10; row.status = "ok"; }
+    } catch (err) { console.log(JSON.stringify({ osrm_error: String(err).slice(0, 100) })); }
+    if (row.status !== "ok") { const km = haversine(home, to) * 1.35; row.km = Math.round(km * 10) / 10; row.minutes = Math.max(3, Math.ceil(km / 45 * 60 + 3)); row.status = "ok"; }
+  }
+  await admin.from("event_travel").upsert(row, { onConflict: "household_id,event_id,location" });
+  return row;
+}
+
 async function subsFor(hid: string, pref: string, memberIds?: string[]) {
   let q = admin.from("push_subscriptions").select("id,endpoint,p256dh,auth,member_id,prefs,fails").eq("household_id", hid);
   if (memberIds) q = q.in("member_id", memberIds.length ? memberIds : ["00000000-0000-0000-0000-000000000000"]);
@@ -81,20 +117,30 @@ async function tick() {
     const { data: members } = await admin.from("members").select("id,name,kind").eq("household_id", hid);
     const adults = (members || []).filter((m: any) => m.kind !== "kid").map((m: any) => m.id);
 
-    // 1) Leave reminders: events with a place to go, about 10 minutes before you need to leave.
-    const now = Date.now();
+    // 1) Leave reminders, using real driving time from home (OpenStreetMap), plus 5 minutes to park.
+    //    A heads-up about 25 minutes before you need to leave, then "time to leave".
+    const now = Date.now(), home = st.location && st.location.lat ? st.location : { lat: -31.9523, lon: 115.8613 };
     const { data: evs } = await admin.from("events_cache").select("event_id,calendar_id,title,starts_at,location,all_day").eq("household_id", hid).eq("all_day", false)
-      .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + (buffer + 30) * 60e3).toISOString());
-    if ((evs || []).length) {
+      .gte("starts_at", new Date(now).toISOString()).lte("starts_at", new Date(now + 8 * 3600e3).toISOString()).order("starts_at");
+    const withPlace = (evs || []).filter((e: any) => e.location && String(e.location).trim());
+    if (withPlace.length) {
       const { data: cals } = await admin.from("calendars").select("id,google_id,member_id").eq("household_id", hid);
-      for (const e of evs || []) {
-        if (!e.location || !String(e.location).trim()) continue;
-        const leaveIn = Math.round((new Date(e.starts_at).getTime() - now) / 60e3 - buffer);
-        if (leaveIn < 3 || leaveIn > 15) continue;
-        if (!(await once(`leave:${hid}:${e.event_id}:${e.starts_at}`, hid))) continue;
+      const { data: known } = await admin.from("event_travel").select("event_id,location,minutes,status,computed_at").eq("household_id", hid).in("event_id", withPlace.map((e: any) => e.event_id));
+      let lookups = 0;
+      for (const e of withPlace) {
+        let t: any = (known || []).find((k: any) => k.event_id === e.event_id && k.location === e.location);
+        if (t && t.status !== "ok" && Date.now() - new Date(t.computed_at).getTime() > 30 * 60e3) t = null; // try again later
+        if (!t && lookups < 3) { lookups++; t = await travel(hid, e, home); }
+        const drive = t && t.status === "ok" && t.minutes != null ? t.minutes : null;
+        const leaveAt = new Date(e.starts_at).getTime() - ((drive != null ? drive + 5 : buffer) * 60e3);
+        const toLeave = Math.round((leaveAt - now) / 60e3);
         const cal = (cals || []).find((c: any) => c.google_id === e.calendar_id || c.id === e.calendar_id);
         const who = cal && cal.member_id ? [cal.member_id] : adults;
-        sent += await send(await subsFor(hid, "leave", who), { title: `Leave in ${leaveIn} min`, body: `${e.title} at ${fmtTime(e.starts_at, tz)} · ${e.location}`, tag: "leave-" + e.event_id, url: "./" });
+        const how = drive != null ? ` · ${drive} min drive` : "";
+        if (toLeave <= 32 && toLeave >= 18 && await once(`soon:${hid}:${e.event_id}:${e.starts_at}`, hid))
+          sent += await send(await subsFor(hid, "leave", who), { title: `Leave at ${fmtTime(new Date(leaveAt).toISOString(), tz)}`, body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
+        else if (toLeave <= 6 && toLeave >= -4 && await once(`leave:${hid}:${e.event_id}:${e.starts_at}`, hid))
+          sent += await send(await subsFor(hid, "leave", who), { title: toLeave > 1 ? `Leave in ${toLeave} min` : "Time to leave", body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" });
       }
     }
 

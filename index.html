@@ -275,6 +275,7 @@ button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7
 .gcd{display:grid;grid-template-columns:auto auto;align-items:center;column-gap:12px;background:rgba(6,30,48,.26);padding:14px 24px;border-radius:24px}
 .gcd .ge{grid-row:span 2;font-size:64px;line-height:1}.gcd .gn{font-size:72px;font-weight:800;line-height:1}.gcd .gw{font-size:22px;font-weight:700;opacity:.9;grid-column:2}
 .gcd .gm{grid-column:1/-1;font-size:26px;letter-spacing:2px;margin-top:6px}.gcd .gt{grid-column:1/-1;font-size:17px;font-weight:600;opacity:.85;margin-top:4px}
+.homeloc{display:grid;gap:6px;margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--surface-2,#f4f1ea)}.homeloc small{color:var(--muted);font-size:14px;line-height:1.35}.homeloc .btn{justify-self:start}
 .ntypes{display:grid;gap:4px}.ntype{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,rgba(0,0,0,.06));cursor:pointer}.ntype:first-child{border-top:0}
 .ntype input{width:24px;height:24px;margin-top:2px;accent-color:var(--ocean-2);flex:none}.ntype b{display:block;font-size:16px}.ntype small{display:block;color:var(--muted);font-size:14px;line-height:1.35}
 .nlist{list-style:none;padding:0;margin:4px auto 10px;display:grid;gap:8px;text-align:left;max-width:340px;font-size:16.5px}
@@ -700,7 +701,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '21.11-1200'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '21.11-1215'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -929,10 +930,15 @@ async function loadAll() {
   S.household = hh.data; TZ = hh.data.timezone || TZ;
   TABLES.forEach((t, i) => { if (!rest[i].error) S[KEY_OF[t]] = rest[i].data || []; });
   S.lastData = Date.now(); saveSnap();
-  refreshCalStatus(); loadHistory(); loadBalances();
+  refreshCalStatus(); loadHistory(); loadBalances(); loadTravel();
   sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; });
   return true;
 }
+// Driving times worked out on the server (home → event address), used for "leave in" countdowns.
+async function loadTravel() { const {data} = await sb.from('event_travel').select('event_id,location,minutes,km,status').eq('household_id', S.hid); if (data) S.travel = data; }
+const driveFor = e => { const t = (S.travel || []).find(x => x.event_id === e.event_id && x.location === e.location && x.status === 'ok'); return t ? t.minutes : null; };
+const leaveBufferFor = e => { if (!e.location) return 0; const d = driveFor(e); return d != null ? d + 5 : settings().leaveBuffer; };
+setInterval(() => { if (S.household && !DEMO) loadTravel(); }, 10 * 60e3);
 let balT = 0;
 async function loadBalances() {
   clearTimeout(balT);
@@ -1433,7 +1439,7 @@ function parseAssignee(raw) {
 const guessKind = t => /^(buy|get|pick up|grab|need)\b/i.test(t) || (t.split(/,| and /).every(x => aisleOf(x.trim()) !== 'Other') && t.split(' ').length <= 6) ? 'grocery' : 'todo';
 function focusNow(now, k) {
   const st = settings(), evs = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now), chips = chipsFor(k, now);
-  const soon = evs.find(e => (new Date(e.starts_at) - now) / 60e3 <= 120);
+  const soon = evs.find(e => (new Date(e.starts_at) - now) / 60e3 - leaveBufferFor(e) <= 120);
   const firstChip = chips.find(c => c.first) || null;
   if (soon) return {ev: soon, rest: evs.filter(e => e !== soon), chips};
   if (firstChip) return {chip: firstChip, rest: evs, chips: chips.filter(c => c !== firstChip)};
@@ -1445,10 +1451,10 @@ V.focus = () => {
   const N = focusNow(now, k);
   let hero;
   if (N.ev) {
-    const e = N.ev, start = new Date(e.starts_at), mins = (start - now) / 60e3, live = mins <= 0, buffer = e.location ? st.leaveBuffer : 0, leaveIn = mins - buffer;
+    const e = N.ev, start = new Date(e.starts_at), mins = (start - now) / 60e3, live = mins <= 0, buffer = leaveBufferFor(e), drive = driveFor(e), leaveIn = mins - buffer;
     hero = `<div class="fnow" style="--c:${eventColour(e)}"><div class="fk">${live ? 'Happening now' : buffer ? (leaveIn <= 0 ? 'Time to leave' : 'Leave in') : 'Starts in'}</div>
       ${!live && !(buffer && leaveIn <= 0) ? `<div class="fbig num">${esc(relMins(buffer ? leaveIn : mins))}</div>` : ''}
-      <div class="ft">${esc(e.title || 'Busy')}</div><div class="fs num">${esc(fmtTime(start))}${e.location ? ' · ' + esc(e.location) : ''}</div></div>`;
+      <div class="ft">${esc(e.title || 'Busy')}</div><div class="fs num">${esc(fmtTime(start))}${drive != null ? ` · ${drive} min drive` : ''}${e.location ? ' · ' + esc(e.location) : ''}</div></div>`;
   } else if (N.chip) {
     const c = N.chip;
     hero = `<${c.act ? `button data-act="${c.act}" data-k="${c.k}"` : 'div'} class="fnow chipnow"><div class="fk">${esc(c.sub || 'Now')}</div><div class="ft">${esc(c.text)}</div>${c.act ? '<div class="fs">Tap to see it</div>' : ''}</${c.act ? 'button' : 'div'}>`;
@@ -1889,7 +1895,7 @@ V.settings = () => {
   if (t === 'notify') {
     if (!S._push) { S._push = {state: 'loading'}; pushState().then(p => { S._push = p; render(); }); }
     const P = S._push, me = meMember(), pr = (P.row && P.row.prefs) || {};
-    const types = [['assigned', 'To-dos given to me', 'When someone gives you a to-do, e.g. “Josh: book the car service”.'], ['leave', 'Time to leave', 'About 10 minutes before you need to leave for an event with a place.'], ['evening', '7pm heads-up', 'Bins out, lunchboxes and defrosting for tomorrow, only when there is something.'], ['morning', '7am today', 'Lunchboxes to pack, bin day and what’s first, only when there is something.']];
+    const types = [['assigned', 'To-dos given to me', 'When someone gives you a to-do, e.g. “Josh: book the car service”.'], ['leave', 'Time to leave', 'For events with an address: a heads-up about 25 minutes before you need to leave, then “time to leave”, using the drive from home.'], ['evening', '7pm heads-up', 'Bins out, lunchboxes and defrosting for tomorrow, only when there is something.'], ['morning', '7am today', 'Lunchboxes to pack, bin day and what’s first, only when there is something.']];
     body = `<div class="panel"><h2>Phone notifications</h2>
       ${P.state === 'loading' ? '<p class="help">Checking…</p>'
       : P.state === 'demo' ? '<p class="help">Notifications are off in the sample.</p>'
@@ -1899,6 +1905,7 @@ V.settings = () => {
       : P.state === 'off' ? `<p class="help">Get a nudge on this phone for ${me ? esc(me.name) : 'you'}: to-dos given to you, time to leave, and a heads-up the night before.</p><button class="btn" data-act="push-on">${icon('bell')}Turn on for this phone</button><p class="help" style="margin-top:12px">Your phone will ask to allow notifications. Tap <b>Allow</b>.</p>${allowStepsHTML(false)}`
       : `<p class="help">On for ${esc((memberById(P.row.member_id) || me || {}).name || 'this phone')}. Choose what you get:</p>
         <div class="ntypes">${types.map(([k, l, d]) => `<label class="ntype"><input type="checkbox" data-change="push-pref" data-k="${k}" ${pr[k] !== false ? 'checked' : ''}><span><b>${l}</b><small>${d}</small></span></label>`).join('')}</div>
+        <div class="homeloc"><b>Driving times from home</b><small>${st.location && st.location.name === 'Home' ? 'Home is set. Leave reminders use the drive from there, plus 5 minutes to park.' : 'Home isn’t set yet, so drives are worked out from the city. Tap this at home to fix it.'}</small><button class="btn ${st.location && st.location.name === 'Home' ? 'ghost' : 'soft'}" data-act="use-location">${st.location && st.location.name === 'Home' ? 'Update home' : 'I’m home: use my location'}</button></div>
         <div class="row" style="margin-top:12px"><button class="btn soft" data-act="push-test">Send a test</button><button class="btn ghost" data-act="push-off">Turn off on this phone</button></div>`}
     </div>`;
   }
@@ -2353,7 +2360,7 @@ const A = {
   async 'toggle-saver'(el) { const s = settings().saver; await saveSettings({saver: Object.assign({}, s, {on: !s.on})}); },
   'use-location'() {
     if (!navigator.geolocation) return toast("This device can't share its location.");
-    navigator.geolocation.getCurrentPosition(async p => { await saveSettings({location: {lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3), name: 'Home'}}); loadWeather(); }, () => toast('Location was not allowed.'));
+    navigator.geolocation.getCurrentPosition(async p => { await saveSettings({location: {lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3), name: 'Home'}}); loadWeather(); toast('Home saved. Weather and driving times now use it.'); }, () => toast('Location was not allowed.'));
   },
   async 'sign-out'() { await sb.auth.signOut(); LS.set('hid', null); location.reload(); },
   onboard(el) { S._onboard = el.dataset.mode; renderOnboard(); },
