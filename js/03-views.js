@@ -38,6 +38,9 @@ function locField(value, opts = {}) {
     <div class="locsug" role="listbox" hidden></div></div>`;
 }
 let locTimer = 0, locSeq = 0;
+// "144 Mill Point Rd" → "144 Mill Point Road": the free map only knows the long forms
+const STREET_ABBR = {rd: 'Road', st: 'Street', ave: 'Avenue', av: 'Avenue', dr: 'Drive', cres: 'Crescent', cr: 'Crescent', hwy: 'Highway', pde: 'Parade', pl: 'Place', ct: 'Court', tce: 'Terrace', blvd: 'Boulevard', bvd: 'Boulevard', cl: 'Close', ln: 'Lane', wy: 'Way', gr: 'Grove', sq: 'Square', cct: 'Circuit', esp: 'Esplanade', mews: 'Mews', fwy: 'Freeway'};
+const expandStreet = q => String(q).replace(/\b([A-Za-z]+)\.?(?=\s|,|$)/g, (m, w, i, all) => { const L = STREET_ABBR[w.toLowerCase()]; return L && i > 0 && /\S\s+$/.test(all.slice(0, i)) && !/^st$/i.test(w) || (L && /^st$/i.test(w) && i > 0 && /[a-z]\s+$/i.test(all.slice(0, i))) ? L : m; });
 function locSearch(inp) {
   const box = inp.closest('.locf').querySelector('.locsug'), q = inp.value.trim(); clearTimeout(locTimer);
   inp.form && (inp.form.querySelector(`[name="${inp.name}_lat"]`).value = '');
@@ -45,12 +48,24 @@ function locSearch(inp) {
   locTimer = setTimeout(async () => {
     const seq = ++locSeq, h = settings().location && settings().location.lat ? settings().location : {lat: -31.95, lon: 115.86};
     try {
-      const r = await fetch(`https://photon.komoot.io/api/?limit=7&lang=en&lat=${h.lat}&lon=${h.lon}&location_bias_scale=0.6&q=${encodeURIComponent(q)}`); const d = await r.json(); if (seq !== locSeq) return;
-      const seen = new Set(), list = (d.features || []).filter(f => (f.properties.countrycode || 'AU') === 'AU').map(f => {
+      const qq = expandStreet(q), num = (qq.match(/^\s*(\d+[a-z]?(?:[\/-]\d+[a-z]?)?)\s+\D/i) || [])[1];
+      // a street on the map without this house number: keep the number you typed, use the street for drive times
+      const withNum = (name, street, area, isStreet, sub) => isStreet && num && !/^\d/.test(name) ? {name: `${num} ${name}`, sub: [area, 'number not on the map, street used'].filter(Boolean).join(' · ')} : {name, sub};
+      const r = await fetch(`https://photon.komoot.io/api/?limit=7&lang=en&lat=${h.lat}&lon=${h.lon}&location_bias_scale=0.6&q=${encodeURIComponent(qq)}`); const d = await r.json(); if (seq !== locSeq) return;
+      const seen = new Set();
+      let list = (d.features || []).filter(f => (f.properties.countrycode || 'AU') === 'AU').map(f => {
         const P = f.properties, street = [P.housenumber, P.street].filter(Boolean).join(' '), area = P.suburb || P.district || P.locality || P.city || '';
-        const name = P.name || street, sub = [P.name && street ? street : '', area !== name ? area : '', P.state && P.state !== 'Western Australia' ? P.state : ''].filter(Boolean).join(', ');
+        let name = P.name || street, sub = [P.name && street ? street : '', area !== name ? area : '', P.state && P.state !== 'Western Australia' ? P.state : ''].filter(Boolean).join(', ');
+        ({name, sub} = withNum(name, street, area, P.type === 'street' && !P.housenumber, sub) );
         return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
       }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
+      // nothing from the first map: ask the other free one (it understands more address styles)
+      if (!list.length) { try {
+        const n = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=au&addressdetails=1&viewbox=${[h.lon - 1, h.lat + 1, h.lon + 1, h.lat - 1].join(',')}&q=${encodeURIComponent(qq)}`)).json(); if (seq !== locSeq) return;
+        list = (Array.isArray(n) ? n : []).map(x => { const A = x.address || {}, street = [A.house_number, A.road].filter(Boolean).join(' '), area = A.suburb || A.town || A.city || '';
+          const nm = x.name && x.name !== A.road ? x.name : street || x.name; const w = withNum(nm, street, area, x.class === 'highway' && !A.house_number, [x.name && x.name !== A.road ? street : '', area].filter(Boolean).join(', '));
+          return {name: w.name, sub: w.sub, label: [w.name, area].filter(Boolean).join(', '), lat: +x.lat, lon: +x.lon}; }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
+      } catch {} }
       S._locList = list;
       const asis = `<button type="button" class="locopt asis" data-act="loc-asis"><b>${icon('check', 'xs')} Use “${esc(q)}” as written</b><small>${list.length ? 'None of these? Keep what you typed' : 'Not on the free map (small businesses often aren\'t). Add a street address later for drive times.'}</small></button>`;
       box.innerHTML = list.map((x, i) => `<button type="button" class="locopt" role="option" data-act="loc-choose" data-i="${i}"><b>${esc(x.name)}</b>${x.sub ? `<small>${esc(x.sub)}</small>` : ''}</button>`).join('') + asis;
