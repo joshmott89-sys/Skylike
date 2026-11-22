@@ -3,8 +3,12 @@
 const V = {};
 /* Photo faces: pick a photo, drag and zoom it into the circle, saved small (about 15 KB) on the member. */
 function cropSheet(file, id) {
-  const url = URL.createObjectURL(file), img = new Image();
-  img.onload = () => {
+  const url = URL.createObjectURL(file), img0 = new Image();
+  img0.onerror = () => { URL.revokeObjectURL(url); toast("That photo couldn't be opened. Try another, or take a new one.", 5000); };
+  img0.onload = () => {
+    // copy into our own canvas straight away: iPad Safari can drop the original once the file link is released
+    const sc0 = Math.min(1, 1400 / Math.max(img0.naturalWidth || img0.width, img0.naturalHeight || img0.height)), img = document.createElement('canvas');
+    img.width = Math.max(1, Math.round((img0.naturalWidth || img0.width) * sc0)); img.height = Math.max(1, Math.round((img0.naturalHeight || img0.height) * sc0)); img.getContext('2d').drawImage(img0, 0, 0, img.width, img.height);
     const C = {img, id, z: 1, x: 0, y: 0, base: 0};
     sheet(`<h2>Fit the photo</h2><p class="help">Drag to move it, slide to zoom. The circle is what everyone sees.</p>
       <div class="cropbox"><canvas id="cropc" width="560" height="560" aria-label="Photo crop preview"></canvas></div>
@@ -14,7 +18,7 @@ function cropSheet(file, id) {
     const clamp = () => { const w = img.width * C.base * C.z, h = img.height * C.base * C.z, mx = Math.max(0, (w - N) / 2), my = Math.max(0, (h - N) / 2); C.x = Math.max(-mx, Math.min(mx, C.x)); C.y = Math.max(-my, Math.min(my, C.y)); };
     const draw = () => { clamp(); const sc = C.base * C.z; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, N, N); ctx.drawImage(img, N / 2 - img.width * sc / 2 + C.x, N / 2 - img.height * sc / 2 + C.y, img.width * sc, img.height * sc);
       ctx.save(); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.rect(0, 0, N, N); ctx.arc(N / 2, N / 2, N / 2 - 6, 0, Math.PI * 2, true); ctx.fill('evenodd'); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(N / 2, N / 2, N / 2 - 6, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); };
-    C.draw = draw; draw();
+    C.draw = draw; draw(); requestAnimationFrame(draw); setTimeout(draw, 350); // again once the sheet has opened
     let drag = null; const k = () => N / cv.getBoundingClientRect().width;
     cv.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY, ox: C.x, oy: C.y}; cv.setPointerCapture(e.pointerId); });
     cv.addEventListener('pointermove', e => { if (!drag) return; C.x = drag.ox + (e.clientX - drag.x) * k(); C.y = drag.oy + (e.clientY - drag.y) * k(); draw(); });
@@ -23,8 +27,7 @@ function cropSheet(file, id) {
     $('#cropz').addEventListener('input', e => { C.z = +e.target.value; draw(); });
     URL.revokeObjectURL(url);
   };
-  img.onerror = () => toast("Couldn't open that photo. Try another.", 4000);
-  img.src = url;
+  img0.src = url;
 }
 /* Location box: saved places as one-tap chips, and type-to-search (OpenStreetMap's Photon, near home). */
 function locField(value, opts = {}) {
@@ -192,13 +195,33 @@ function quickAddHTML() {
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 const micBtn = (target, submit) => canListen() ? `<button type="button" class="icon-btn micbtn" data-act="mic" data-target="${target}" ${submit ? 'data-submit="1"' : ''} aria-label="Say it instead of typing">${icon('mic')}</button>` : '';
+// Voice: keeps listening through pauses (finishes 3.5 s after you stop talking, or when you tap Done),
+// shows the words as they come, and always fully releases the mic afterwards (iPad otherwise keeps recording).
 function listen(cb, el) {
   const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) { toast("Voice isn't available here. Use the mic on your keyboard instead.", 4000); return; }
-  const r = new R(); r.lang = 'en-AU'; r.interimResults = false; r.maxAlternatives = 1; if (el) el.classList.add('on');
-  r.onresult = ev => cb(ev.results[0][0].transcript);
-  r.onend = () => el && el.classList.remove('on');
-  r.onerror = ev => { if (el) el.classList.remove('on'); toast(ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'Allow the microphone for Skylike (and on iPhone, turn on Siri & Dictation).' : ev.error === 'no-speech' ? "Didn't hear anything. Tap the mic and talk." : ev.error === 'aborted' ? '' : "Didn't catch that. Try again.", 4500); };
-  try { r.start(); } catch { if (el) el.classList.remove('on'); }
+  if (S._rec) return S._rec.finish(); // tapping the mic again = done
+  const r = new R(); r.lang = 'en-AU'; r.interimResults = true; r.continuous = true; r.maxAlternatives = 1;
+  let finals = '', interim = '', done = false, quiet = null, cap = null;
+  const bar = document.createElement('div'); bar.className = 'listenbar'; bar.setAttribute('role', 'status');
+  bar.innerHTML = `<span class="ldot" aria-hidden="true"></span><span class="ltxt">Listening… take your time</span><button class="btn sm" data-x="done">Done</button><button class="btn ghost sm" data-x="cancel">Cancel</button>`;
+  document.body.appendChild(bar);
+  const text = () => (finals + ' ' + interim).replace(/\s+/g, ' ').trim();
+  const show = () => { const t = text(); bar.querySelector('.ltxt').textContent = t || 'Listening… take your time'; };
+  const cleanup = () => { clearTimeout(quiet); clearTimeout(cap); bar.remove(); if (el) el.classList.remove('on'); S._rec = null; document.removeEventListener('visibilitychange', onHide);
+    try { r.abort(); } catch {} setTimeout(() => { try { r.abort(); } catch {} }, 400); };
+  const finish = (use = true) => { if (done) return; done = true; const t = text(); try { r.stop(); } catch {} cleanup(); if (use && t) cb(t); else if (use) toast("Didn't catch that. Try again, a little closer.", 3500); };
+  const onHide = () => { if (document.hidden) finish(false); };
+  S._rec = {finish: () => finish(true)};
+  bar.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (x) finish(x.dataset.x === 'done'); });
+  r.onresult = ev => { interim = ''; for (let i = ev.resultIndex; i < ev.results.length; i++) { const t = ev.results[i][0].transcript; if (ev.results[i].isFinal) finals += ' ' + t; else interim += ' ' + t; }
+    show(); clearTimeout(quiet); quiet = setTimeout(() => finish(true), 3500); };
+  r.onend = () => { if (!done) { if (text()) finish(true); else { try { r.start(); } catch { finish(true); } } } }; // some browsers stop on silence: start again until Done
+  r.onerror = ev => { if (ev.error === 'no-speech' || ev.error === 'aborted') return; finish(false);
+    toast(ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'Allow the microphone for Skylike (and on iPhone, turn on Siri & Dictation).' : "Voice stopped. Try again, or type it.", 4500); };
+  document.addEventListener('visibilitychange', onHide);
+  cap = setTimeout(() => finish(true), 60000);
+  if (el) el.classList.add('on');
+  try { r.start(); } catch { cleanup(); }
 }
 const submitForm = f => { if (!f) return; if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); };
 
@@ -239,7 +262,8 @@ function eventImportSheet() {
 const takerOf = e => { const t = ((settings().people || {})[e.event_id] || {}).taker; return t ? memberById(t) : null; };
 function peopleHTML(k) {
   const evs = eventsOnKey(k).sort((a, b) => (b.all_day - a.all_day) || a.starts_at.localeCompare(b.starts_at));
-  const by = id => evs.filter(e => { const ids = eventMembers(e).map(m => m.id); return id ? ids.includes(id) : !ids.length; });
+  // the driver is busy too: their column shows what they're taking someone to
+  const by = id => evs.filter(e => { const ids = eventMembers(e).map(m => m.id), t = (takerOf(e) || {}).id; return id ? ids.includes(id) || t === id : !ids.length && !t; });
   // "Everyone" only shows when something is shared; on a phone, one person at a time (tap a face)
   let cols = S.members.map(m => ({id: m.id, m})).concat(by('').length ? [{id: '', m: null}] : []);
   const phone = isPhone(), pick = phone ? (cols.find(c => c.id === S.pplPick) || cols.find(c => c.m && meMember() && c.m.id === meMember().id) || cols[0]) : null;
@@ -342,6 +366,11 @@ const KART = {
 // which picture goes with which emoji (the ones families already use); custom steps keep their own emoji
 const KART_OF = {'🚽': 'toilet', '🪥': 'teeth', '👕': 'dress', '👚': 'dress', '🥣': 'breakfast', '👟': 'shoes', '🎒': 'bag', '🛁': 'bath', '🩲': 'pjs', '📖': 'book', '💡': 'bulb', '🧸': 'teddy', '🍽': 'plate', '🐟': 'fish', '📺': 'screen', '🧢': 'hat', '🩱': 'swim', '📚': 'books', '🍦': 'icecream', '🛝': 'slide', '🎬': 'movie', '🌅': 'sunrise', '⏳': 'timer', '🧼': 'wash', '💧': 'water', '🌙': 'sleep', '😴': 'sleep', '⭐': 'star', '🌟': 'star', '🎁': 'gift'};
 const kartKey = (emoji, label = '') => { const e = String(emoji || '').replace(/️/g, '').trim(); if (/lights? out|sleep|go to bed/i.test(label) && (e === '💡' || e === '🌙' || !e)) return 'sleep'; return KART_OF[e] || ''; };
+// Picture picker for jobs and routines: our drawn tiles, plus a best guess from the words
+const KART_PICK = (() => { const seen = new Set(), out = []; Object.entries(KART_OF).forEach(([e, k]) => { if (!seen.has(k)) { seen.add(k); out.push([e, k]); } }); return out; })();
+const KART_GUESS = [[/toy|tidy|pack away/i, '🧸'], [/teeth|brush/i, '🪥'], [/dress|clothes|uniform/i, '👕'], [/shoe/i, '👟'], [/bag|backpack/i, '🎒'], [/bath|shower/i, '🛁'], [/pyjama|pj/i, '🩲'], [/read|book/i, '📖'], [/table|plate|dish|dinner/i, '🍽'], [/fish|feed|pet/i, '🐟'], [/water|plant|drink/i, '💧'], [/wash|hands|soap/i, '🧼'], [/toilet|potty|wee/i, '🚽'], [/breakfast|cereal/i, '🥣'], [/hat|sunscreen/i, '🧢'], [/swim/i, '🩱'], [/bed|sleep/i, '🌙'], [/screen|tv|ipad/i, '📺'], [/homework|school/i, '📚'], [/light/i, '💡']];
+const guessEmoji = t => (KART_GUESS.find(([re]) => re.test(t || '')) || [])[1] || '';
+const kpickHTML = (cur = '', act = 'kpick', id = '') => `<div class="kpick" role="group" aria-label="Picture">${KART_PICK.map(([e, k]) => `<button type="button" class="kpb ${cur === e ? 'on' : ''}" data-act="${act}" data-e="${e}" ${id ? `data-id="${id}"` : ''} aria-label="${esc(k)}" aria-pressed="${cur === e}">${kart(e, '', 'sx')}</button>`).join('')}</div>`;
 const STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.75 5.6 6.15.9-4.45 4.33 1.05 6.12L12 16.66l-5.5 2.89 1.05-6.12L3.1 9.1l6.15-.9z"/></svg>';
 const emptyArt = k => `<span class="emart kart" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="var(--kart-ink,#1F3442)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${KART[k]}</svg></span>`;
 const kart = (emoji, label = '', cls = 'em') => { const k = kartKey(emoji, label); return k ? `<span class="${cls} kart" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="var(--kart-ink,#1F3442)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${KART[k]}</svg></span>` : `<span class="${cls}">${esc(emoji || '⭐')}</span>`; };
@@ -620,7 +649,8 @@ function evRow(e, big) {
 V.calendar = () => {
   const today = dayKey(new Date()), mode = S.calMode;
   if (!S.dayKey) S.dayKey = today;
-  const title = mode === 'day' || mode === 'people' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
+  const title = mode === 'day' || mode === 'people' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? (w0 => { const w1 = addDaysKey(w0, 6), sameM = w0.slice(5, 7) === w1.slice(5, 7); return esc(`${fmtDay(w0, sameM ? {day: 'numeric'} : {day: 'numeric', month: 'short'})}–${fmtDay(w1, {day: 'numeric', month: 'short'})}`); })(addDaysKey(today, -((weekdayOfKey(today) + 6) % 7) + (S.calOffset || 0) * 7))
+    : (() => { const p = tzParts(new Date()); let y = p.y, m = p.m - 1 + (S.calOffset || 0); y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return esc(fmtDay(`${y}-${String(m + 1).padStart(2, '0')}-01`, {month: 'long', year: 'numeric'})); })();
   const head = `<h1 class="calhead"><span class="ct">${title}</span><span class="sp"></span>
     <span class="cnav"><button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button><button class="btn soft" data-act="cal-shift" data-n="0">Today</button><button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button></span>
     <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].concat([['people', 'People']]).map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
@@ -662,7 +692,7 @@ V.calendar = () => {
     return `<button class="mc ${k.slice(5, 7) !== first.slice(5, 7) ? 'out' : ''} ${k === today ? 'today' : ''}" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}"><span class="n num">${keyToDate(k).getUTCDate()}</span>
       ${WA_HOLIDAYS[k] && settings().holidays ? `<span class="e" style="--c:#D9773B"><i></i><span>${esc(WA_HOLIDAYS[k])}</span></span>` : ''}
       ${evs.slice(0, 3).map(e => `<span class="e" style="--c:${eventColour(e)}"><i></i><span>${esc(e.title)}</span></span>`).join('')}${evs.length > 3 ? `<span class="e" style="color:var(--ink-3)">+${evs.length - 3}</span>` : ''}</button>`; }).join('');
-  return `<div class="page" style="max-width:none">${head.replace('<h1>Month<', '<h1>' + esc(fmtDay(first, {month: 'long', year: 'numeric'})) + '<')}${mailN}${noCal}
+  return `<div class="page" style="max-width:none">${head}${mailN}${noCal}
     <div class="month">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="mh">${d}</div>`).join('')}${cells}</div></div>`;
 };
 

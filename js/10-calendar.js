@@ -30,11 +30,19 @@ function eventForm(e, k) {
       ${whoSel}
       <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required data-change="rep-refresh"></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
       <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}" data-change="ev-start" data-prev="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
+      ${e ? '' : `<div class="evtake" ${pre0.all_day ? 'hidden' : ''}><div class="lbl">Who's driving <span class="hint">optional · they get the leave reminder</span></div><input type="hidden" name="taker" value="">
+        <div class="chips2">${S.members.filter(m => m.kind !== 'kid').map(m => `<button type="button" class="chip2" data-act="take-tog" data-m="${m.id}" aria-pressed="false">${avatar(m)}${esc(m.name)}</button>`).join('')}</div></div>`}
       ${repeatBlock(e, day, pre0)}
       <div class="lbl">Where <span class="hint">optional, used for leave reminders</span></div>${locField(e ? e.location : pre0.location)}
       ${e && /@\\d+$/.test(e.event_id) && S.events.filter(x => x.event_id.replace(/@\\d+$/, '') === e.event_id.replace(/@\\d+$/, '')).length > 1 ? '<p class="help">This repeats: changes here only affect this one.</p>' : ''}
       <div class="row" style="margin-top:6px"><button class="btn">${e ? 'Save' : 'Add to calendar'}</button>${e ? `<button type="button" class="btn ghost danger" data-act="ev-del" data-id="${e.id}">Delete</button>` : ''}</div>
     </form>`, {focus: !e});
+}
+// A new Google event only gets its real id after the next sync: set the driver once it shows up.
+function takerWhenSynced(title, startsAt, taker, n = 0) {
+  const e = S.events.find(x => !String(x.id).startsWith('tmp-') && x.title === title && Date.parse(x.starts_at) === Date.parse(startsAt));
+  if (e) return setEventPeople(e.id, {taker});
+  if (n < 8) setTimeout(() => takerWhenSynced(title, startsAt, taker, n + 1), 2500);
 }
 async function saveLocalEvent(r, undo) {
   if (DEMO) return toast('Sample data: nothing here is saved');
@@ -146,7 +154,8 @@ function mealSheet(k) {
     return g + `<li class="${h ? 'have' : ''}"><span><b class="num">${esc(x.qty || '')}</b> ${esc(x.name)}${x.notes ? ` <small>${esc(x.notes)}</small>` : ''}</span><span class="tag">${h ? 'Have' : 'Buy'}</span></li>`; }).join('');
   sheet(`<h2>${foodArt(m.title, 'h2art')} ${esc(m.title)}</h2>
     <div class="mbadges">${recipeOfMeal(m) ? `<span class="mb real">${icon('heart', 'xs')} From your recipe box</span>` : m.real ? `<span class="mb real">${icon('check', 'xs')} Real RecipeTin Eats recipe</span>` : '<span class="mb est">AI estimate: check the recipe</span>'}${m.double_batch ? '<span class="mb dbl">Double batch: leftovers tomorrow</span>' : ''}${m.servings ? `<span class="mb">Serves ${esc(m.servings)}</span>` : ''}${m.prep_time ? `<span class="mb">${esc(m.prep_time)}</span>` : ''}${m.difficulty ? `<span class="mb">${esc(m.difficulty)}</span>` : ''}</div>
-    <p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}${m.est_cost ? ` · about <span class="num">$${Math.round(m.est_cost)}</span> to buy` : ''} · <a href="${esc(m.url || recipeLink(m.title))}" target="_blank" rel="noopener">${m.real ? 'Open the recipe' : 'Find it on RecipeTin Eats'}</a></p>
+    <p class="help">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'short'}))}${m.est_cost ? ` · about <span class="num">$${Math.round(m.est_cost)}</span> to buy` : ''} ${m.url && !/[?&]s=/.test(m.url) ? ` · <a href="${esc(m.url)}" target="_blank" rel="noopener">Open the recipe</a>` : ''}</p>
+    ${!recipeOfMeal(m) && !(m.url && !/[?&]s=/.test(m.url)) ? `<div class="row mhow"><button class="btn soft" data-act="meal-method" data-k="${k}">${icon('sparkle')}Show me how to make it</button><a class="linkbtn" href="${esc(recipeLink(m.title))}" target="_blank" rel="noopener">or search RecipeTin Eats</a></div>` : ''}
     <ul class="ing">${rows || '<li class="help">No ingredients listed.</li>'}</ul>
     <div class="row" style="margin-top:14px;flex-wrap:wrap">${need.length ? `<button class="btn" data-act="meal-need" data-k="${k}">Add ${need.length} to groceries</button>` : ''}<button class="btn soft" data-act="meal-cooked" data-k="${k}">${m.cooked ? 'Not cooked yet' : 'We cooked it'}</button>${recipeOfMeal(m) ? `<button class="btn soft" data-act="recipe-open" data-id="${recipeOfMeal(m).id}">${icon('note')}Method</button>` : `<button class="btn ghost" data-act="meal-save-recipe" data-k="${k}">${icon('heart')}Save to recipe box</button>`}<button class="btn ghost" data-act="meal-del" data-k="${k}">Remove</button></div>`);
 }
@@ -172,8 +181,19 @@ async function pantryAdd(items) {
   render(); return rows.length;
 }
 // shrink a camera photo before sending it (keeps it fast on mobile data and under the AI's size limit)
-function photoToBase64(file, max = 1400) {
-  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const sc = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = img.width * sc; c.height = img.height * sc; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .82).split(',')[1]); URL.revokeObjectURL(img.src); }; img.onerror = rej; img.src = URL.createObjectURL(file); });
+// Shrink a camera photo before sending it (fast on mobile data, under the AI's size limit).
+// Tries the browser's image decoder first (handles phone rotation), then an <img>, then the original file;
+// never quietly sends an empty picture.
+async function photoToBase64(file, max = 1400) {
+  const draw = (src, w, h) => { if (!w || !h) return ''; const sc = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    return (c.toDataURL('image/jpeg', .82).split(',')[1] || ''); };
+  let out = '';
+  if (window.createImageBitmap) { try { const bm = await createImageBitmap(file, {imageOrientation: 'from-image'}); out = draw(bm, bm.width, bm.height); if (bm.close) bm.close(); } catch {} }
+  if (out.length < 2000) { try { out = await new Promise((res, rej) => { const img = new Image(), u = URL.createObjectURL(file); img.onload = () => { try { res(draw(img, img.naturalWidth, img.naturalHeight)); } catch (e) { rej(e); } URL.revokeObjectURL(u); }; img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('decode')); }; img.src = u; }); } catch {} }
+  if (out.length < 2000 && file.size && file.size < 5e6 && /jpe?g/i.test(file.type || file.name || '')) out = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = () => res(''); fr.readAsDataURL(file); });
+  if (out.length < 2000) throw new Error("That photo couldn't be opened. Try taking it again, or pick it from your gallery.");
+  return out;
 }
 async function toggleTick(kid, kind, ref, k, stars, existing) {
   if (existing) { S.ticks = S.ticks.filter(t => t.id !== existing.id); S.balances[kid.id] = starsOf(kid) - (existing.stars || 0); render(); await db(sb.from('ticks').delete().eq('id', existing.id)); }
@@ -203,7 +223,7 @@ const F = {
     const i = S.routines.findIndex(x => x.id === data.id); if (i >= 0) S.routines[i] = data; else S.routines.push(data); closeSheet(); render();
   },
   async 'add-chore'(f) {
-    const row = {household_id: S.hid, title: f.title.value.trim(), emoji: f.emoji.value.trim() || null, member_id: f.who.value || null, days: daysFrom(f.days.value), stars: Math.max(0, Math.min(10, +f.stars.value || 0)), sort: S.chores.length};
+    const row = {household_id: S.hid, title: f.title.value.trim(), emoji: f.emoji.value.trim() || guessEmoji(f.title.value) || null, member_id: f.who.value || null, days: daysFrom(f.days.value), stars: Math.max(0, Math.min(10, +f.stars.value || 0)), sort: S.chores.length};
     const {data, error} = await sb.from('chores').insert(row).select().single(); if (error) return toast("Couldn't save that job.");
     if (!S.chores.find(x => x.id === data.id)) S.chores.push(data); render();
   },
@@ -281,7 +301,7 @@ const F = {
     let start, end;
     if (allDay) { start = day; end = addDaysKey(day, 1); }
     else { start = zonedISO(day, f.start.value || '09:00'); end = zonedISO(day, f.end.value || f.start.value || '10:00'); if (new Date(end) <= new Date(start)) end = new Date(new Date(start).getTime() + 3600e3).toISOString(); }
-    const location = f.location.value.trim(), whoIds = f.who && f.who.value ? f.who.value.split(',').filter(Boolean) : [], who = whoIds[0] || null, notes = f.notes ? f.notes.value.trim() || null : null;
+    const taker = f.taker && f.taker.value && !allDay ? f.taker.value : null, location = f.location.value.trim(), whoIds = f.who && f.who.value ? f.who.value.split(',').filter(Boolean) : [], who = whoIds[0] || null, notes = f.notes ? f.notes.value.trim() || null : null;
     if (location && f.location_lat && f.location_lat.value) rememberGeo(location, f.location_lat.value, f.location_lon.value);
     const sa = allDay ? start + 'T00:00:00Z' : start, ea = allDay ? end + 'T00:00:00Z' : end;
     closeSheet();
@@ -298,12 +318,12 @@ const F = {
       render(); return saveLocalEvent(r, old); }
     if (id && id.startsWith('L-')) { const r = S.localEvents.find(x => x.id === id.slice(2)); if (!r) return; r.repeat = R; const old = {s: r.starts_at, e2: r.ends_at}; Object.assign(r, {title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes}); render(); return saveLocalEvent(r, old); }
     if (!id && f.calendar && f.calendar.value === 'skylike') { const r = {id: uid(), _new: true, household_id: S.hid, title, location: location || null, all_day: allDay, starts_at: sa, ends_at: ea, member_id: who, member_ids: whoIds, notes, repeat: R, created_at: new Date().toISOString()};
-      S.localEvents.push(r); render(); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); return saveLocalEvent(r, {drop: true}); }
+      S.localEvents.push(r); render(); if (taker) setEventPeople('L-' + r.id, {taker}); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); return saveLocalEvent(r, {drop: true}); }
     if (id) { const e = S.events.find(x => x.id === id); if (!e) return; const old = Object.assign({}, e);
       Object.assign(e, {title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end}); render();
       calWrite({action: 'update', id, title, start, end, allDay, location}, () => Object.assign(e, old)); }
     else { const cal = S.calendars.find(c => c.id === f.calendar.value), tmp = {id: 'tmp-' + uid(), household_id: S.hid, calendar_id: cal ? cal.google_id : '', event_id: 'tmp', title, location: location || null, all_day: allDay, starts_at: allDay ? start + 'T00:00:00Z' : start, ends_at: allDay ? end + 'T00:00:00Z' : end};
-      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location, ...(R ? {repeat: JSON.stringify(R)} : {})}, () => { S.events = S.events.filter(x => x !== tmp); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
+      S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location, ...(R ? {repeat: JSON.stringify(R)} : {})}, () => { S.events = S.events.filter(x => x !== tmp); }).then(() => { if (taker) takerWhenSynced(title, tmp.starts_at, taker); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
   },
   async fquick(f) {
     const raw0 = f.text.value.trim(); if (!raw0) return;
@@ -322,7 +342,7 @@ const F = {
   async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0), shopBudget: f.shopbudget ? Math.max(0, +f.shopbudget.value || 0) : kset().shopBudget, staples: f.staples ? f.staples.value.trim().slice(0, 400) : kset().staples}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
-    let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: recipeLink(title), ingredients: []};
+    let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: null, ingredients: []};
     if (S.aiOn) { const r = await callAI({action: 'recipe', title, servings: kset().servings}); if (!r.error) row = Object.assign(row, {emoji: r.emoji || null, ingredients: (r.ingredients || []).slice(0, 25), est_cost: +r.est_cost || null}); }
     const {data, error} = await sb.from('meals').upsert(row, {onConflict: 'household_id,day,slot'}).select().single(); if (error) return toast("Couldn't save that dinner.");
     S.meals = S.meals.filter(m => !(m.day === k && (m.slot || 'dinner') === 'dinner')).concat(data); closeSheet(); render(); mealSheet(k);
@@ -517,10 +537,10 @@ document.addEventListener('change', async e => {
     files.forEach(f => { SS.chain = SS.chain.then(() => photoToBase64(f).then(d => SS.imgs.push(d)).catch(() => { SS.failed++; toast("Couldn't open one of the photos. Try taking it again.", 4000); })); });
     scanMoreSheet();
   }
-  if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
+  if (el.dataset.change === 'fb-shot' && el.files && el.files[0]) { const b = $('#fb-body'); if (b) S._fb.body = b.value; try { S._fb.shot = await shrink(el.files[0], 1600); if (S._fb.shotUrl) URL.revokeObjectURL(S._fb.shotUrl); S._fb.shotUrl = URL.createObjectURL(S._fb.shot); } catch { toast("Couldn't open that image."); } feedbackSheet(); }
   if (el.dataset.change === 'push-pref' && S._push && S._push.row) { const prefs = Object.assign({}, S._push.row.prefs, {[el.dataset.k]: el.checked}); S._push.row.prefs = prefs; await db(sb.from('push_subscriptions').update({prefs}).eq('id', S._push.row.id)); }
   if (el.dataset.change === 'avatar-pick' && el.files && el.files[0]) { const f0 = el.files[0]; el.value = ''; return cropSheet(f0, el.dataset.id); }
-  if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(photoToBase64)); readEvents({images: imgs}); } catch { toast("Couldn't open that photo. Try again.", 4000); } return; }
+  if (el.dataset.change === 'ev-photo' && el.files && el.files.length) { const files = [...el.files].slice(0, 4); el.value = ''; try { const imgs = await Promise.all(files.map(f => photoToBase64(f, 1600))); readEvents({images: imgs}); } catch (err) { toast(err.message || "Couldn't open that photo. Try again.", 5000); } return; }
   if (el.dataset.change === 'ev-smart') { smartFill(el.form); return; }
   if (el.dataset.change === 'rep-toggle') { const box = el.form.querySelector('.repbox'); box.hidden = !el.checked; repRefresh(el.form); return; }
   if (el.dataset.change === 'rep-refresh') { repRefresh(el.form); return; }
@@ -528,7 +548,9 @@ document.addEventListener('change', async e => {
     if (el.value) { let dur = toM(en.value) - toM(el.dataset.prev); if (!(dur > 0)) dur = 60; en.value = fromM(Math.min(23 * 60 + 59, toM(el.value) + dur)); el.dataset.prev = el.value; } return; }
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
   if (el.dataset.change === 'lock-here') { LS.set('lockHere', el.checked); toast(el.checked ? 'This screen will ask for the PIN' : 'This screen won\'t ask for the PIN'); return; }
-  if (el.dataset.change === 'ev-allday') { const t = el.closest('form').querySelector('.evtimes'); if (t) t.hidden = el.checked; }
+  if (el.dataset.change === 'scan-count') { scanCount(); return; }
+  if (el.dataset.change === 'chore-guess') { const f = el.closest('form'); if (f.dataset.picked) return; const g = guessEmoji(el.value); f.emoji.value = g; f.querySelectorAll('.kpb').forEach(x => { const y = !!g && x.dataset.e === g; x.classList.toggle('on', y); x.setAttribute('aria-pressed', y); }); }
+  if (el.dataset.change === 'ev-allday') { const fm = el.closest('form'), t = fm.querySelector('.evtimes'), tk = fm.querySelector('.evtake'); if (t) t.hidden = el.checked; if (tk) tk.hidden = el.checked; }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
     else S.uploadAlbum = el.value;
@@ -536,15 +558,40 @@ document.addEventListener('change', async e => {
   }
 });
 
+// After a scan: compare with the last snapshot of that place and turn the difference into a shopping decision.
 function scanFinish(SS) {
-  if (S.scanSess === SS) S.scanSess = null; S.scanning = null; render(); if (!SS.read) return;
-  const seenTxt = [...new Set(SS.seen)].slice(0, 8).join(', ');
-  toast(`${SS.read} photo${SS.read === 1 ? '' : 's'}: spotted ${SS.found ? seenTxt + (SS.found > 8 ? '…' : '') : 'nothing it could name'}${SS.found ? (SS.added ? ` (${SS.added} new)` : ' (all already listed)') : '. Try closer, with the lights on.'}`, 6000);
-  if (SS.failed) return; // a photo didn't read, so don't suggest removing things that may have been in it
-  const miss = S.pantry.filter(p => SS.before.includes(p.id) && !SS.seen.some(n => sameFood(n, p.name)));
-  const thin = SS.before.length >= 3 && SS.found < SS.before.length / 2; // the photos probably didn't show everything
-  if (miss.length) sheet(`<h2>Not in your photos</h2><p class="help">${thin ? `It only spotted ${SS.found} thing${SS.found === 1 ? '' : 's'} this time, against ${SS.before.length} last time, so the photo${SS.read === 1 ? '' : 's'} may not have shown everything (drawers, frosty bags). Only tick what you know has gone.` : `These were in the last ${esc(SS.place)} snapshot but weren't spotted in any of the ${SS.read} photo${SS.read === 1 ? '' : 's'}. Tick the ones that have gone.`}</p><div id="snap-miss" class="bd">${miss.map(p => `<label class="row bdrow"><input type="checkbox" value="${p.id}"> ${esc(p.name)}</label>`).join('')}</div><div class="row" style="margin-top:14px"><button class="btn" data-act="snap-remove">Remove ticked</button><button class="btn ghost" data-act="close-sheet">Keep them all</button></div>`, {focus: false});
+  if (S.scanSess === SS) S.scanSess = null; S.scanning = null; if (!SS.read) return render();
+  const pl = SS.place, prev = (settings().scans || {})[pl], seen = n => SS.seen.some(x => sameFood(x, n));
+  saveSettings({scans: Object.assign({}, settings().scans, {[pl]: {at: Date.now(), n: SS.found}})}, true);
+  const thin = SS.failed > 0 || (SS.before.length >= 3 && SS.found < SS.before.length / 2); // photos probably didn't show everything
+  const was = S.pantry.filter(p => SS.before.includes(p.id));
+  const gone = was.filter(p => !p.out && !seen(p.name));
+  const low = S.pantry.filter(p => p.place === pl && !p.leftover && p.low && !p.out && seen(p.name));
+  const fresh = [...new Set(SS.seen)].filter(n => !was.some(p => sameFood(p.name, n))).slice(0, 12);
+  // what this week's planned dinners still need, once the gone things are taken off
+  const goneNames = gone.map(p => p.name), today = dayKey(new Date());
+  const meals = S.meals.filter(m => m.day >= today && m.day <= addDaysKey(today, 6) && !m.cooked && !m.leftovers_of && (m.slot || 'dinner') === 'dinner');
+  const gl = listByKind('grocery'), onList = gl ? listItems(gl.id, false).map(i => i.text) : [];
+  const needs = [...new Set(meals.flatMap(m => (m.ingredients || []).map(x => x.name)).filter(n => (!haveIt(n) || goneNames.some(g => sameFood(g, n))) && !onList.some(t => sameFood(t, n))))]
+    .filter(n => !goneNames.some(g => sameFood(g, n)) && !low.some(p => sameFood(p.name, n))).slice(0, 15);
+  render();
+  if (!gone.length && !low.length && !needs.length) return toast(`${cap(pl)} checked: ${SS.found} things spotted${fresh.length ? `, ${fresh.length} new` : ''}. Nothing missing.`, 5000);
+  S._scanRes = {pl, gone: gone.map(p => p.id)};
+  const when = prev && prev.at ? (d => d < 1 ? 'earlier today' : d < 2 ? 'yesterday' : `${Math.round(d)} days ago`)((Date.now() - prev.at) / 864e5) : '';
+  const box = (name, v, on, extra = '') => `<label class="schk"><input type="checkbox" name="${name}" value="${esc(v)}" ${on ? 'checked' : ''} data-change="scan-count"><span>${esc(v)}${extra}</span></label>`;
+  sheet(`<h2>${icon(pl === 'freezer' ? 'snow' : pl === 'pantry' ? 'jar' : 'fridge')} ${cap(pl)} check</h2>
+    <p class="help">${SS.read} photo${SS.read === 1 ? '' : 's'}, ${SS.found} things spotted${when ? `, compared with your last scan ${when}` : ''}.${thin ? ' Some things may not have been in shot, so only tick what has really gone.' : ''}</p>
+    <form data-form="scan-apply" class="scanres">
+      ${gone.length ? `<div class="sgrp out"><div class="sgh"><i class="pdot"></i>Gone since last time <small>ticked ones are marked out</small></div>${gone.map(p => box('gone', p.name, !thin)).join('')}</div>` : ''}
+      ${low.length ? `<div class="sgrp low"><div class="sgh"><i class="pdot"></i>Running low</div>${low.map(p => box('buy', p.name, true, p.qty ? ` <small>${esc(p.qty)}</small>` : '')).join('')}</div>` : ''}
+      ${needs.length ? `<div class="sgrp meal"><div class="sgh">${icon('meal', 'xs')} Needed for this week's dinners</div>${needs.map(n => box('buy', n, true)).join('')}</div>` : ''}
+      ${fresh.length ? `<p class="help">New since last time: ${esc(fresh.join(', '))}.</p>` : ''}
+      <div class="row" style="margin-top:12px;flex-wrap:wrap"><button class="btn" id="scan-go">Add to groceries</button><button type="button" class="btn ghost" data-act="scan-plan">Plan meals with what's in</button></div>
+    </form>`, {focus: false});
+  scanCount();
 }
+const cap = t => String(t || '').charAt(0).toUpperCase() + String(t || '').slice(1);
+function scanCount() { const f = document.querySelector('form.scanres'); if (!f) return; const n = f.querySelectorAll('input:checked').length, b = f.querySelector('#scan-go'); if (b) { b.textContent = n ? `Add ${n} to groceries` : 'Done'; } }
 function scanMoreSheet(refresh) {
   const SS = S.scanSess; if (!SS || SS.done) return;
   if (refresh && !document.querySelector('#scan-more')) return; // only update it if it's still open

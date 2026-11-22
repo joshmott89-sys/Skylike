@@ -69,6 +69,8 @@ const A = {
   'meal-week'(el) { const n = +el.dataset.n; S.mealOffset = n === 0 ? 0 : (S.mealOffset || 0) + n; render(); },
   'meal-open'(el) { mealSheet(el.dataset.k); },
   'meal-plan'() { planSheet(); },
+  'scan-plan'() { const f = document.querySelector('form.scanres'); if (f) F['scan-apply'](f).then(() => { S.view = 'meals'; render(); planSheet(); }); else planSheet(); },
+  'scan-fridge'() { S.view = 'meals'; render(); A['scan-pick']({dataset: {place: 'fridge'}}); },
   'plan-tag'(el) { const g = el.dataset.g, v = el.dataset.v, P = S._plan; if (['vibe', 'skill', 'double', 'lunch'].includes(g)) P[g] = v; else { const a = P[g] || (P[g] = []); const i = a.indexOf(v); i >= 0 ? a.splice(i, 1) : a.push(v); } planSheet(true); },
   'plan-day'(el) { const P = S._plan, k = el.dataset.k, i = P.days.indexOf(k); i >= 0 ? P.days.splice(i, 1) : P.days.push(k); P.days.sort(); planSheet(true); },
   'plan-people'(el) { S._plan.people = Math.max(1, Math.min(12, S._plan.people + +el.dataset.d)); planSheet(true); },
@@ -86,14 +88,14 @@ const A = {
     closeSheet(); S.planning = {at: Date.now()}; render(); planTicker();
     const leftTxt = smallLeft.map(p => `${p.name.replace(/^leftovers?\s*/i, '')} (${p.portions || 1} portion${(p.portions || 1) > 1 ? 's' : ''})`);
     const faves = (S.recipes || []).filter(x => x.favourite).map(x => x.title).slice(0, 20);
-    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: [P.notes, faves.length ? `Family favourites from our recipe box (include one or two this week where they fit, using these exact names): ${faves.join('; ')}.` : '', priceNotes()].filter(Boolean).join(' '), budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
+    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: [P.notes, faves.length ? `Family favourites from our recipe box (include one or two this week where they fit, using these exact names): ${faves.join('; ')}.` : '', priceNotes()].filter(Boolean).join(' '), budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover && !p.out).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
       lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt, kids: lunchKids(), staples: lbox().staples} : null});
     S.planning = null; clearInterval(planT);
     if (r.error) { render(); return toast(r.error, 5000); }
     const byDay = {}; (r.meals || []).forEach(m => { if (m && m.title) byDay[m.day] = m; });
     dates.forEach(({day, double}) => { const m = byDay[day]; if (!m) return;
       const fam = recipeMatch(m.title); if (fam) Object.assign(m, {title: fam.title, ingredients: fam.ingredients, url: fam.url || m.url, servings: fam.servings || m.servings, _rec: fam.id});
-      rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null, notes: m._rec ? 'recipe:' + m._rec : null});
+      rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || null, servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null, notes: m._rec ? 'recipe:' + m._rec : null});
       const ln = Object.keys(leftNights).find(k => leftNights[k] === day);
       if (ln) rows.push({household_id: S.hid, day: ln, slot: 'dinner', title: 'Leftovers: ' + String(m.title).slice(0, 70), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: null, real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: String(m.title).slice(0, 90)}); });
     (r.lunches || []).forEach(l => { if (!l || !lunchDays.includes(l.day)) return;
@@ -154,6 +156,12 @@ const A = {
   'rep-day'(el) { const f = el.closest('form'), cur = f.rep_days.value ? f.rep_days.value.split(',') : [], v = el.dataset.v, next = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v);
     if (!next.length) return toast('Pick at least one day.'); f.rep_days.value = next.join(','); el.classList.toggle('on', next.includes(v)); el.setAttribute('aria-pressed', next.includes(v)); repRefresh(f); },
   async 'ev-del-one'(el) { const e = evById(el.dataset.id); if (!e || !e.series) return; const r = e.row; r.repeat = Object.assign({}, r.repeat, {skip: (r.repeat.skip || []).concat(e.occ)}); closeSheet(); render(); saveLocalEvent(r, null); },
+  kpick(el) { const f = el.closest('form'), inp = f.querySelector('input[name="emoji"]'), on = inp.value !== el.dataset.e; inp.value = on ? el.dataset.e : ''; f.dataset.picked = on ? '1' : '';
+    f.querySelectorAll('.kpb').forEach(b => { const y = on && b === el; b.classList.toggle('on', y); b.setAttribute('aria-pressed', y); }); },
+  'chore-pic'(el) { const c = S.chores.find(x => x.id === el.dataset.id); if (!c) return; sheet(`<h2>Picture for ${esc(c.title)}</h2>${kpickHTML(c.emoji || '', 'chore-pic-set', c.id)}`); },
+  async 'chore-pic-set'(el) { const c = S.chores.find(x => x.id === el.dataset.id); if (!c) return; c.emoji = el.dataset.e; closeSheet(); render(); if (!DEMO) await db(sb.from('chores').update({emoji: c.emoji}).eq('id', c.id)); },
+  'take-tog'(el) { const f = el.closest('form'), inp = f.querySelector('input[name="taker"]'), on = inp.value !== el.dataset.m; inp.value = on ? el.dataset.m : '';
+    f.querySelectorAll('[data-act="take-tog"]').forEach(b => { const y = on && b === el; b.classList.toggle('on', y); b.setAttribute('aria-pressed', y); }); },
   'who-tog'(el) {
     const f = el.closest('form'), inp = f.querySelector('input[name="who"]'), ids = inp.value ? inp.value.split(',') : [], m = el.dataset.m;
     const next = ids.includes(m) ? ids.filter(x => x !== m) : ids.concat(m); inp.value = next.join(','); el.classList.toggle('on', next.includes(m)); el.setAttribute('aria-pressed', next.includes(m));

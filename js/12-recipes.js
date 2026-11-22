@@ -92,7 +92,22 @@ Object.assign(A, {
   'recipe-all'() { recipeAllSheet(); },
   'recipe-open'(el) { recipeSheet(el.dataset.id); },
   'recipe-edit'(el) { recipeEditSheet(el.dataset.id); },
-  async 'recipe-save-draft'() { const d = S._rdraft; if (!d) return; S._rdraft = null; const r = await saveRecipe(d); toast(`Saved ${r.title}.`); recipeSheet(r.id); },
+  async 'recipe-save-draft'() { const d = S._rdraft; if (!d) return; S._rdraft = null; const r = await saveRecipe(d); toast(`Saved ${r.title}.`);
+    const mk = S._rdraftMeal, m = mk && mealOn(mk); S._rdraftMeal = null; if (m) { m.notes = 'recipe:' + r.id; if (!DEMO) db(sb.from('meals').update({notes: m.notes}).eq('id', m.id)); render(); }
+    recipeSheet(r.id); },
+  // AI-planned dinners without a real recipe page: write the method for this meal, with its own ingredients
+  async 'meal-method'(el) {
+    const m = mealOn(el.dataset.k); if (!m) return;
+    const ex = recipeMatch(m.title); if (ex) return recipeSheet(ex.id);
+    if (!S.aiOn && !DEMO) return toast('Writing a method needs the free Gemini key (Settings → Kitchen).', 5000);
+    el.disabled = true; el.innerHTML = `<span class="spin"></span>Writing the method…`;
+    const ing = (m.ingredients || []).map(x => ({qty: x.qty || '', name: x.name, ...(x.group ? {group: x.group} : {})}));
+    const r = DEMO ? {recipe: {title: m.title, servings: m.servings || '4', prep_time: m.prep_time || '', source: 'ai', ingredients: ing, steps: ['Get everything out and preheat the oven to 200°C.', 'Prep the vegetables while the oven heats.', 'Cook the main part until golden, about 15 minutes.', 'Bring it all together, taste, season and serve.']}}
+      : await callRecipe({write: {title: m.title, servings: m.servings || '', ingredients: ing}});
+    if (r.error) { el.disabled = false; el.textContent = 'Show me how to make it'; return toast(r.error, 5000); }
+    r.recipe.ingredients = r.recipe.ingredients && r.recipe.ingredients.length ? r.recipe.ingredients : ing;
+    S._rdraftMeal = el.dataset.k; recipeNewSheet(r.recipe);
+  },
   async 'recipe-fave'(el) { const r = recipeById(el.dataset.id); if (!r) return; r.favourite = !r.favourite; recipeSheet(r.id); render(); if (!DEMO) await db(sb.from('recipes').update({favourite: r.favourite}).eq('id', r.id)); },
   async 'recipe-need'(el) { const r = recipeById(el.dataset.id); if (!r) return; const n = await groceryAdd((r.ingredients || []).filter(x => !haveIt(x.name)).map(x => x.name)); toast(n ? `Added ${n} to groceries.` : 'Already on the list.'); },
   async 'recipe-plan'(el) { const r = recipeById(el.dataset.id); if (!r) return; if (await planRecipe(r, el.dataset.k)) { closeSheet(); toast(`${r.title} planned for ${i18nDay(el.dataset.k, dayKey(new Date()))}.`); } },

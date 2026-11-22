@@ -69,6 +69,16 @@ Object.assign(A, {
   },
 });
 Object.assign(F, {
+  // fridge check: ticked "gone" items are marked out; everything ticked goes on the grocery list
+  async 'scan-apply'(f) {
+    const R = S._scanRes || {}, gone = [...f.querySelectorAll('input[name="gone"]:checked')].map(i => i.value), buy = [...f.querySelectorAll('input[name="buy"]:checked')].map(i => i.value);
+    const outRows = S.pantry.filter(p => (R.gone || []).includes(p.id) && gone.some(g => g === p.name));
+    outRows.forEach(p => { p.out = true; p.low = true; });
+    if (outRows.length && !DEMO) db(sb.from('pantry').update({out: true, low: true}).in('id', outRows.map(p => p.id)));
+    const n = (gone.length || buy.length) ? await groceryAdd([...gone, ...buy]) : 0;
+    S._scanRes = null; closeSheet(); render();
+    toast(n ? `Added ${n} to Groceries${outRows.length ? ` · ${outRows.length} marked out` : ''}` : outRows.length ? `${outRows.length} marked out` : 'All up to date', 4000);
+  },
   async 'spend-save'(f) {
     const d = S._spendDraft || {}, total = Math.round((+f.total.value || 0) * 100) / 100; if (!(total > 0)) return toast('Add the total');
     const row = {id: uid(), household_id: S.hid, day: f.day.value || dayKey(new Date()), store: f.store.value.trim().slice(0, 60) || null, total, source: (d.items || []).length ? 'receipt' : 'typed',

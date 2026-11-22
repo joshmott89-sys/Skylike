@@ -120,6 +120,13 @@ Deno.serve(async (req) => {
       const out = tidy(await gemini(await key(), `This is the text of a recipe web page. Pull out the recipe. ${ASK}\nPage: """${text}"""`), "link", url.href);
       return out.title ? json({ recipe: out }) : json({ error: "Couldn't find a recipe on that page." }, 422);
     }
+    if (body.write && body.write.title) { // write a method for a planned dinner that has no recipe page, using its own ingredients
+      const t = clean(body.write.title).slice(0, 120), serves = clean(body.write.servings).slice(0, 20);
+      const ings = (Array.isArray(body.write.ingredients) ? body.write.ingredients : []).slice(0, 40).map((i: any) => `${clean(i.qty)} ${clean(i.name)}`.trim()).filter(Boolean).join("\n");
+      const out = tidy(await gemini(await key(), `Write a simple, reliable home recipe for "${t}"${serves ? ` to serve ${serves}` : " for a family of four"} in Perth, Australia. ${ings ? `Use these ingredients and amounts (add pantry basics like oil, salt and pepper if needed):\n${ings}\n` : ""}Give clear steps a busy parent can follow: one action per step, with times, and oven temperatures in Celsius. Keep the title "${t}". ${ASK}`), "ai");
+      if (!out.title) out.title = t;
+      return out.steps.length ? json({ recipe: out }) : json({ error: "Couldn't write that one. Try again in a minute." }, 422);
+    }
     if (Array.isArray(body.receipt) && body.receipt.length) { // a shopping receipt: what each line cost
       const imgs = body.receipt.slice(0, 3).map(String);
       if (imgs.reduce((a: number, x: string) => a + x.length, 0) > 12_000_000) return json({ error: "Those photos are too big. Try fewer." }, 400);

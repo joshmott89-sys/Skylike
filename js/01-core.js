@@ -179,7 +179,10 @@ window.addEventListener('error', e => onAppError(e.error || e.message));
 window.addEventListener('unhandledrejection', e => onAppError(e.reason));
 const DEMO_PAGE = new URLSearchParams(location.search).has('demo');
 // Android Chrome can keep a stale 100dvh after switching apps, pushing the bottom bar off screen: size to the real window instead.
-function fitHeight() { document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); }
+// iPad: while the keyboard is up the window reports half its height; don't shrink the app to that, and re-measure once typing ends.
+const typingNow = () => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && matchMedia('(pointer:coarse)').matches; };
+function fitHeight() { if (typingNow() && window.innerHeight < (S && S._fullH || 0) * .8) return; document.documentElement.style.setProperty('--app-h', window.innerHeight + 'px'); if (!typingNow()) S._fullH = window.innerHeight; }
+document.addEventListener('focusout', () => [60, 300, 700, 1200].forEach(t => setTimeout(() => { if (typingNow()) return; fitHeight(); if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0); }, t)));
 fitHeight();
 ['resize', 'orientationchange', 'pageshow', 'focus'].forEach(e => addEventListener(e, () => { fitHeight(); setTimeout(fitHeight, 300); }));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { fitHeight(); setTimeout(fitHeight, 300); setTimeout(fitHeight, 1000); } });
@@ -572,6 +575,9 @@ function chipsFor(k, now) {
       if (next) { const d = daysBetween(k, next[0]); out.push({icon: 'school', c: '#3A9AA0', text: d <= 3 ? 'Back to school' : 'School holidays', sub: d <= 3 ? (d === 1 ? 'tomorrow' : fmtDay(next[0], {weekday: 'long'})) : `${d} sleeps to go`}); }
     } else { const d = daysBetween(k, inTerm[1]); if (d >= 0 && d <= 4) out.push({icon: 'school', c: '#3A9AA0', text: 'Holidays start', sub: d === 0 ? 'after today' : `in ${d} sleeps`}); }
   }
+  // Weekly fridge photo: once it's been a week (mornings and evenings, when people are in the kitchen)
+  const fs = (st.scans || {}).fridge, fd = fs && fs.at ? (Date.now() - fs.at) / 864e5 : null;
+  if (S.aiOn && (fd == null ? S.pantry.some(p => p.place === 'fridge') : fd >= 7) && (hr < 10 || hr >= 16)) out.push({icon: 'fridge', c: '#3A7CA5', text: 'Weekly fridge photo', sub: fd == null ? 'see what\'s running low' : `last one ${Math.floor(fd)} days ago`, act: 'scan-fridge'});
   // Everyday staples marked low or out (bread, milk…), one tap adds them to groceries
   const sl = staplesLow(); if (sl.length) { const out1 = sl.filter(p => p.out); out.push({icon: 'cart', c: out1.length ? '#C24A3A' : '#C98A12', text: out1.length === sl.length ? `Out of ${andList(sl.map(p => p.name.toLowerCase()))}` : `Low: ${andList(sl.map(p => p.name.toLowerCase()))}`, sub: 'tap to add to groceries', act: 'staples-add', staples: sl.map(p => p.name.toLowerCase()), anyOut: out1.length > 0}); }
   // Countdowns live on the idle screens (photos, night clock); home only shows one on the day itself.

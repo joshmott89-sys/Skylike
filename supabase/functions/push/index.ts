@@ -192,10 +192,12 @@ async function tick() {
         const grown = ids.filter(id => (members || []).some((m: any) => m.id === id && m.kind !== "kid"));
         const who = ov.taker ? [ov.taker] : grown.length ? grown : adults;
         const how = drive != null ? ` · ${drive} min drive` : "";
+        // If nobody chosen has a phone with notifications on (e.g. the driver hasn't set it up), tell the other grown-ups instead of no one.
+        const leaveSubs = async () => { const s1 = await subsFor(hid, "leave", who); return s1.length ? s1 : await subsFor(hid, "leave", adults); };
         if (toLeave <= 32 && toLeave >= 18 && await once(`soon:${hid}:${e.event_id}:${e.starts_at}`, hid))
-          sent += await sendP(await subsFor(hid, "leave", who), st, C => ({ title: C.soon(fmtTime(new Date(leaveAt).toISOString(), tz)), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
+          sent += await sendP(await leaveSubs(), st, C => ({ title: C.soon(fmtTime(new Date(leaveAt).toISOString(), tz)), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
         else if (toLeave <= 6 && toLeave >= -4 && await once(`leave:${hid}:${e.event_id}:${e.starts_at}`, hid))
-          sent += await sendP(await subsFor(hid, "leave", who), st, C => ({ title: C.now(toLeave), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
+          sent += await sendP(await leaveSubs(), st, C => ({ title: C.now(toLeave), body: `${e.title} at ${fmtTime(e.starts_at, tz)}${how}\n${e.location}`, tag: "leave-" + e.event_id, url: "./" }));
       }
     }
 
