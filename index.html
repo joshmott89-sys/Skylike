@@ -248,7 +248,7 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .fhead{display:flex;justify-content:space-between;align-items:baseline;font-size:20px;font-weight:700;color:var(--ink-2);padding-top:4px}
 .fq{display:flex;gap:8px}.fq .input{flex:1;min-height:58px;font-size:19px;border-radius:16px}.fq .btn{min-width:58px;min-height:58px;border-radius:16px;justify-content:center;padding:0}
 .fmic{min-width:58px;min-height:58px;border-radius:16px;border:1px solid var(--line,rgba(0,0,0,.1));background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}.fmic svg{width:24px;height:24px}.fmic.on{background:var(--apricot);color:#fff;border-color:transparent}
-.fqhint{font-size:14px;color:var(--muted);margin-top:-8px}.fqdone{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:15.5px;margin-top:-8px}
+.fqhint{font-size:14px;color:var(--muted);margin-top:-8px}.qa-in{display:grid;gap:8px;margin:2px 0 12px}.qa-in .fq .input{min-height:48px;font-size:17px;border-radius:14px}.qa-in .fq .btn,.qa-in .fq .fmic{min-width:48px;min-height:48px;border-radius:14px}.qa-in .fqhint,.qa-in .fqdone{margin-top:0;font-size:13.5px}.fqdone{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:15.5px;margin-top:-8px}
 .fnow{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:26px 26px 24px;border-left:8px solid var(--c,var(--ocean-2))}
 button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7FB59A}
 .fk{font-size:14px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
@@ -780,7 +780,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1315'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1345'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1608,7 +1608,7 @@ function listsZoneHTML() {
   const l = shown.find(x => x.kind === LS.get('homeList', 'todo')) || shown[0];
   if (!l) return `<div class="zone lists-z"><h2><button class="h2link" data-act="go" data-view="lists">Lists${icon('right')}</button></h2><div class="empty">No lists yet.</div></div>`;
   const items = listItems(l.id, false), cap = 12;
-  return `<div class="zone lists-z"><h2><button class="h2link" data-act="go" data-view="lists" data-list="${l.id}">Lists${icon('right')}</button>
+  return `<div class="zone lists-z">${isPhone() ? '' : `<div class="qa-in">${quickAddHTML()}</div>`}<h2><button class="h2link" data-act="go" data-view="lists" data-list="${l.id}">Lists${icon('right')}</button>
       <span class="seg sm">${shown.map(x => `<button class="${x.id === l.id ? 'on' : ''}" data-act="home-list" data-kind="${x.kind}">${esc(x.name)}<span class="n num">${listItems(x.id, false).length}</span></button>`).join('')}</span></h2>
     <div class="items scroll"><ul class="items">${items.slice(0, cap).map(i => itemRow(i)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up' : 'Nothing to do'}</li>`}</ul>
     ${items.length > cap ? `<button class="btn ghost" style="margin-top:8px" data-act="go" data-view="lists" data-list="${l.id}">${items.length - cap} more in ${esc(l.name)}</button>` : ''}</div></div>`;
@@ -1828,6 +1828,15 @@ function repRefresh(f) {
   const end = f.rep_end.value; f.rep_until.hidden = end !== 'date'; box.querySelector('.repcount').hidden = end !== 'count';
   if ((freq === 'week' || freq === 'fortnight') && !f.rep_days.value) { f.rep_days.value = String(weekdayOfKey(k)); box.querySelectorAll('.dow').forEach(b => b.classList.toggle('on', +b.dataset.v === weekdayOfKey(k))); }
   const R = repeatFrom(f); box.querySelector('.repsum').innerHTML = R ? icon('repeat', 'xs') + ' ' + esc(repeatText(R, k)) : '';
+}
+/* One smart Add, the same everywhere: an event if it has a day or time, groceries if it's food, a to-do for someone if it
+   starts with their name ("Sam: call the plumber"), otherwise a to-do. One mic beside it. */
+function quickAddHTML() {
+  const last = S._fqLast, them = (S.members.find(m => m.kind !== 'kid' && m.id !== (meMember() || {}).id) || {}).name || 'Sam';
+  const where = last && (last.kind === 'event' ? 'Calendar' : last.kind === 'grocery' ? 'Groceries' : 'To do');
+  return `<form class="fq" data-form="fquick"><input class="input" id="fq" name="text" placeholder="Add anything…" autocomplete="off" maxlength="200" enterkeyhint="done" aria-label="Add anything: an event, a to-do or groceries" aria-describedby="fq-tip">${canListen() ? `<button type="button" class="fmic" data-act="fq-mic" aria-label="Say it">${icon('mic')}</button>` : ''}<button class="btn" aria-label="Add">${icon('plus')}</button></form>
+    ${last && last.kind !== 'event' && Date.now() - last.at < 15000 ? `<div class="fqdone">${icon('check', 'xs')} ${esc(last.text)} → <b>${where}${last.who ? ` for ${esc(last.who)}` : ''}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>`
+      : `<div class="fqhint" id="fq-tip">Try “milk and bread”, “swimming Tue 4pm” or “${esc(them)}: book the car service”.</div>`}`;
 }
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
 const canListen = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -2182,8 +2191,7 @@ V.focus = () => {
   const last = S._fqLast;
   return `<div class="page focus2">
     <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="num">${esc(fmtTime(now))}</span></div>
-    <form class="fq" data-form="fquick"><input class="input" id="fq" name="text" placeholder="Add anything…" autocomplete="off" maxlength="200" enterkeyhint="done" aria-label="Add a to-do or grocery">${window.webkitSpeechRecognition || window.SpeechRecognition ? `<button type="button" class="fmic" data-act="fq-mic" aria-label="Say it">${icon('mic')}</button>` : ''}<button class="btn" aria-label="Add">${icon('plus')}</button></form>
-    ${last && Date.now() - last.at < 15000 ? `<div class="fqdone">${icon('check', 'xs')} ${esc(last.text)} → <b>${last.kind === 'grocery' ? 'Groceries' : 'To do'}${last.who ? ` for ${esc(last.who)}` : ''}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>` : `<div class="fqhint">Food goes to Groceries, the rest to To do. Start with a name to give it to someone: “${esc(((S.members.find(m => m.kind !== 'kid' && (!me || m.id !== me.id)) || {}).name) || 'Josh')}: book the car service”.</div>`}
+    ${quickAddHTML()}
     ${hero}
     ${briefShow() ? `<button class="fbrief" data-act="brief-open">${icon('sun')} Hear today's brief</button>` : ''}
     <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : '<p class="fempty">Nothing else today.</p>'}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
@@ -2203,7 +2211,7 @@ V.planner = () => {
   const g = listByKind('grocery'), gc = g ? listItems(g.id, false).length : 0;
   return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">
     <div class="zone"><h2>Today's checklist${me ? ' · ' + esc(me.name) : ''}<span class="more num" style="color:var(--ink-2)">${done.length}/${items.length}</span></h2>
-      <form class="addbar" data-form="add-item" data-list="${t ? t.id : ''}"><input class="input" id="plan-add" name="text" placeholder="Add to the checklist" autocomplete="off" maxlength="200"><button class="btn" aria-label="Add">${icon('plus')}</button></form>
+      <div class="qa-in">${quickAddHTML()}</div>
       <ul class="items scroll">${open.map(i => itemRow(i, true)).join('')}${done.map(i => itemRow(i, true)).join('')}</ul></div>
     <div class="zone"><h2>This week<button class="more" data-act="go" data-view="lists">Groceries · ${gc}</button></h2><div class="scroll">${days}</div></div>
   </div>`;
@@ -3010,9 +3018,7 @@ const A = {
   'brief-tone'() { sheet(`<h2>Choose your assistant</h2><p class="help">Each one has its own voice and its own way of telling you about your day. Tap ▶ to hear them.</p>${personaPickerHTML()}`, {focus: false}); },
   'brief-voice'(el) { LS.set('briefVoice', el.dataset.v); document.querySelectorAll('#sheet-root [data-act="brief-voice"]').forEach(b => b.classList.toggle('on', b === el)); },
   'brief-open'() { sheet(`<h2>Today's brief</h2>${briefCardHTML(true).replace('class="brief"', 'class="brief insheet"')}`); },
-  'fq-mic'(el) { const R = window.SpeechRecognition || window.webkitSpeechRecognition; if (!R) return; const r = new R(); r.lang = 'en-AU'; r.interimResults = false; el.classList.add('on');
-    r.onresult = ev => { const t = ev.results[0][0].transcript; const f = document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } };
-    r.onend = () => el.classList.remove('on'); r.onerror = () => { el.classList.remove('on'); toast('Didn\'t catch that. Try again, or use the keyboard mic.'); }; r.start(); },
+  'fq-mic'(el) { listen(t => { const f = el.closest('form') || document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } }, el); },
   'calm-set'(el) { LS.set('calm', el.dataset.v); render(); },
   fold(el) { S.fold = S.fold || {}; S.fold[el.dataset.k] = !S.fold[el.dataset.k]; render(); },
   async feedback() { S._fb = null; feedbackSheet(); if (!DEMO) { const {data} = await sb.from('feedback').select('body,status,created_at').eq('household_id', S.hid).eq('user_id', S.session ? S.session.user.id : null).order('created_at', {ascending: false}).limit(5); S._fbMine = data || []; if (document.querySelector('#fb-body')) feedbackSheet(); } },
@@ -3259,7 +3265,7 @@ function eventForm(e, k) {
       <textarea class="input" name="notes" rows="2" maxlength="600" placeholder="Notes (optional): bring a hat, RSVP by Friday…">${esc((e ? e.notes : pre.notes) || '')}</textarea></div>`;
   sheet(`<h2>${e ? 'Edit event' : 'Add an event'}</h2>
     <form data-form="ev-save" data-id="${e ? e.id : ''}" class="evform">
-      ${e || pre0.title ? '' : `<div class="evimp"><button type="button" class="btn soft sm" data-act="ev-import">${icon('camera')} From a photo</button>${canListen() ? `<button type="button" class="btn soft sm" data-act="ev-voice">${icon('mic')} Say it</button>` : ''}<button type="button" class="btn soft sm" data-act="ev-import">Paste text</button></div>`}
+      ${e || pre0.title ? '' : `<div class="evimp"><button type="button" class="btn soft sm" data-act="ev-import">${icon('camera')} From a photo</button><button type="button" class="btn soft sm" data-act="ev-import">Paste text</button></div>`}
       <div class="row evtitle"><input class="input grow" id="ev-title" name="title" data-change="ev-smart" placeholder="e.g. Dancing for Elowyn at 10am Saturday" value="${esc(e ? e.title : (pre.title || ''))}" maxlength="120" required>${micBtn('#ev-title')}</div><p class="smarthint" hidden></p>
       ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
       ${whoSel}
@@ -3542,12 +3548,16 @@ const F = {
   },
   async fquick(f) {
     const raw0 = f.text.value.trim(); if (!raw0) return;
-    if (!S._fqForce && S.aiOn && !DEMO && looksLikeAppointment(raw0) && !parseAssignee(raw0).who && !/^(buy|get|pick up|grab|call|ring|email|text|pay|book|order|remind)\b/i.test(raw0)) { f.text.value = ''; return readEvents({text: raw0}, raw0); }
+    if (!S._fqForce && looksLikeAppointment(raw0) && !parseAssignee(raw0).who && !/^(buy|get|pick up|grab|call|ring|email|text|pay|book|order|remind)\b/i.test(raw0)) {
+      const P = parseEventText(raw0);
+      if (P.start || P.day || P.all_day) { f.text.value = ''; S._fqLast = {kind: 'event', text: raw0, at: Date.now()}; S._evDraft = {title: raw0}; eventForm(null); setTimeout(() => { const ef = document.querySelector('#sheet-root form.evform'); if (ef) smartFill(ef); }, 60); return; }
+      if (S.aiOn && !DEMO) { f.text.value = ''; return readEvents({text: raw0}, raw0); }
+    }
     const A2 = parseAssignee(raw0), raw = A2.text, kind = A2.who ? 'todo' : guessKind(raw), me = meMember(), l = listByKind(kind); if (!l) return;
     const parts = kind === 'grocery' ? raw.replace(/^(buy|get|pick up|grab|need)\s+/i, '').split(/,| and /).map(x => x.trim()).filter(Boolean) : [raw];
     const rows = parts.map((text, i) => ({id: uid(), household_id: S.hid, list_id: l.id, text: text.charAt(0).toUpperCase() + text.slice(1, 200), added_by: me ? me.id : null, assignee: A2.who ? A2.who.id : null, sort: Date.now() / 1000 + i, done: false, created_at: new Date().toISOString()}));
     S.items.push(...rows); S._fqLast = {ids: rows.map(r => r.id), text: rows.map(r => r.text).join(', '), kind, who: A2.who && (!me || A2.who.id !== me.id) ? A2.who.name : null, at: Date.now()}; f.text.value = ''; render();
-    const inp = $('#fq'); if (inp) inp.focus(); setTimeout(() => { if (S._fqLast && Date.now() - S._fqLast.at >= 15000 && S.view === 'focus') render(); }, 15500);
+    const inp = $('#fq'); if (inp) inp.focus(); setTimeout(() => { if (S._fqLast && Date.now() - S._fqLast.at >= 15000 && ['focus', 'planner', 'family'].includes(S.view)) render(); }, 15500);
     if (!DEMO) await db(sb.from('list_items').insert(rows));
   },
   async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
