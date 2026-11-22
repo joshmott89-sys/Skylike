@@ -433,7 +433,7 @@ body[data-drag="pev"] .pcol{transition:outline .1s}
 .smarthint{margin:-4px 0 0;font-size:14px;font-weight:700;color:var(--pick)}body.night .smarthint{color:#8CC3DC}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
 .pcard{position:relative;border-radius:18px;border:1.5px solid var(--line);background:var(--surface);transition:border-color .15s,box-shadow .15s}.pcard.on{border-color:var(--pick);box-shadow:0 0 0 2px var(--pick) inset;background:color-mix(in srgb,var(--pick) 10%,var(--surface))}
-.pmain{display:grid;gap:3px;justify-items:start;width:100%;text-align:left;padding:14px 14px 14px;border:0;background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:118px}.pmain .pe{font-size:30px;line-height:1}.pmain b{font-size:17px;margin-top:4px}.pmain small{color:var(--ink-2);font-size:13.5px;line-height:1.3;padding-right:34px}
+.pmain{display:grid;gap:3px;justify-items:start;width:100%;text-align:left;padding:14px 14px 14px;border:0;background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:118px}.pav{display:inline-grid;place-items:center;width:46px;height:46px;border-radius:15px;background:var(--av);color:var(--avi);flex:none}.pav svg{width:31px;height:31px}.pav.sm{width:28px;height:28px;border-radius:9px;vertical-align:middle;margin:-4px 2px -4px -4px}.pav.sm svg{width:21px;height:21px}body.night .pav{background:color-mix(in srgb,var(--avi) 34%,var(--surface));color:color-mix(in srgb,var(--av) 85%,#fff)}.pcard.on .pav{box-shadow:0 1px 2px rgba(0,0,0,.08),0 6px 14px -8px var(--avi)}.pmain b{font-size:17px;margin-top:4px}.pmain small{color:var(--ink-2);font-size:13.5px;line-height:1.3;padding-right:34px}
 .psample{position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;border:0;background:var(--pick);color:#fff;font-size:15px;cursor:pointer;display:grid;place-items:center}.psample.on{background:#C9473A}
 .pcard.on .pmain b::after{content:' ✓';color:var(--pick)}
 .evrep{display:flex;align-items:center;gap:10px;min-height:48px;font-weight:700;cursor:pointer}.evrep input{width:22px;height:22px}
@@ -778,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1030'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1115'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1897,13 +1897,25 @@ const personaKey = () => (briefWho() || {}).id || 'family';
 const personaId = () => (settings().persona || {})[personaKey()] || ({bubbly: 'sunny', sassy: 'sass', plain: 'news', calm: 'willow'})[LS.get('briefTone', '')] || 'sunny';
 const persona = (id = personaId()) => PERSONAS.find(p => p.id === id) || PERSONAS[0];
 const briefTone = () => persona().tone;
+// Assistant portraits: bespoke line marks on a tinted tile, one drawing style for all eight.
+const PAV = {
+  sunny: {bg: '#FBE7BE', ink: '#9A5208', g: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.1M12 19.1v2.1M2.8 12h2.1M19.1 12h2.1M5.5 5.5l1.5 1.5M17 17l1.5 1.5M5.5 18.5L7 17M17 7l1.5-1.5"/>'},
+  mate: {bg: '#F2DCC4', ink: '#86401A', g: '<path d="M6.8 14C6.6 8.2 8.6 5 12 5s5.4 3.2 5.2 9"/><path d="M9.2 6.7c1.5 1.1 4.1 1.1 5.6 0"/><path d="M6.9 11.4h10.2"/><path d="M2.5 15.3c2-1 4.7-1.5 9.5-1.5s7.5.5 9.5 1.5c-1.9 2-5.4 3.3-9.5 3.3s-7.6-1.3-9.5-3.3z"/>'},
+  sass: {bg: '#F5D6E0', ink: '#9C2F55', g: '<circle cx="12" cy="12" r="9"/><path d="M7.4 7.6l2.7-1"/><circle cx="9" cy="10.4" r="1.1" fill="currentColor" stroke="none"/><path d="M13.6 10.8q1.3-1.4 2.6 0"/><path d="M8.6 14.6c1.8 1.4 4.7 1.5 7-.6"/>'},
+  willow: {bg: '#D8EBD9', ink: '#2F6A46', g: '<path d="M5.5 19.5C8.6 15.4 12 10.6 18.6 4.8"/><path d="M18.6 4.8c-4.6.2-7.3 2.6-7.4 6.4 3.9.1 6.8-2.4 7.4-6.4z"/><path d="M9.7 14.4c-3.5-1-6-.1-7 2.6 2.9 1.1 5.6.3 7-2.6z"/><path d="M11.4 12.1c.5-3.3-.5-5.8-3.2-7-1.2 2.8 0 5.6 3.2 7z"/>'},
+  news: {bg: '#DAE4EC', ink: '#284B63', g: '<rect x="9" y="2.8" width="6" height="10.4" rx="3"/><path d="M10.6 6.3h2.8M10.6 8.8h2.8"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3.6M8.6 20.6h6.8"/>'},
+  sterling: {bg: '#DFE2F4', ink: '#33408A', g: '<path d="M12 3a9 9 0 0 1 9 9"/><path d="M12 21a9 9 0 0 1-9-9"/><path d="M5.6 5.6l.9.9M17.5 17.5l.9.9"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>'},
+  ambrose: {bg: '#ECE1CE', ink: '#5A4426', g: '<path d="M10.2 10.4L4.6 7.3c-.9-.5-1.8.1-1.8 1.1v7.2c0 1 .9 1.6 1.8 1.1l5.6-3.1"/><path d="M13.8 10.4l5.6-3.1c.9-.5 1.8.1 1.8 1.1v7.2c0 1-.9 1.6-1.8 1.1l-5.6-3.1"/><rect x="10.2" y="9.6" width="3.6" height="4.8" rx="1.3"/>'},
+  coach: {bg: '#FDDCCD', ink: '#A83E1C', g: '<circle cx="9.4" cy="13.6" r="5.6"/><circle cx="9.4" cy="13.6" r="1.6"/><path d="M9.4 8h10.4c.7 0 1.2.5 1.2 1.2v1.6c0 .7-.5 1.2-1.2 1.2h-5.2"/>'},
+};
+const pavatar = (p, cls = '') => { const a = PAV[p.id] || PAV.sunny; return `<span class="pav ${cls}" style="--av:${a.bg};--avi:${a.ink}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${a.g}</svg></span>`; };
 const gselShow = g => document.querySelectorAll('[data-act="voice-g"]').forEach(b => { b.classList.toggle('on', b.dataset.v === g); b.setAttribute('aria-pressed', b.dataset.v === g); });
 // Female or male voice, chosen per person; until they choose, each personality uses its own usual voice.
 const voiceG = (pid = personaId()) => (settings().voiceG || {})[personaKey()] || persona(pid).g || 'f';
 function personaPickerHTML() {
   const cur = personaId(), who = briefWho(), g = voiceG(cur);
   return `<h3 style="margin-top:6px">Voice</h3><div class="chips2 gsel" role="group" aria-label="Voice">${[['f', 'Female'], ['m', 'Male']].map(([k, l]) => `<button class="chip2 ${g === k ? 'on' : ''}" data-act="voice-g" data-v="${k}" aria-pressed="${g === k}">${l}</button>`).join('')}</div>
-    <h3 style="margin-top:14px">Personality</h3><div class="pgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}"><span class="pe">${p.emoji}</span><b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
+    <h3 style="margin-top:14px">Personality</h3><div class="pgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}">${pavatar(p)}<b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
     <p class="help">${who ? `This is ${esc(who.name)}'s assistant.` : 'This is the family screen\'s assistant.'} Each person can pick their own.</p>
     <h3 style="margin-top:14px">Read by</h3><div class="chips2 gsel">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
     <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`;
@@ -2007,7 +2019,7 @@ function briefCardHTML(force) {
   const P = persona();
   return `<section class="brief ${force || S._briefOpen ? 'open' : ''}" aria-label="Morning briefing"><div class="bhead"><span class="bk">☀️ <span class="bkl">Morning brief</span><span class="bks">Brief</span></span><span class="sp"></span>
     <button class="btn bplay ${S._speaking ? 'on' : ''}" data-act="brief-say">${S._speaking ? '■ Stop' : '▶ <span class="rl">Read it to me</span><span class="rs">Listen</span>'}</button>
-    <button class="btn soft sm" data-act="brief-tone" aria-label="Assistant: ${P.name}. Change it">${P.emoji}<span class="tl"> ${P.name}</span></button>
+    <button class="btn soft sm" data-act="brief-tone" aria-label="Assistant: ${P.name}. Change it">${pavatar(P, 'sm')}<span class="tl"> ${P.name}</span></button>
     ${force ? '' : `<button class="icon-btn sm" data-act="brief-hide" aria-label="Hide for today">${icon('x')}</button>`}</div>
     <p class="btxt" ${force ? '' : 'data-act="brief-more" role="button" tabindex="0" aria-label="Show the whole brief"'}>${esc(briefText())}</p></section>`;
 }
