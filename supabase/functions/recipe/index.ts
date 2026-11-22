@@ -120,6 +120,16 @@ Deno.serve(async (req) => {
       const out = tidy(await gemini(await key(), `This is the text of a recipe web page. Pull out the recipe. ${ASK}\nPage: """${text}"""`), "link", url.href);
       return out.title ? json({ recipe: out }) : json({ error: "Couldn't find a recipe on that page." }, 422);
     }
+    if (Array.isArray(body.receipt) && body.receipt.length) { // a shopping receipt: what each line cost
+      const imgs = body.receipt.slice(0, 3).map(String);
+      if (imgs.reduce((a: number, x: string) => a + x.length, 0) > 12_000_000) return json({ error: "Those photos are too big. Try fewer." }, 400);
+      const o = await gemini(await key(), `These photos show one shopping receipt (several photos may be parts of one long receipt). Return JSON: {"store":"shop name, e.g. Woolworths","date":"YYYY-MM-DD or empty","total":0,"items":[{"name":"plain everyday name with size, e.g. Milk 2L","qty":"count or weight if more than one","price":0,"place":"fridge, freezer or pantry for food and drink; empty for anything that isn't food"}]}. price is what was paid for that line after any discount on it. total is the amount actually paid. Leave out bags, subtotals, GST, rewards, savings summaries and payment lines. If it isn't a receipt, return {"total":0,"items":[]}.`, imgs);
+      const num = (v: unknown) => { const n = Math.round(parseFloat(String(v ?? "").replace(/[^\d.\-]/g, "")) * 100) / 100; return isFinite(n) && n >= 0 && n < 100000 ? n : 0; };
+      const items = (Array.isArray(o.items) ? o.items : []).slice(0, 120).map((i: any) => ({ name: clean(i.name).slice(0, 60), qty: clean(i.qty).slice(0, 20), price: num(i.price), ...(["fridge", "freezer", "pantry"].includes(String(i.place)) ? { place: String(i.place) } : {}) })).filter((i: any) => i.name);
+      const total = num(o.total) || Math.round(items.reduce((a: number, i: any) => a + i.price, 0) * 100) / 100;
+      if (!total && !items.length) return json({ error: "Couldn't read a receipt in that photo. Try a flatter, closer shot." }, 422);
+      return json({ receipt: { store: clean(o.store).slice(0, 60), day: /^\d{4}-\d{2}-\d{2}$/.test(String(o.date)) ? String(o.date) : "", total, items } });
+    }
     if (Array.isArray(body.images) && body.images.length) {
       const imgs = body.images.slice(0, 4).map(String);
       if (imgs.reduce((a: number, x: string) => a + x.length, 0) > 12_000_000) return json({ error: "Those photos are too big. Try fewer." }, 400);
@@ -130,7 +140,7 @@ Deno.serve(async (req) => {
       const out = tidy(await gemini(await key(), `Tidy this recipe someone typed or pasted. ${ASK}\nText: """${String(body.text).slice(0, 8000)}"""`), "typed");
       return out.title ? json({ recipe: out }) : json({ error: "Couldn't find a recipe in that text." }, 422);
     }
-    return json({ error: "Send a link, a photo or some text." }, 400);
+    return json({ error: "Send a link, a photo, a receipt or some text." }, 400);
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 502);
   }

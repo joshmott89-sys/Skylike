@@ -15,7 +15,7 @@
 <title>Skylike</title>
 <link rel="preload" href="fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <script>
-const APP_VERSION = '22.11-1800'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1900'; // day.month-time of the build, shown in Settings → Devices
 document.write('<link rel="stylesheet" href="css/app.css?v=' + APP_VERSION + '">');
 </script>
 </head>
@@ -71,7 +71,7 @@ document.write('<link rel="stylesheet" href="css/app.css?v=' + APP_VERSION + '">
 <script>/* safety net: if the copy in the repo ever fails to load, use the published one */ if (!window.supabase) document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"><\/script>');</script>
 <script>
 // the app, in parts, in this order; the version on each stops a phone mixing a new release with old cached parts
-['js/01-core.js', 'js/02-render.js', 'js/03-views.js', 'js/04-setup.js', 'js/05-kids.js', 'js/06-kitchen.js', 'js/07-settings.js', 'js/08-shell.js', 'js/09-actions.js', 'js/10-calendar.js', 'js/12-recipes.js', 'js/13-mail.js', 'js/11-boot.js'].forEach(f => document.write('<script src="' + f + '?v=' + APP_VERSION + '"><\/script>'));
+['js/01-core.js', 'js/02-render.js', 'js/03-views.js', 'js/04-setup.js', 'js/05-kids.js', 'js/06-kitchen.js', 'js/07-settings.js', 'js/08-shell.js', 'js/09-actions.js', 'js/10-calendar.js', 'js/12-recipes.js', 'js/13-mail.js', 'js/14-spend.js', 'js/11-boot.js'].forEach(f => document.write('<script src="' + f + '?v=' + APP_VERSION + '"><\/script>'));
 </script>
 </body>
 </html>

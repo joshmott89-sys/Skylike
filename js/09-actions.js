@@ -86,7 +86,7 @@ const A = {
     closeSheet(); S.planning = {at: Date.now()}; render(); planTicker();
     const leftTxt = smallLeft.map(p => `${p.name.replace(/^leftovers?\s*/i, '')} (${p.portions || 1} portion${(p.portions || 1) > 1 ? 's' : ''})`);
     const faves = (S.recipes || []).filter(x => x.favourite).map(x => x.title).slice(0, 20);
-    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: [P.notes, faves.length ? `Family favourites from our recipe box (include one or two this week where they fit, using these exact names): ${faves.join('; ')}.` : ''].filter(Boolean).join(' '), budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
+    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: [P.notes, faves.length ? `Family favourites from our recipe box (include one or two this week where they fit, using these exact names): ${faves.join('; ')}.` : '', priceNotes()].filter(Boolean).join(' '), budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
       lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt, kids: lunchKids(), staples: lbox().staples} : null});
     S.planning = null; clearInterval(planT);
     if (r.error) { render(); return toast(r.error, 5000); }
@@ -272,8 +272,11 @@ const A = {
   async 'pantry-clear-yes'(el) { const pl = el.dataset.place, ids = S.pantry.filter(p => p.place === pl).map(p => p.id); S.pantry = S.pantry.filter(p => p.place !== pl); closeSheet(); render(); await db(sb.from('pantry').delete().in('id', ids)); toast(`Cleared the ${pl}`); },
   async 'snap-remove'() { const ids = [...document.querySelectorAll('#snap-miss input:checked')].map(i => i.value); closeSheet(); if (!ids.length) return; S.pantry = S.pantry.filter(p => !ids.includes(p.id)); render(); await db(sb.from('pantry').delete().in('id', ids)); toast(`Removed ${ids.length}`); },
   async 'meal-del'(el) { const m = mealOn(el.dataset.k); if (!m) return; S.meals = S.meals.filter(x => x.id !== m.id); closeSheet(); render(); await db(sb.from('meals').delete().eq('id', m.id)); },
-  async 'pantry-low'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; p.low = !p.low; render(); await db(sb.from('pantry').update({low: p.low}).eq('id', p.id)); },
-  async 'pantry-shop'() { const low = S.pantry.filter(p => p.low); const n = await groceryAdd(low.map(p => p.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
+  async 'pantry-low'(el) { const p = S.pantry.find(x => x.id === el.dataset.id); if (!p) return; // fine → low → out → fine
+    if (p.out) { p.out = false; p.low = false; } else if (p.low) p.out = true; else p.low = true;
+    render(); await db(sb.from('pantry').update({low: p.low, out: !!p.out}).eq('id', p.id)); },
+  async 'staples-add'() { const L = staplesLow(); const n = await groceryAdd(L.map(p => p.name)); render(); toast(n ? `Added ${andList(L.map(p => p.name))} to Groceries` : 'Already on the list.'); },
+  async 'pantry-shop'() { const low = S.pantry.filter(p => (p.low || p.out) && !p.leftover); const n = await groceryAdd(low.map(p => p.name)); toast(n ? `Added ${n} to Groceries` : 'Already on the list.'); },
   'brain-dump'(el) {
     sheet(`<h2>Add lots at once</h2><p class="help">Type or use your keyboard's mic and say everything at once: "milk, two loaves of bread, something for school lunches, nappies size five, bananas". It becomes a tidy list.</p>
       <form data-form="brain-dump" data-list="${el.dataset.list}"><textarea class="input" name="text" rows="5" required placeholder="milk bread eggs, mince for spag bol, apples for lunches…"></textarea><button class="btn" style="margin-top:12px">${icon('sparkle')}Sort it</button></form><div id="bd-out"></div>`);

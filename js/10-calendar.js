@@ -166,7 +166,7 @@ function sameFood(a, b) {
 async function pantryAdd(items) {
   const rows = [];
   items.forEach(x => { const name = String(x.name || '').trim().slice(0, 60); if (!name) return; const ex = S.pantry.find(p => sameFood(p.name, name)) || rows.find(r => sameFood(r.name, name)); if (ex && !ex.id) return;
-    if (ex) { ex.low = !!x.low; if (x.qty) ex.qty = x.qty; if (x.leftover) { ex.leftover = true; ex.portions = Math.max(1, +x.portions || ex.portions || 1); } db(sb.from('pantry').update({low: ex.low, qty: ex.qty, leftover: !!ex.leftover, portions: ex.portions || null, updated_at: new Date().toISOString()}).eq('id', ex.id)); }
+    if (ex) { ex.low = !!x.low; ex.out = false; if (x.qty) ex.qty = x.qty; if (x.leftover) { ex.leftover = true; ex.portions = Math.max(1, +x.portions || ex.portions || 1); } db(sb.from('pantry').update({low: ex.low, out: false, qty: ex.qty, leftover: !!ex.leftover, portions: ex.portions || null, updated_at: new Date().toISOString()}).eq('id', ex.id)); }
     else rows.push({id: uid(), household_id: S.hid, name, qty: x.leftover ? null : (x.qty || null), place: ['fridge', 'freezer', 'pantry'].includes(x.place) ? x.place : placeGuess(name), low: !!x.low, leftover: !!x.leftover, portions: x.leftover ? Math.max(1, Math.min(12, +x.portions || 1)) : null}); });
   if (rows.length) { rows.forEach(r => S.pantry.push(r)); S.pantry.sort((a, b) => a.name.localeCompare(b.name)); await db(sb.from('pantry').insert(rows)); }
   render(); return rows.length;
@@ -319,7 +319,7 @@ const F = {
     const inp = $('#fq'); if (inp) inp.focus(); setTimeout(() => { if (S._fqLast && Date.now() - S._fqLast.at >= 15000 && ['focus', 'planner', 'family'].includes(S.view)) render(); }, 15500);
     if (!DEMO) await db(sb.from('list_items').insert(rows));
   },
-  async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0)}}); toast('Saved'); },
+  async kitchen(f) { await saveSettings({kitchen: {...kset(), shopDay: f.shopday.value === '' ? null : +f.shopday.value, prefs: f.prefs.value.trim().slice(0, 600), servings: Math.max(1, +f.servings.value || 4), budget: Math.max(0, +f.budget.value || 0), shopBudget: f.shopbudget ? Math.max(0, +f.shopbudget.value || 0) : kset().shopBudget, staples: f.staples ? f.staples.value.trim().slice(0, 400) : kset().staples}}); toast('Saved'); },
   async 'meal-set'(f) {
     const k = f.dataset.k, title = f.title.value.trim(); f.querySelector('button').disabled = true;
     let row = {household_id: S.hid, day: k, slot: 'dinner', title, url: recipeLink(title), ingredients: []};

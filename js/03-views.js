@@ -453,6 +453,7 @@ function briefFacts(now = new Date()) {
     const t = noEmoji(c.text);
     if (c.act === 'lunch-open') { const names = t.replace(/^Lunchboxes:\s*/i, '').split(/,\s*/).filter(Boolean); return c.k === k ? `Pack the lunchboxes${names.length ? ' for ' + andList(names) : ''}` : `Prep tomorrow's lunchboxes`; }
     if (c.icon === 'bag') return t.replace(/^([^:]+):\s*(.*)$/, (m, n, x) => `${n} needs ${x.toLowerCase().replace(/\s*\+\s*/g, ' and ')}`);
+    if (c.act === 'staples-add') return c.anyOut ? `We're out of ${andList(c.staples)}, worth grabbing today` : `Running low on ${andList(c.staples)}`;
     if (c.icon === 'bin') return `${t.replace(/\s*\+\s*/g, ' and ')} ${c.sub === 'out tonight' ? 'go out tonight' : 'are collected today'}`;
     return t.replace(/\s*\+\s*/g, ' and ') + (c.sub && !/^(today|bring today)$/.test(c.sub) ? ` (${c.sub})` : '');
   });
