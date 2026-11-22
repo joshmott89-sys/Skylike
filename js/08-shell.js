@@ -15,7 +15,9 @@ function tabbarHTML() {
   const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['meals','Meals','meal'],['settings','More','gear']];
   return T.map(([v, l, ic]) => `<button class="${S.view === v || (v === 'family' && ['focus','planner'].includes(S.view)) || (v === 'settings' && ['sitter', 'notes', 'kids'].includes(S.view)) ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('');
 }
-function renderRail() { const r = $('.rail'); if (r) r.innerHTML = railHTML(); }
+function renderRail() { const r = $('.rail'); if (!r) return; const h = railHTML(); if (r._h !== h) { r.innerHTML = h; r._h = h; } }
+// any touch or typing may change the page directly (drags, folds, toggles), so the next redraw always runs in full
+['pointerdown', 'keydown', 'input'].forEach(ev => document.addEventListener(ev, () => { const m = document.getElementById('main'), r = document.querySelector('.rail'); if (m) m._h = null; if (r) r._h = null; }, {capture: true, passive: true}));
 function renderSkyOnly() { const s = $('.sky'); if (s) { const compact = s.classList.contains('compact'); s.outerHTML = skyHTML(compact); } }
 
 let raf = 0;
@@ -29,10 +31,12 @@ function doRender() {
   const scrollers = [...document.querySelectorAll('.scroll')].map(s => s.scrollTop);
   if (!$('.rail')) app.innerHTML = `<nav class="rail" aria-label="Family and views"></nav><main id="main"></main><nav class="tabbar" aria-label="Views"></nav>`;
   renderRail();
-  $('.tabbar').innerHTML = tabbarHTML();
+  const tb = tabbarHTML(), tabbar = $('.tabbar'); if (tabbar._h !== tb) { tabbar.innerHTML = tb; tabbar._h = tb; }
   const main = $('#main');
-  const html = (V[S.view] || V.family)();
-  main.innerHTML = S.view === 'family' || S.view === 'focus' || S.view === 'planner' ? html : `<div class="scroll">${html}</div>`;
+  const html = (V[S.view] || V.family)(), full = S.view === 'family' || S.view === 'focus' || S.view === 'planner' ? html : `<div class="scroll">${html}</div>`;
+  // nothing changed (a sync that brought the same data, a tick with no new minute): leave the page alone, so scroll and taps aren't disturbed
+  if (main._h === full) return;
+  main.innerHTML = full; main._h = full;
   if (S.view === 'settings' && S.settingsTab === 'photos') loadThumbs();
   document.querySelectorAll('.scroll').forEach((s, i) => { if (scrollers[i]) s.scrollTop = scrollers[i]; });
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); if (fval != null) { el.value = fval; try { el.setSelectionRange(sel, sel); } catch {} } } }

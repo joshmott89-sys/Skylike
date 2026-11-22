@@ -144,7 +144,10 @@ const settings = () => Object.assign({
 /* offline snapshot so the screen paints instantly */
 function snapshot() {
   if (!S.hid) return;
-  LS.set('snap:' + S.hid, {household: S.household, members: S.members, lists: S.lists, items: S.items, notes: S.notes, events: S.events, calendars: S.calendars, countdowns: S.countdowns, reminders: S.reminders, at: Date.now()});
+  const snap = {household: S.household, members: S.members, lists: S.lists, items: S.items, notes: S.notes, events: S.events, calendars: S.calendars, countdowns: S.countdowns, reminders: S.reminders, at: Date.now()};
+  // browsers allow about 5 MB here; if face photos push the copy past ~1.5 MB, keep it without them (they load from the server)
+  if (JSON.stringify(snap).length > 1.5e6) snap.members = S.members.map(m => Object.assign({}, m, {photo: null}));
+  LS.set('snap:' + S.hid, snap);
 }
 let snapT; const saveSnap = () => { clearTimeout(snapT); snapT = setTimeout(snapshot, 800); };
 function restoreSnap() {
@@ -219,8 +222,8 @@ async function loadAll() {
   const since = new Date(Date.now() - 3 * 864e5).toISOString();
   const [hh, ...rest] = await Promise.all([
     sb.from('households').select('*').eq('id', hid).maybeSingle(),
-    q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}),
-    q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}), q('devices'),
+    q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}).limit(200),
+    q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}).limit(300), q('devices'),
     q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules'),
     q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').or(`starts_at.gte.${since},repeat.not.is.null`).order('starts_at')
   ]);
