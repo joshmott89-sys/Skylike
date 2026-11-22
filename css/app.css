@@ -719,3 +719,11 @@ body.night .hero .leave{color:var(--apricot)}
 /* empty-state drawings and place icons */
 .emart{display:block;font-size:46px;width:1em;height:1em;margin:0 0 8px}.emart svg{width:100%;height:100%;display:block}li.empty .emart,.fempty .emart{font-size:40px}.notes .empty{display:grid;justify-items:start}
 .plic{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--surface);color:var(--pick);flex:none}.plic svg.i{width:22px;height:22px}.chip3 svg.i{color:var(--pick)}
+/* recipe box */
+.rbox h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rbox .rbn{font-size:15px;color:var(--ink-3);font-weight:700}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:10px}
+.rcard{display:grid;justify-items:start;gap:4px;text-align:left;border:1.5px solid var(--line);border-radius:18px;background:var(--surface);padding:12px 14px;font:inherit;color:var(--ink);cursor:pointer}
+.rcard .rart{font-size:40px;margin-bottom:2px}.rcard .rt{font-weight:750;font-size:16.5px;line-height:1.25}.rcard .rm{font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:4px}.rcard .rm svg.i{color:var(--bad)}
+.rsteps{padding-left:22px;display:grid;gap:8px;font-size:16.5px;line-height:1.45}.rdays .ptag.busy{opacity:.7}
+
+.ing .inote{color:var(--ink-3);font-weight:400}

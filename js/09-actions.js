@@ -85,13 +85,15 @@ const A = {
     await saveSettings({kitchen: Object.assign({}, kset(), {servings: P.people, prefs: P.notes, plan: {vibe: P.vibe, skill: P.skill, double: P.double, focus: P.focus, cuisines: P.cuisines, lunch: P.lunch}})});
     closeSheet(); S.planning = {at: Date.now()}; render(); planTicker();
     const leftTxt = smallLeft.map(p => `${p.name.replace(/^leftovers?\s*/i, '')} (${p.portions || 1} portion${(p.portions || 1) > 1 ? 's' : ''})`);
-    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: P.notes, budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
+    const faves = (S.recipes || []).filter(x => x.favourite).map(x => x.title).slice(0, 20);
+    const r = await callAI({action: 'plan', dates, people: P.people, vibe: P.vibe, skill: P.skill, focus: P.focus, cuisines: P.cuisines, notes: [P.notes, faves.length ? `Family favourites from our recipe box (include one or two this week where they fit, using these exact names): ${faves.join('; ')}.` : ''].filter(Boolean).join(' '), budget: kset().budget, leftovers: lunchDays.length ? [] : leftTxt, pantry: S.pantry.filter(p => !p.leftover).map(p => p.name), recent: S.meals.slice(-14).map(m => m.title),
       lunches: lunchDays.length ? {who: P.lunch, dates: lunchDays, leftovers: leftTxt, kids: lunchKids(), staples: lbox().staples} : null});
     S.planning = null; clearInterval(planT);
     if (r.error) { render(); return toast(r.error, 5000); }
     const byDay = {}; (r.meals || []).forEach(m => { if (m && m.title) byDay[m.day] = m; });
     dates.forEach(({day, double}) => { const m = byDay[day]; if (!m) return;
-      rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null});
+      const fam = recipeMatch(m.title); if (fam) Object.assign(m, {title: fam.title, ingredients: fam.ingredients, url: fam.url || m.url, servings: fam.servings || m.servings, _rec: fam.id});
+      rows.push({household_id: S.hid, day, slot: 'dinner', title: String(m.title).slice(0, 90), emoji: m.emoji || null, ingredients: (m.ingredients || []).slice(0, 30), est_cost: +m.est_cost || null, url: m.url || recipeLink(m.title), servings: m.servings ? String(m.servings) : null, real: !!m.real, double_batch: !!double, prep_time: m.prep_time || null, difficulty: m.difficulty || null, cooked: false, leftovers_of: null, notes: m._rec ? 'recipe:' + m._rec : null});
       const ln = Object.keys(leftNights).find(k => leftNights[k] === day);
       if (ln) rows.push({household_id: S.hid, day: ln, slot: 'dinner', title: 'Leftovers: ' + String(m.title).slice(0, 70), emoji: '🍱', ingredients: [], est_cost: 0, url: null, servings: null, real: false, double_batch: false, prep_time: '10 min', difficulty: null, cooked: false, leftovers_of: String(m.title).slice(0, 90)}); });
     (r.lunches || []).forEach(l => { if (!l || !lunchDays.includes(l.day)) return;
@@ -242,6 +244,8 @@ const A = {
       if (gone.length) db(sb.from('pantry').delete().in('id', gone.map(p => p.id))); if (lowNow.length) db(sb.from('pantry').update({low: true}).in('id', lowNow.map(p => p.id)));
     }
     closeSheet(); render(); await db(sb.from('meals').update({cooked: m.cooked}).eq('id', m.id));
+    const rec = recipeOfMeal(m) || recipeMatch(m.title); // keep count of how often each family recipe gets made
+    if (rec && m.cooked) { rec.times_cooked = (rec.times_cooked || 0) + 1; rec.last_cooked = m.day; if (!DEMO) db(sb.from('recipes').update({times_cooked: rec.times_cooked, last_cooked: rec.last_cooked}).eq('id', rec.id)); }
     if (m.cooked && !m.leftovers_of && !m.double_batch) sheet(`<h2>Any leftovers?</h2><p class="help">They'll show in the fridge and get used first next time you plan.</p><div class="ptags">${[0, 1, 2, 3, 4].map(n => `<button class="ptag" data-act="left-add" data-n="${n}" data-t="${esc(m.title)}">${n === 0 ? 'None' : n === 4 ? '4+ portions' : n + ' portion' + (n > 1 ? 's' : '')}</button>`).join('')}</div>`);
     if (m.leftovers_of) { const lo = S.pantry.find(p => p.leftover && sameFood(p.name, 'Leftover ' + m.leftovers_of)); if (lo) { S.pantry = S.pantry.filter(p => p !== lo); render(); db(sb.from('pantry').delete().eq('id', lo.id)); } }
   },
