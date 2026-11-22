@@ -326,7 +326,9 @@ const F = {
       S.events.push(tmp); render(); calWrite({action: 'create', calendar: f.calendar.value, title, start, end, allDay, location, ...(R ? {repeat: JSON.stringify(R)} : {})}, () => { S.events = S.events.filter(x => x !== tmp); }).then(() => { if (taker) takerWhenSynced(title, tmp.starts_at, taker); }); if (S._evReview && S._evReview.length) setTimeout(nextDraft, 350); }
   },
   async fquick(f) {
-    const raw0 = f.text.value.trim(); if (!raw0) return;
+    let raw0 = spokenTimes(f.text.value.trim()); if (!raw0) return;
+    // "Event for Josh stump grinding 2 to 4pm tomorrow": the word event means calendar, whatever else it says
+    if (EVENT_CUE.test(raw0)) { const t0 = raw0.replace(EVENT_CUE, '').trim() || raw0; f.text.value = ''; S._fqLast = {kind: 'event', text: t0, at: Date.now()}; S._evDraft = {title: t0}; eventForm(null); setTimeout(() => { const ef = document.querySelector('#sheet-root form.evform'); if (ef) smartFill(ef); }, 60); return; }
     if (!S._fqForce && looksLikeAppointment(raw0) && !parseAssignee(raw0).who && !/^(buy|get|pick up|grab|call|ring|email|text|pay|book|order|remind)\b/i.test(raw0)) {
       const P = parseEventText(raw0);
       if (P.start || P.day || P.all_day) { f.text.value = ''; S._fqLast = {kind: 'event', text: raw0, at: Date.now()}; S._evDraft = {title: raw0}; eventForm(null); setTimeout(() => { const ef = document.querySelector('#sheet-root form.evform'); if (ef) smartFill(ef); }, 60); return; }

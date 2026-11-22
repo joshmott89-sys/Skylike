@@ -150,6 +150,7 @@ function parseEventText(raw, baseDay) {
 }
 function smartFill(f) {
   const inp = f.title; if (!inp || !inp.value.trim() || inp.dataset.parsed === inp.value) return;
+  if (/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i.test(inp.value)) inp.value = spokenTimes(inp.value);
   const r = parseEventText(inp.value, f.day && f.day.value), done = [];
   if (r.day && f.day) { f.day.value = r.day; done.push(fmtDay(r.day, {weekday: 'short', day: 'numeric', month: 'short'})); }
   if (r.all_day && f.allday) { f.allday.checked = true; const tm = f.querySelector('.evtimes'); if (tm) tm.hidden = true; done.push('all day'); }
@@ -207,7 +208,8 @@ function quickAddHTML() {
   const last = S._fqLast, them = (S.members.find(m => m.kind !== 'kid' && m.id !== (meMember() || {}).id) || {}).name || 'Sam';
   const where = last && (last.kind === 'event' ? 'Calendar' : last.kind === 'grocery' ? 'Groceries' : 'To do');
   return `<form class="fq" data-form="fquick"><input class="input" id="fq" name="text" placeholder="Add anything…" autocomplete="off" maxlength="200" enterkeyhint="done" aria-label="Add anything: an event, a to-do or groceries" aria-describedby="fq-tip">${canListen() ? `<button type="button" class="fmic" data-act="fq-mic" aria-label="Say it">${icon('mic')}</button>` : ''}<button class="btn" aria-label="Add">${icon('plus')}</button></form>
-    ${last && last.kind !== 'event' && Date.now() - last.at < 15000 ? `<div class="fqdone">${icon('check', 'xs')} ${esc(last.text)} → <b>${where}${last.who ? ` for ${esc(last.who)}` : ''}</b><button class="linkbtn" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></div>`
+    ${last && last.kind !== 'event' && Date.now() - last.at < 15000 ? `<div class="fqdone" role="status"><span class="fqok">${icon('check')}</span><span class="fqtx"><small>Added to ${where}${last.who ? ` for ${esc(last.who)}` : ''}</small><b>${esc(last.text)}</b></span>
+      <span class="fqacts">${last.ids && last.ids.length === 1 ? `<button class="btn soft sm" data-act="item-edit" data-id="${last.ids[0]}">${icon('edit')}Edit</button>` : ''}<button class="btn soft sm" data-act="fq-move">Move to ${last.kind === 'grocery' ? 'To do' : 'Groceries'}</button></span></div>`
       : `<div class="fqhint" id="fq-tip">Try “milk and bread”, “swimming Tue 4pm” or “${esc(them)}: book the car service”.</div>`}`;
 }
 /* Voice: one mic button for any text box (Web Speech API; on iPhone/iPad it needs Siri & Dictation on). */
@@ -585,9 +587,28 @@ V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${br
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
+// Voice writes numbers as words: "two to four pm", "half past three". Turn the time parts into digits.
+const NUMW = {one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12};
+function spokenTimes(t) {
+  const W = '(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)', n = w => NUMW[w.toLowerCase()];
+  t = String(t || '');
+  t = t.replace(new RegExp(`\\bhalf past ${W}\\b`, 'gi'), (m, w) => n(w) + ':30').replace(new RegExp(`\\bquarter past ${W}\\b`, 'gi'), (m, w) => n(w) + ':15')
+       .replace(new RegExp(`\\bquarter to ${W}\\b`, 'gi'), (m, w) => (n(w) === 1 ? 12 : n(w) - 1) + ':45');
+  t = t.replace(new RegExp(`\\b${W}\\s+(thirty|fifteen|forty[- ]five)\\b`, 'gi'), (m, w, mm) => n(w) + ':' + ({thirty: '30', fifteen: '15'}[mm.toLowerCase()] || '45'));
+  for (let i = 0; i < 2; i++) t = t.replace(new RegExp(`\\b${W}\\b(?=\\s*(?:o'?clock|am|pm|a\\.m\\.|p\\.m\\.|in the (?:morning|afternoon|evening))|\\s+(?:to|till|until|-)\\s+(?:\\d|${W.slice(1, -1)}))`, 'gi'), (m, w) => n(w));
+  t = t.replace(/(^|\s)(?!at\s)(\S+\s+)?(\d{1,2}:\d\d)(?!\s*(?:am|pm))\b/gi, (m, a, w, tm) => w && /^at\s+$/i.test(w) ? m : `${a}${w || ''}at ${tm}`);
+  return t.replace(/\b(\d{1,2}(?::\d\d)?)\s*o'?clock\b/gi, '$1').replace(/\b(\d{1,2}(?::\d\d)?)\s+in the (morning)\b/gi, '$1am').replace(/\b(\d{1,2}(?::\d\d)?)\s+in the (afternoon|evening)\b/gi, '$1pm');
+}
+const EVENT_CUE = /^(?:please\s+)?(?:add|make|create|put)?\s*(?:an?\s+)?(?:new\s+)?(?:event|appointment|appt|calendar entry|booking)\b[:,.]?\s*|^(?:put|add)\s+(?:this\s+)?(?:in|on|to)\s+(?:the\s+)?calendar[:,.]?\s*/i;
 function parseAssignee(raw) {
   const names = S.members.map(m => [m, m.name.toLowerCase()]).sort((a, b) => b[1].length - a[1].length), me = meMember();
   const find = n => { n = String(n || '').toLowerCase().trim().replace(/^@/, ''); if (/^(me|myself)$/.test(n)) return me || null; const hit = names.find(([, nm]) => nm === n || nm.split(' ')[0] === n); return hit ? hit[0] : null; };
+  // "task for Tallulah …", "add to Tallulah's to-do list …", "Tallulah's list: …"
+  const cue = raw.match(/^(?:please\s+)?(?:add\s+|give\s+|new\s+)?(?:an?\s+)?(?:task|to-?do|todo|job|reminder|chore)s?\b\s*(.*)$/i) || raw.match(/^(?:add|put)\s+(?:this\s+)?(?:to|on|onto)\s+(.*)$/i) || raw.match(/^()(\w[\w'-]*'s\s+(?:to-?do\s+|todo\s+|task\s+)?list\b.*)$/i);
+  if (cue) { const rest = cue[1] || cue[2] || '', low = rest.toLowerCase();
+    for (const [mb, nm] of names) { const first = nm.split(' ')[0], i = low.search(new RegExp('\\b' + first.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "(?:'s)?\\b")); if (i < 0 || i > 30) continue;
+      const after = rest.slice(i + first.length).replace(/^'s\b/i, '').replace(/^\s*(?:(?:to|on|onto|in|for)\s+)?(?:(?:the|her|his|their|my)\s+)?(?:to-?do|todo|task|tasks)?\s*(?:list)?\s*[:,–-]?\s*(?:to\s+(?=\w+\s))?/i, '').trim();
+      if (after) return {who: mb, text: after.charAt(0).toUpperCase() + after.slice(1)}; } }
   const pats = [/^@?([a-z][\w'-]*)\s*[:,–-]\s+(.+)$/i, /^(?:please\s+)?(?:ask|tell|remind|get)\s+([a-z][\w'-]*)\s+(?:to\s+)?(.+)$/i, /^([a-z][\w'-]*)\s+(?:to|needs to|should|has to|can)\s+(.+)$/i, /^(.+?)\s+(?:for|@)\s*([a-z][\w'-]*)$/i];
   for (const [i, re] of pats.entries()) { const m = raw.match(re); if (!m) continue; const [n, t] = i === 3 ? [m[2], m[1]] : [m[1], m[2]]; const who = find(n); if (who && t.trim()) return {who, text: t.trim()}; }
   const at = raw.match(/@([a-z][\w'-]*)/i); if (at && find(at[1])) return {who: find(at[1]), text: raw.replace(at[0], '').replace(/\s{2,}/g, ' ').trim()};
@@ -747,6 +768,15 @@ function shopHTML() {
 // Calm layout: fewer things on screen at once, more space. On automatically for people whose home view is Focus (Settings → Screen to change).
 const isCalm = () => { const c = LS.get('calm', 'auto'); if (c === 'on') return true; if (c === 'off') return false; const me = meMember(); return !!(me && me.home_view === 'focus'); };
 const isOpen = k => !!(S.fold || {})[k];
+// To-dos given to someone sit under their name, so you can see what's yours and what's theirs
+function openGroupsHTML(l, open) {
+  const empty = `<ul class="items"><li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li></ul>`;
+  if (!open.length) return empty;
+  if (l.kind === 'grocery' || !open.some(i => i.assignee)) return `<ul class="items">${open.map(i => itemRow(i, true)).join('')}</ul>`;
+  const me = meMember(), groups = [[me ? 'Yours' : null, open.filter(i => me && i.assignee === me.id)], ['Anyone', open.filter(i => !i.assignee)],
+    ...S.members.filter(m => !me || m.id !== me.id).map(m => [`${m.name}'s`, open.filter(i => i.assignee === m.id)])].filter(([n, L]) => n && L.length);
+  return groups.map(([n, L]) => `<div class="tgrp"><div class="tgh">${esc(n)} <span class="num">${L.length}</span></div><ul class="items">${L.map(i => itemRow(i, true)).join('')}</ul></div>`).join('');
+}
 V.lists = () => {
   if (!S.listId || !S.lists.find(l => l.id === S.listId)) S.listId = (S.lists[0] || {}).id;
   const l = S.lists.find(x => x.id === S.listId);
@@ -760,7 +790,7 @@ V.lists = () => {
       <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200">${micBtn('#list-add', true)}<button class="btn">${icon('plus')}Add</button></form>
         ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops</button>` : ''}
         ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
-        <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
+        ${openGroupsHTML(l, open)}
         <div class="foldbar">${done.length ? `<button class="fold ${showDone ? 'open' : ''}" data-act="fold" data-k="ldone:${l.id}" aria-expanded="${showDone}">${icon('right')}${showDone ? 'Hide' : 'Show'} ${done.length} done</button>` : ''}<button class="fold ${more ? 'open' : ''}" data-act="fold" data-k="ltools:${l.id}" aria-expanded="${more}">${icon('right')}More</button></div>
         ${showDone ? `<ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul><div class="row"><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div>` : ''}
         ${more ? `<div class="foldbody">${sug.length ? `<div class="lbl">Quick add</div><div class="quick">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : ''}
@@ -774,7 +804,7 @@ V.lists = () => {
       ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops <small>${open.length} item${open.length === 1 ? '' : 's'}, in aisle order</small></button>` : ''}
       ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
       ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">Total about <b>$${Math.round(listItems(l.id, false).reduce((a, it) => a + (priceOf(it) || 0), 0) || b.total)}</b> · prices per item below · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
-      <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
+      ${openGroupsHTML(l, open)}
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
       ${l.kind === 'custom' ? `<div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button></div>` : ''}
     </div></div>`;

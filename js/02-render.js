@@ -111,18 +111,18 @@ const priceBook = () => kset().prices || {};
 const priceOf = it => { const e = priceBook()[normFood(it.text)]; if (e) return e.est; const b = LS.get('gbudget:' + it.list_id, null); const v = b && b.items ? b.items[normFood(it.text)] : null; return v != null ? v : null; };
 function itemRow(it, showX = false) {
   const pr = !it.done && showX ? priceOf(it) : null, isTodo = (S.lists.find(l => l.id === it.list_id) || {}).kind !== 'grocery', who = it.assignee && memberById(it.assignee);
-  return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><span class="txt">${esc(it.text)}</span>${isTodo && !it.done ? `<button class="who ${who ? 'set' : ''}" data-act="assign" data-id="${it.id}" aria-label="${who ? `For ${esc(who.name)}. Change` : 'Assign to someone'}">${who ? avatar(who) : icon('user')}</button>` : ''}${pr != null ? `<span class="price num">~$${pr < 10 ? pr.toFixed(2) : Math.round(pr)}</span>` : ''}${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
+  return `<li class="item ${it.done ? 'done' : ''}"><button class="check" data-act="toggle-item" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}: ${esc(it.text)}">${icon('check')}</button><button class="txt" data-act="item-edit" data-id="${it.id}" aria-label="Edit: ${esc(it.text)}">${esc(it.text)}</button>${isTodo && !it.done ? `<button class="who ${who ? 'set' : ''}" data-act="assign" data-id="${it.id}" aria-label="${who ? `For ${esc(who.name)}. Change` : 'Assign to someone'}">${who ? avatar(who) : icon('user')}</button>` : ''}${pr != null ? `<span class="price num">~$${pr < 10 ? pr.toFixed(2) : Math.round(pr)}</span>` : ''}${showX ? `<button class="x" data-act="del-item" data-id="${it.id}" aria-label="Remove ${esc(it.text)}">${icon('x')}</button>` : ''}</li>`;
 }
 function listsZoneHTML() {
   // One list at a time, To do by default; the choice is remembered on this screen.
   const shown = [listByKind('todo'), listByKind('grocery')].filter(Boolean);
   const l = shown.find(x => x.kind === LS.get('homeList', 'todo')) || shown[0];
   if (!l) return `<div class="zone lists-z"><h2><button class="h2link" data-act="go" data-view="lists">Lists${icon('right')}</button></h2><div class="empty">No lists yet.</div></div>`;
-  const items = listItems(l.id, false), cap = 12;
+  const all = listItems(l.id, false), me = meMember(), mine = isPhone() && me && l.kind !== 'grocery', items = mine ? all.filter(i => !i.assignee || i.assignee === me.id) : all, others = all.length - items.length, cap = 12;
   return `<div class="zone lists-z">${isPhone() ? '' : `<div class="qa-in">${quickAddHTML()}</div>`}<h2><button class="h2link" data-act="go" data-view="lists" data-list="${l.id}">Lists${icon('right')}</button>
       <span class="seg sm">${shown.map(x => `<button class="${x.id === l.id ? 'on' : ''}" data-act="home-list" data-kind="${x.kind}">${esc(x.name)}<span class="n num">${listItems(x.id, false).length}</span></button>`).join('')}</span></h2>
     <div class="items scroll"><ul class="items">${items.slice(0, cap).map(i => itemRow(i)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up' : 'Nothing to do'}</li>`}</ul>
-    ${items.length > cap ? `<button class="btn ghost" style="margin-top:8px" data-act="go" data-view="lists" data-list="${l.id}">${items.length - cap} more in ${esc(l.name)}</button>` : ''}</div></div>`;
+    ${items.length > cap ? `<button class="btn ghost" style="margin-top:8px" data-act="go" data-view="lists" data-list="${l.id}">${items.length - cap} more in ${esc(l.name)}</button>` : ''}${others ? `<button class="linkbtn othersn" data-act="go" data-view="lists" data-list="${l.id}">${others} given to others</button>` : ''}</div></div>`;
 }
 function noteHTML(n, i) {
   const a = memberById(n.author_id), rot = [-1.2, .8, -.4, 1.1, -.9, .5][i % 6];

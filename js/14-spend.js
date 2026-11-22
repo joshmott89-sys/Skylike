@@ -69,6 +69,10 @@ Object.assign(A, {
   },
 });
 Object.assign(F, {
+  async 'item-save'(f) { const it = S.items.find(i => i.id === f.dataset.id); if (!it) return closeSheet(); const text = f.text.value.trim().slice(0, 200); if (!text) return;
+    const who = f.who ? (f.who.value || null) : it.assignee, gave = who && who !== it.assignee; it.text = text; it.assignee = who; closeSheet(); render();
+    if (!DEMO) { await db(sb.from('list_items').update({text, assignee: who}).eq('id', it.id)); }
+    toast(gave ? `Given to ${memberById(who).name}` : 'Saved'); },
   // fridge check: ticked "gone" items are marked out; everything ticked goes on the grocery list
   async 'scan-apply'(f) {
     const R = S._scanRes || {}, gone = [...f.querySelectorAll('input[name="gone"]:checked')].map(i => i.value), buy = [...f.querySelectorAll('input[name="buy"]:checked')].map(i => i.value);

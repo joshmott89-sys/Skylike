@@ -209,6 +209,13 @@ const A = {
   'fq-mic'(el) { listen(t => { const f = el.closest('form') || document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } }, el); },
   async 'home-view-set'(el) { const me = meMember(); if (!me) return; me.home_view = el.dataset.v; render(); toast(`Home is now ${el.dataset.v === 'family' ? 'the family board' : el.dataset.v === 'focus' ? 'Focus' : 'Planner'}`);
     if (!DEMO) await db(sb.from('members').update({home_view: me.home_view}).eq('id', me.id)); },
+  // tap a list item to fix its words (voice isn't always right) or change who it's for
+  'item-edit'(el) { const it = S.items.find(i => i.id === el.dataset.id); if (!it) return; const l = S.lists.find(x => x.id === it.list_id) || {}, todo = l.kind !== 'grocery';
+    sheet(`<h2>Edit</h2><form data-form="item-save" data-id="${it.id}"><textarea class="input" name="text" rows="2" maxlength="200" required>${esc(it.text)}</textarea>
+      ${todo ? `<div class="lbl" style="margin-top:12px">For</div><input type="hidden" name="who" value="${it.assignee || ''}"><div class="chips2"><button type="button" class="chip2 ${!it.assignee ? 'on' : ''}" data-act="item-who" data-m="">Anyone</button>${S.members.filter(m => m.kind !== 'kid').map(m => `<button type="button" class="chip2 ${it.assignee === m.id ? 'on' : ''}" data-act="item-who" data-m="${m.id}">${avatar(m)}${esc(m.name)}</button>`).join('')}</div>` : ''}
+      <div class="row" style="margin-top:16px"><button class="btn">Save</button><span class="grow"></span><button type="button" class="btn ghost" data-act="item-del-edit" data-id="${it.id}">${icon('trash')}Delete</button></div></form>`); },
+  'item-who'(el) { const f = el.closest('form'); f.who.value = el.dataset.m; f.querySelectorAll('[data-act="item-who"]').forEach(b => b.classList.toggle('on', b === el)); },
+  async 'item-del-edit'(el) { const id = el.dataset.id; S.items = S.items.filter(i => i.id !== id); closeSheet(); render(); toast('Deleted'); if (!DEMO) await db(sb.from('list_items').delete().eq('id', id)); },
   'calm-set'(el) { LS.set('calm', el.dataset.v); render(); },
   fold(el) { S.fold = S.fold || {}; S.fold[el.dataset.k] = !S.fold[el.dataset.k]; render(); },
   async feedback() { S._fb = null; feedbackSheet(); if (!DEMO) { const {data} = await sb.from('feedback').select('body,status,created_at').eq('household_id', S.hid).eq('user_id', S.session ? S.session.user.id : null).order('created_at', {ascending: false}).limit(5); S._fbMine = data || []; if (document.querySelector('#fb-body')) feedbackSheet(); } },
