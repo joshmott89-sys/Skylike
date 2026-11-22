@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Skylike">
 <meta name="theme-color" content="#0B4F6C">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; media-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; connect-src 'self' https://sroxxxuurhdugvfmwwyw.supabase.co wss://sroxxxuurhdugvfmwwyw.supabase.co https://api.open-meteo.com https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; media-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; connect-src 'self' https://sroxxxuurhdugvfmwwyw.supabase.co wss://sroxxxuurhdugvfmwwyw.supabase.co https://api.open-meteo.com https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
@@ -776,6 +776,7 @@ body.night .hero .leave{color:var(--apricot)}
 <div id="sheet-root"></div>
 
 <script src="vendor/supabase-js-2.49.4.js"></script>
+<script>/* safety net: if the copy in the repo ever fails to load, use the published one */ if (!window.supabase) document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"><\/script>');</script>
 <script>
 "use strict";
 /* ============ config ============ */
