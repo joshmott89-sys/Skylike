@@ -252,14 +252,14 @@ body.dragging[data-drag=lunch] .mday.lunch.empty{border:2px dashed color-mix(in 
 .fnow{display:block;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:26px 26px 24px;border-left:8px solid var(--c,var(--ocean-2))}
 button.fnow{cursor:pointer}.fnow.chipnow{--c:var(--apricot)}.fnow.calmnow{--c:#7FB59A}
 .fk{font-size:14px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
-.fbig{font-size:56px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:4px}
+.fhr{display:flex;align-items:center;gap:12px}.fhead .fbrief.sm{width:auto;min-height:40px;margin:0;padding:0 14px;font-size:15px;border-radius:99px;font-weight:700;color:var(--ink)}.fhead .fbrief.sm svg{width:18px;height:18px}.fthen{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:17px;color:var(--ink-2)}.fthen span{font-weight:700;text-transform:uppercase;font-size:12.5px;letter-spacing:.08em;margin-right:4px}.fthen b{color:var(--ink);margin-right:4px}.fhead{align-items:center}.fhr{flex:none}.fbig{font-size:56px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:4px}
 .ft{font-size:26px;font-weight:750;line-height:1.2;margin-top:6px}.fs{font-size:16px;color:var(--muted);margin-top:6px}
 .fsec{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
 .fsec h2{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px}
 .fl{list-style:none;margin:0;padding:0}.fl li{display:flex;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid var(--line,rgba(0,0,0,.06));font-size:18.5px;line-height:1.3}.fl li:first-child{border-top:0}
 .fl .fw{flex:none;min-width:70px;color:var(--ink-2);font-weight:700}.fl small{color:var(--muted);font-size:14px}
 .focus2 .items .item{min-height:60px}.fempty{color:var(--muted);font-size:17px;margin:6px 0}
-@media (min-width:900px){.focus2{max-width:1000px;grid-template-columns:1fr 1fr;align-items:start}.focus2 .fhead,.focus2 .fq,.focus2 .fqhint,.focus2 .fqdone{grid-column:1/-1}}
+@media (min-width:900px){.focus2{max-width:1000px;grid-template-columns:1fr 1fr;align-items:start}.focus2 .fhead,.focus2 .fq,.focus2 .fqhint,.focus2 .fqdone,.focus2 .fnow{grid-column:1/-1}@media (min-width:900px){.focus2 .fbig{font-size:clamp(56px,7vw,104px)}.focus2 .fnow .ft{font-size:clamp(26px,2.6vw,40px)}.focus2 .fnow{padding:32px 36px}.focus2 .fsec .fl li,.focus2 .items .item{font-size:19px}}}
 .item .who{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;cursor:pointer;color:var(--muted);opacity:.55}.item .who svg{width:20px;height:20px}.item .who.set{opacity:1}.item .who .face{width:30px;height:30px;font-size:14px}
 .whopick{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:8px}.whopick button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:16px;border:2px solid transparent;background:var(--surface-2,#f4f1ea);font:inherit;font-weight:700;cursor:pointer}.whopick button.on{border-color:var(--ocean-2)}.whopick .face{width:44px;height:44px;font-size:20px}
 .fgave{margin:10px 0 0;font-size:14.5px;color:var(--muted)}
@@ -416,7 +416,7 @@ body.night .kid{border-top-color:var(--c)}
 .pbody{display:grid;gap:8px;padding:0 10px 12px}.pnone{color:var(--muted);text-align:center;margin:18px 0;font-weight:650}
 .pev{display:grid;gap:2px;text-align:left;border:0;border-left:5px solid var(--c);border-radius:14px;padding:10px 12px;background:color-mix(in srgb,var(--c) 12%,var(--raise,var(--surface)));font:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .pev .pt{font-size:14px;font-weight:700;color:var(--ink-2)}.pev b{font-size:17px;line-height:1.25}.pev small{font-size:13.5px;color:var(--ink-2)}
-.ptk{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13.5px;font-weight:700}.ptk .face{width:22px;height:22px;font-size:11px;border-width:0}
+.ptk{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13.5px;font-weight:700}.ptk .face{width:22px;height:22px;font-size:11px;border-width:0}.pflag{display:inline-flex;margin-top:6px;padding:3px 9px;border-radius:99px;font-size:12.5px;font-weight:700;background:color-mix(in srgb,var(--bad) 14%,var(--surface));color:var(--bad)}.pflag.soft{background:color-mix(in srgb,var(--warn) 16%,var(--surface));color:color-mix(in srgb,var(--warn) 70%,var(--ink))}.ppick{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px}.ppick button{display:grid;justify-items:center;gap:4px;min-width:64px;padding:8px 6px;border:0;border-radius:16px;background:none;font:inherit;font-size:13px;font-weight:700;color:var(--ink-2);cursor:pointer}.ppick button.on{background:var(--surface);box-shadow:var(--shadow);color:var(--ink)}.ppick .face{width:44px;height:44px}@media (max-width:760px){.ppcol{min-height:auto}}
 .chips2.gsel .chip2{padding:4px 18px}.evppl{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .chip2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 14px 4px 6px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.chip2 .face{width:32px;height:32px;font-size:15px;border-width:0}.chip2.on{background:var(--pick);border-color:var(--pick);color:#fff}.chip2.on .face{box-shadow:0 0 0 2px #fff}
 body[data-drag="pev"] .ppcol{transition:outline .1s}
@@ -780,7 +780,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1345'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1430'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1315,7 +1315,9 @@ function chipsFor(k, now) {
   const lk = hr < 9.5 ? k : hr >= 18 ? tomorrow : null, lm = lk && mealOn(lk, 'lunch');
   if (lm) { const who = [...new Set((lm.ingredients || []).map(i => i.who).filter(Boolean))], mains = who.map(w => { const it = (lm.ingredients || []).find(i => i.who === w && i.slot === 'Lunch'); return it ? `${w} ${foodEmoji(it.name)}` : w; });
     out.push({icon: 'meal', c: '#C9772B', text: `Lunchboxes: ${mains.join(', ') || lm.title}`, sub: lk === k ? 'pack this morning' : 'prep for tomorrow', act: 'lunch-open', k: lk, first: true}); }
-  if (bk) bringFor(bk).forEach(({m, items}) => out.push({icon: 'bag', c: m.color || '#3A9AA0', text: `${m.name}: ${items.map(r => (r.emoji ? r.emoji + ' ' : '') + r.title).join(', ')}`, sub: bk === k ? 'bring today' : 'pack for tomorrow'}));
+  // kids bringing the same things share one chip ("Ruby and Leo: Hat, Swimmers + towel"); words only, so it reads from across the room
+  if (bk) { const groups = {}; bringFor(bk).forEach(({m, items}) => { const key = items.map(r => r.title).join(', '); (groups[key] = groups[key] || {key, kids: []}).kids.push(m); });
+    Object.values(groups).forEach(g => out.push({icon: 'bag', c: g.kids[0].color || '#3A9AA0', text: `${g.kids.map(x => x.name).join(g.kids.length > 2 ? ', ' : ' and ')}: ${g.key}`, sub: bk === k ? 'bring today' : 'pack for tomorrow'})); }
   // One chip naming exactly which bins go out, e.g. "Red + Yellow bins · out tonight".
   // Before 6pm: today's what-to-wear; after: tomorrow's, so bags can be packed tonight.
   if (hr < 18) wearTips(k, Math.floor(hr)).forEach(t => out.push(t));
@@ -1888,13 +1890,21 @@ function eventImportSheet() {
 const takerOf = e => { const t = ((settings().people || {})[e.event_id] || {}).taker; return t ? memberById(t) : null; };
 function peopleHTML(k) {
   const evs = eventsOnKey(k).sort((a, b) => (b.all_day - a.all_day) || a.starts_at.localeCompare(b.starts_at));
-  const cols = S.members.map(m => ({id: m.id, m})).concat([{id: '', m: null}]);
   const by = id => evs.filter(e => { const ids = eventMembers(e).map(m => m.id); return id ? ids.includes(id) : !ids.length; });
-  const card = e => { const t = takerOf(e), st = new Date(e.starts_at), d = !e.all_day ? driveFor(e) : null;
-    return `<button class="pev" data-ev="${e.id}" data-act="open-event" data-id="${e.id}" style="--c:${eventColour(e)}"><span class="pt num">${e.all_day ? 'All day' : esc(fmtTime(st))}</span><b>${esc(e.title || 'Busy')}</b>${e.location ? `<small>${esc(e.location)}${d != null ? ` · ${d} min` : ''}</small>` : ''}${t ? `<span class="ptk">${icon('car', 'xs')} ${avatar(t)} ${esc(t.name)}</span>` : ''}</button>`; };
-  return `<p class="help phint">Drag an event onto someone to say who it's for. Tap it to choose who's taking them.</p>
-    <div class="pgrid2" style="--n:${cols.length}">${cols.map(c => { const list = by(c.id); return `<section class="ppcol" data-m="${c.id}" style="--c:${c.m ? esc(c.m.color) : 'var(--ink-2)'}"><div class="phd">${c.m ? avatar(c.m) : `<span class="face" style="--c:#8A93A6">${icon('family')}</span>`}<b>${c.m ? esc(c.m.name) : 'Everyone'}</b><span class="n num">${list.length || ''}</span></div>
-      <div class="pbody">${list.map(card).join('') || `<p class="pnone">${c.m ? 'Free' : 'Nothing shared'}</p>`}</div></section>`; }).join('')}</div>`;
+  // "Everyone" only shows when something is shared; on a phone, one person at a time (tap a face)
+  let cols = S.members.map(m => ({id: m.id, m})).concat(by('').length ? [{id: '', m: null}] : []);
+  const phone = isPhone(), pick = phone ? (cols.find(c => c.id === S.pplPick) || cols.find(c => c.m && meMember() && c.m.id === meMember().id) || cols[0]) : null;
+  if (phone && pick) cols = [pick];
+  // clashes: two things at once for the same person, or not enough time to drive between them
+  const flags = {};
+  (phone ? cols : S.members.map(m => ({id: m.id}))).forEach(c => { if (!c.id) return; const tl = by(c.id).filter(e => !e.all_day).map(e => ({e, a: Date.parse(e.starts_at), b: Date.parse(e.ends_at || e.starts_at) || Date.parse(e.starts_at) + 3600e3}));
+    tl.forEach((x, i) => tl.slice(i + 1).forEach(y => { if (x.a < y.b && y.a < x.b) { flags[c.id + x.e.id] = 'clash'; flags[c.id + y.e.id] = 'clash'; }
+      else { const [p1, p2] = x.a <= y.a ? [x, y] : [y, x], d = driveFor(p2.e), gap = (p2.a - p1.b) / 60e3; if (d != null && gap >= 0 && gap < d && !flags[c.id + p2.e.id]) flags[c.id + p2.e.id] = `tight:${Math.round(gap)}:${d}`; } })); });
+  const card = (e, cid) => { const t = takerOf(e), st = new Date(e.starts_at), d = !e.all_day ? driveFor(e) : null, fl = flags[cid + e.id] || '';
+    return `<button class="pev" data-ev="${e.id}" data-act="open-event" data-id="${e.id}" style="--c:${eventColour(e)}"><span class="pt num">${e.all_day ? 'All day' : esc(fmtTime(st))}</span><b>${esc(e.title || 'Busy')}</b>${e.location ? `<small>${esc(e.location)}${d != null ? ` · ${d} min` : ''}</small>` : ''}${t ? `<span class="ptk">${icon('car', 'xs')} ${avatar(t)} ${esc(t.name)}</span>` : ''}${fl === 'clash' ? `<span class="pflag">Clashes with another event</span>` : fl ? `<span class="pflag soft">Tight: ${fl.split(':')[1]} min gap, ${fl.split(':')[2]} min drive</span>` : ''}</button>`; };
+  return `${phone ? `<div class="ppick" role="group" aria-label="Whose day">${S.members.map(m => `<button class="${pick && pick.id === m.id ? 'on' : ''}" data-act="ppl-pick" data-m="${m.id}" aria-pressed="${!!(pick && pick.id === m.id)}">${avatar(m)}<span>${esc(m.name)}</span></button>`).join('')}</div>` : `<p class="help phint">Drag an event onto someone to say who it's for. Tap it to choose who's taking them.</p>`}
+    <div class="pgrid2" style="--n:${cols.length}${phone ? ';grid-template-columns:1fr' : ''}">${cols.map(c => { const list = by(c.id); return `<section class="ppcol" data-m="${c.id}" style="--c:${c.m ? esc(c.m.color) : 'var(--ink-2)'}"><div class="phd">${c.m ? avatar(c.m) : `<span class="face" style="--c:#8A93A6">${icon('family')}</span>`}<b>${c.m ? esc(c.m.name) : 'Everyone'}</b><span class="n num">${list.length || ''}</span></div>
+      <div class="pbody">${list.map(e => card(e, c.id)).join('') || `<p class="pnone">${c.m ? 'Free' : 'Nothing shared'}</p>`}</div></section>`; }).join('')}</div>`;
 }
 function setEventPeople(id, patch) {
   const e = evById(id); if (!e) return;
@@ -2174,7 +2184,7 @@ V.focus = () => {
     const e = N.ev, start = new Date(e.starts_at), mins = (start - now) / 60e3, live = mins <= 0, buffer = leaveBufferFor(e), drive = driveFor(e), leaveIn = mins - buffer;
     hero = `<div class="fnow" style="--c:${eventColour(e)}"><div class="fk">${live ? 'Happening now' : buffer ? (leaveIn <= 0 ? 'Time to leave' : 'Leave in') : 'Starts in'}</div>
       ${!live && !(buffer && leaveIn <= 0) ? `<div class="fbig num">${esc(relMins(buffer ? leaveIn : mins))}</div>` : ''}
-      <div class="ft">${esc(e.title || 'Busy')}</div><div class="fs num">${esc(fmtTime(start))}${drive != null ? ` · ${drive} min drive` : ''}${e.location ? ' · ' + esc(e.location) : ''}</div></div>`;
+      <div class="ft">${esc(e.title || 'Busy')}</div><div class="fs num">${esc(fmtTime(start))}${drive != null ? ` · ${drive} min drive` : ''}${e.location ? ' · ' + esc(e.location) : ''}</div>${N.rest[0] ? `<div class="fthen"><span>Then</span> <b class="num">${esc(fmtTime(new Date(N.rest[0].starts_at)))}</b> ${esc(N.rest[0].title || 'Busy')}</div>` : ''}</div>`;
   } else if (N.chip) {
     const c = N.chip;
     hero = `<${c.act ? `button data-act="${c.act}" data-k="${c.k}"` : 'div'} class="fnow chipnow"><div class="fk">${esc(c.sub || 'Now')}</div><div class="ft">${esc(c.text)}</div>${c.act ? '<div class="fs">Tap to see it</div>' : ''}</${c.act ? 'button' : 'div'}>`;
@@ -2190,10 +2200,9 @@ V.focus = () => {
   const gave = me ? allT.filter(i => i.assignee && i.assignee !== me.id && i.added_by === me.id) : [];
   const last = S._fqLast;
   return `<div class="page focus2">
-    <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="num">${esc(fmtTime(now))}</span></div>
-    ${quickAddHTML()}
+    <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="fhr">${briefShow() ? `<button class="fbrief sm" data-act="brief-open" aria-label="Hear today's brief">${icon('sun')}<span>Brief</span></button>` : ''}<span class="num">${esc(fmtTime(now))}</span></span></div>
     ${hero}
-    ${briefShow() ? `<button class="fbrief" data-act="brief-open">${icon('sun')} Hear today's brief</button>` : ''}
+    ${quickAddHTML()}
     <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : '<p class="fempty">Nothing else today.</p>'}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
     <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul>${gave.length ? `<p class="fgave">You've handed off ${gave.length}: ${[...new Set(gave.map(i => (memberById(i.assignee) || {}).name))].map(n => `${esc(n)} ${gave.filter(i => (memberById(i.assignee) || {}).name === n).length}`).join(', ')}</p>` : ''}</section>
   </div>`;
@@ -2212,7 +2221,7 @@ V.planner = () => {
   return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">
     <div class="zone"><h2>Today's checklist${me ? ' · ' + esc(me.name) : ''}<span class="more num" style="color:var(--ink-2)">${done.length}/${items.length}</span></h2>
       <div class="qa-in">${quickAddHTML()}</div>
-      <ul class="items scroll">${open.map(i => itemRow(i, true)).join('')}${done.map(i => itemRow(i, true)).join('')}</ul></div>
+      <ul class="items scroll">${open.map(i => itemRow(i, true)).join('') || '<li class="empty">All done for today.</li>'}${done.length ? `<li class="pdone"><button class="fold ${isOpen('pdone') ? 'open' : ''}" data-act="fold" data-k="pdone">${icon('right')}${done.length} done</button></li>${isOpen('pdone') ? done.map(i => itemRow(i, true)).join('') : ''}` : ''}</ul></div>
     <div class="zone"><h2>This week<button class="more" data-act="go" data-view="lists">Groceries · ${gc}</button></h2><div class="scroll">${days}</div></div>
   </div>`;
 };
@@ -2229,12 +2238,12 @@ function evRow(e, big) {
     <div><div class="what" ${big ? '' : 'style="font-size:19px"'}>${esc(e.title || 'Busy')}</div><div class="who">${whoMeta(e, (S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></button>`;
 }
 V.calendar = () => {
-  const today = dayKey(new Date()), mode = S.calMode === 'people' && isPhone() ? 'day' : S.calMode;
+  const today = dayKey(new Date()), mode = S.calMode;
   if (!S.dayKey) S.dayKey = today;
   const title = mode === 'day' || mode === 'people' ? (S.dayKey === today ? 'Today' : esc(fmtDay(S.dayKey, {weekday: 'long', day: 'numeric', month: 'long'}))) : mode === 'week' ? 'Week' : 'Month';
   const head = `<h1 class="calhead"><span class="ct">${title}</span><span class="sp"></span>
     <span class="cnav"><button class="icon-btn" data-act="cal-shift" data-n="-1" aria-label="Previous">${icon('left')}</button><button class="btn soft" data-act="cal-shift" data-n="0">Today</button><button class="icon-btn" data-act="cal-shift" data-n="1" aria-label="Next">${icon('right')}</button></span>
-    <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].concat(isPhone() ? [] : [['people', 'People']]).map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
+    <span class="seg cseg">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].concat([['people', 'People']]).map(([k, l]) => `<button class="${mode === k ? 'on' : ''}" data-act="cal-mode" data-mode="${k}">${l}</button>`).join('')}</span>
     <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' || mode === 'people' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
     <button class="icon-btn cref" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button></h1>`;
   const noCal = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Add a calendar in Settings to fill this in.</p>`;
@@ -3182,6 +3191,7 @@ const A = {
   'note-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; el.closest('form').querySelectorAll('.fp').forEach(b => b.style.setProperty('--c', el.dataset.c)); },
   'pick-colour'(el) { el.parentElement.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', b === el)); el.closest('form').color.value = el.dataset.c; },
   async 'del-note'(el) { S.notes = S.notes.filter(n => n.id !== el.dataset.id); render(); await db(sb.from('notes').delete().eq('id', el.dataset.id)); },
+  'ppl-pick'(el) { S.pplPick = el.dataset.m; render(); },
   'cal-mode'(el) { S.calMode = el.dataset.mode; S.calOffset = 0; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = dayKey(new Date()); LS.set('calMode', S.calMode); render(); },
   'cal-shift'(el) { const n = +el.dataset.n; if (S.calMode === 'day' || S.calMode === 'people') S.dayKey = n === 0 ? dayKey(new Date()) : addDaysKey(S.dayKey || dayKey(new Date()), n); else S.calOffset = n === 0 ? 0 : S.calOffset + n; render(); },
   'open-day'(el) { S.dayKey = el.dataset.k; S.calMode = 'day'; LS.set('calMode', 'day'); render(); },
