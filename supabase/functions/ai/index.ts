@@ -198,7 +198,18 @@ const PERSONAS: Record<string, { voices: { f: string; m: string }; g: "f" | "m";
   coach: { voices: { f: "Zephyr", m: "Sadachbia" }, g: "m", speak: "energetic and motivating, punchy and upbeat", write: "an energetic coach: motivating, short punchy sentences, celebrates small wins" },
 };
 const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", plain: "news", calm: "willow" };
-async function speak(key: string, hid: string, text: string, pid: string, gender = "", shared = false) {
+// The "hear this assistant" lines, word for word as in the app. Recorded ahead of time (both voices) so trying them out costs nothing.
+const SAMPLES: Record<string, string> = {
+  sunny: "Morning! Big day, but you've totally got this. Swimming's at nine, so let's get those hats on!",
+  mate: "G'day. Pretty easy one today. Swimming at nine, bins out tonight, and that's about it, mate.",
+  sass: "Rise and shine. Swimming's at nine, and no, the bins won't take themselves out tonight.",
+  willow: "Good morning. Take a breath. First, swimming at nine. That's all you need to think about for now.",
+  news: "Good morning. Swimming at nine. Lunchboxes to pack. Bins out tonight. Top of twenty-eight.",
+  sterling: "Good morning. Swimming is at nine, so departure is advised by eight forty. Lunchboxes are pending, and the bins go out tonight.",
+  ambrose: "Good morning. Swimming at nine, so do leave by twenty to, if you please. Lunches want packing, and I'd suggest a hat. It'll be warm.",
+  coach: "Let's go! Swimming at nine, lunches packed by eight thirty. Three things today, and we'll smash every one.",
+};
+async function speak(key: string | undefined, hid: string, text: string, pid: string, gender = "", shared = false) {
   const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voices[gender === "f" || gender === "m" ? gender : P.g];
   const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with ${P.accent || "a warm Australian accent"}: ${P.speak}. These are directions only: never say them out loud.`;
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4|" + voice + "|" + P.speak + "|" + text));
@@ -211,6 +222,7 @@ async function speak(key: string, hid: string, text: string, pid: string, gender
     const { data: mine } = await store.list(`${hid}/brief`, { search: hash + ".wav" });
     if (mine && mine.length && !(await store.copy(`${hid}/brief/${hash}.wav`, path)).error) return { url: await signed(), cached: true };
   }
+  if (!key) throw new Error("voice-nokey"); // not recorded yet, and no key to record it with
   let lastErr = "";
   for (const model of (await ttsModels(key)).slice(0, 3)) {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 45000);
@@ -305,6 +317,19 @@ Deno.serve(async (req) => {
     }
     return json(out);
   }
+  // Record the assistant samples ahead of time (any missing ones, a few per call), using a household's own free key.
+  if (cron && body.action === "samples") {
+    const { data: ap } = await admin.from("app_private").select("cron_secret").eq("id", 1).single();
+    if (!ap || ap.cron_secret !== cron) return json({ error: "unauthorised" }, 401);
+    const { data: hk } = await admin.from("household_private").select("household_id, ai_key").not("ai_key", "is", null).order("household_id", { ascending: !!body.desc }).limit(1).maybeSingle();
+    const t0 = Date.now(), out: any = { made: [], had: 0, left: [], err: "" };
+    for (const pid of Object.keys(SAMPLES)) for (const g of ["f", "m"]) {
+      if (out.err === "voice-limit" || Date.now() - t0 > 100e3) { out.left.push(`${pid}-${g}`); continue; }
+      try { const r = await speak(hk?.ai_key, hk?.household_id || "", SAMPLES[pid], pid, g, true); if (r.cached) out.had++; else out.made.push(`${pid}-${g}`); }
+      catch (e) { out.err = String((e as Error).message); out.left.push(`${pid}-${g}`); }
+    }
+    return json(out);
+  }
   const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   const { data: u } = await admin.auth.getUser(jwt);
   if (!u?.user) return json({ error: "Please sign in again" }, 401);
@@ -313,7 +338,8 @@ Deno.serve(async (req) => {
   if (!m) return json({ error: "not a member" }, 403);
   const { data: hp } = await admin.from("household_private").select("ai_key, openrouter_key").eq("household_id", hid).maybeSingle();
   const keys = { g: hp?.ai_key || undefined, o: hp?.openrouter_key || undefined };
-  if (!keys.g && !keys.o) return json({ error: "Add a free Gemini key in Settings → Kitchen first." }, 400);
+  const sampleOnly = body.action === "speak" && !!body.sample; // saved samples play for everyone, key or not
+  if (!keys.g && !keys.o && !sampleOnly) return json({ error: "Add a free Gemini key in Settings → Kitchen first." }, 400);
   const ask = (p: string, img?: any, o?: any) => askAI(keys, p, img, o);
 
   try {
@@ -333,7 +359,7 @@ Return JSON: {"text":"..."}`);
       return json({ text: String(out.text || "").slice(0, 1200) });
     }
     if (a === "speak") {
-      if (!keys.g) return json({ error: "voice-nokey" }, 400);
+      if (!keys.g && !body.sample) return json({ error: "voice-nokey" }, 400);
       const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 1400);
       if (!text) return json({ error: "Nothing to read." }, 400);
       try { return json(await speak(keys.g, hid, text, String(body.persona || body.tone || "sunny"), String(body.gender || ""), !!body.sample)); }

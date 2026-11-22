@@ -778,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1010'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1030'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1938,7 +1938,7 @@ function playSpeech(text, pid, onStart, onEnd, opts = {}) {
   _say.end = () => { S._speaking = false; onEnd && onEnd(); };
   const done = () => { if (!live()) return; _say.end = null; S._speaking = false; onEnd && onEnd(); };
   const device = () => { if (live() && !speak(text, P.tone, done, g, P.uk)) done(); };
-  if (!DEMO && S.aiOn && S.aiGemini !== false && LS.get('briefVoice', 'natural') === 'natural') {
+  if (!DEMO && (opts.sample || (S.aiOn && S.aiGemini !== false)) && LS.get('briefVoice', 'natural') === 'natural') { // samples are pre-recorded: free for everyone
     const a = S._audio || (S._audio = new Audio()); a.onended = a.onerror = null;
     try { a.src = silentWav(); a.play().catch(() => {}); } catch {}
     const slow = setTimeout(() => live() && toast(pv('ready'), 3000), 900);
