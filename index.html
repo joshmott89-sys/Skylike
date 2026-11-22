@@ -778,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0830'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-0945'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1888,6 +1888,8 @@ const PERSONAS = [
   {id: 'sass', name: 'Sass', emoji: '💅', blurb: 'Cheeky, dry humour, still kind', tone: 'sassy', sample: "Rise and shine. Swimming's at nine, and no, the bins won't take themselves out tonight."},
   {id: 'willow', name: 'Willow', emoji: '🌿', blurb: 'Calm and gentle, one thing at a time', tone: 'calm', sample: "Good morning. Take a breath. First, swimming at nine. That's all you need to think about for now."},
   {id: 'news', name: 'Newsreader', emoji: '📻', blurb: 'Straight to the point', tone: 'plain', sample: "Good morning. Swimming at nine. Lunchboxes to pack. Bins out tonight. Top of twenty-eight."},
+  {id: 'sterling', name: 'Sterling', emoji: '🤖', blurb: 'Sleek AI aide, dry British wit', tone: 'plain', sample: "Good morning. Swimming is at nine, so departure is advised by eight forty. Lunchboxes are pending, and the bins go out tonight."},
+  {id: 'ambrose', name: 'Ambrose', emoji: '🎩', blurb: 'Devoted family butler, warm and wise', tone: 'calm', sample: "Good morning. Swimming at nine, so do leave by twenty to, if you please. Lunches want packing, and I'd suggest a hat. It'll be warm."},
   {id: 'coach', name: 'Coach', emoji: '💪', blurb: 'Energetic, gets you moving', tone: 'bubbly', sample: "Let's go! Swimming at nine, lunches packed by eight thirty. Three things today, and we'll smash every one."},
 ];
 const briefWho = () => S.activeMember ? memberById(S.activeMember) : (isPhone() ? meMember() : null);
@@ -1914,6 +1916,10 @@ const VOICE = {
     hello: "Hello, I'm Willow 🌿 One thing at a time.", shop: 'Shopping done. Ticked items are cleared and in the pantry.', events: n => `${n} event${n === 1 ? '' : 's'} added. All taken care of.`, saved: 'Saved.', plannedPre: 'One less thing to think about. '},
   news: {ready: 'Preparing audio…', limit: 'Daily voice limit reached. Using device voice.', busy: 'Natural voice unavailable. Using device voice.', hide: 'Hidden until tomorrow.',
     hello: 'Newsreader selected.', shop: 'Shopping done. Ticked items cleared and added to the pantry.', events: n => `Added ${n} event${n === 1 ? '' : 's'}.`, saved: 'Saved.', plannedPre: ''},
+  sterling: {ready: 'Initialising voice systems…', limit: "Voice quota exhausted for today. Routing to this device's voice.", busy: "The natural voice is unavailable. Rerouting to this device's voice.", hide: 'Understood. Standing by until tomorrow.',
+    hello: 'Sterling, at your service. Shall we begin?', shop: 'Shopping complete. Ticked items cleared and logged in the pantry.', events: n => `Done. ${n} event${n === 1 ? '' : 's'} added to the schedule.`, saved: 'Saved, as requested.', plannedPre: 'Menu arranged. '},
+  ambrose: {ready: 'One moment, if you please…', limit: "I'm afraid my voice is spent for today. The device will read it instead.", busy: "My apologies, my voice isn't cooperating. The device will read it.", hide: 'Very good. Until tomorrow morning. 🎩',
+    hello: 'Ambrose, at your service. Do take a jacket. 🎩', shop: "Shopping done. I've cleared the ticked items and stocked the pantry.", events: n => `Very good. ${n} event${n === 1 ? '' : 's'} added to the diary.`, saved: 'Very good.', plannedPre: 'Dinners arranged. '},
   coach: {ready: 'Getting pumped up… 💪', limit: 'Voice is benched for today. Device voice is subbing in!', busy: 'Voice is off the field. Device voice is subbing in!', hide: "Done for today. Back tomorrow, champ! 💪",
     hello: "Coach here! Let's get after it 💪", shop: 'Shopping smashed! 🛒 Ticked items cleared and in the pantry.', events: n => `Boom! ${n} event${n === 1 ? '' : 's'} locked in 💪`, saved: 'Locked in! 💪', plannedPre: 'Fuel sorted! 💪 '},
 };

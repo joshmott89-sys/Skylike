@@ -186,7 +186,9 @@ function wav(pcm: Uint8Array, rate = 24000) {
   const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h), 0); out.set(pcm, 44); return out;
 }
 // Assistant personalities: a Gemini voice, how it speaks (director's notes, never read aloud) and how it writes the brief.
-const PERSONAS: Record<string, { voice: string; speak: string; write: string }> = {
+const PERSONAS: Record<string, { voice: string; speak: string; write: string; accent?: string }> = {
+  sterling: { voice: "Algieba", accent: "a crisp, refined British accent", speak: "smooth, precise and composed, with dry understated wit", write: "a sleek, ultra-capable AI aide with a refined British manner: precise, composed, quietly anticipates needs, dry understated wit, phrases like 'departure advised' or 'I've taken the liberty', never gushing" },
+  ambrose: { voice: "Gacrux", accent: "a warm, refined British accent", speak: "warm, mature and gently formal, kindly and unhurried", write: "a devoted old-school family butler: warm, wise and gently formal ('if you please', 'very good'), quietly looks out for everyone, offers one small sensible suggestion (a jacket, a hat, an early night), a touch of dry humour" },
   sunny: { voice: "Laomedeia", speak: "cheerful and upbeat, smiling as you speak", write: "bubbly and upbeat, warm, encouraging, a little playful, one light joke at most" },
   mate: { voice: "Zubenelgenubi", speak: "relaxed and casual, like a laid-back Aussie mate", write: "a laid-back Australian mate: relaxed and friendly, a touch of Aussie slang (at most two words like reckon or arvo), keeps it real" },
   sass: { voice: "Kore", speak: "dry and cheeky with a little attitude, warm underneath", write: "cheeky and a bit sassy, dry Aussie humour, playful teasing, still kind" },
@@ -197,7 +199,7 @@ const PERSONAS: Record<string, { voice: string; speak: string; write: string }> 
 const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", plain: "news", calm: "willow" };
 async function speak(key: string, hid: string, text: string, pid: string) {
   const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voice;
-  const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with a warm Australian accent: ${P.speak}. These are directions only: never say them out loud.`;
+  const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with ${P.accent || "a warm Australian accent"}: ${P.speak}. These are directions only: never say them out loud.`;
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4|" + voice + "|" + P.speak + "|" + text));
   const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
   const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
@@ -319,7 +321,7 @@ Deno.serve(async (req) => {
     if (a === "brief") {
       const P = PERSONAS[String(body.persona || "")] || PERSONAS[TONE_PERSONA[String(body.tone || "")]], tone = P ? P.write : "warm and friendly";
       const { out } = await ask(`Write a spoken morning briefing for ${String(body.name || "the family").slice(0, 40)} in Perth, Australia. Tone: ${tone}.
-It will be read aloud, so: plain sentences, no lists, no emoji, no markdown, times like "nine thirty" are fine as "9:30". 50 to 110 words. Australian English.
+It will be read aloud, so: plain sentences, no lists, no emoji, no markdown, times like "nine thirty" are fine as "9:30". 50 to 110 words. ${P && P.accent ? "British English" : "Australian English"}.
 Lead with what needs doing first (leave times, lunches to pack, defrosting), then the rest of the day, then one nice thing to look forward to. Only use these facts, don't invent any: ${JSON.stringify(body.facts || {}).slice(0, 3500)}
 Return JSON: {"text":"..."}`);
       return json({ text: String(out.text || "").slice(0, 1200) });
