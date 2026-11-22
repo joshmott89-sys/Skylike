@@ -253,6 +253,9 @@ async function loadTravel() { const {data} = await sb.from('event_travel').selec
 // a second tap within 4 seconds confirms something that can't be undone
 const confirmTap = (k, msg) => { const now = Date.now(); if (S._confirm && S._confirm.k === k && now - S._confirm.at < 4000) { S._confirm = null; return true; } S._confirm = {k, at: now}; toast(msg, 4000); return false; };
 const fmtCode = c => { c = String(c || ''); return c.length === 10 ? c.slice(0, 5) + '-' + c.slice(5) : c; };
+// drawn icons for the preset places; anything a family picks themselves stays as their emoji
+const PLACE_ICON = {'🏫': 'school', '🧸': 'kindy', '🍼': 'bottle', '💼': 'work', '🏊': 'swim', '🏋': 'gym', '👵': 'family-home', '🛒': 'cart', '🩺': 'doctor', '🌳': 'park', '🏠': 'home', '📍': 'pin'};
+const placeIcon = e => { const k = PLACE_ICON[String(e || '📍').replace(/\ufe0f/g, '')]; return k ? icon(k, 'xs') : esc(e); };
 const PLACE_PRESETS = [['School', '🏫'], ['Kindy', '🧸'], ['Daycare', '🍼'], ['Work', '💼'], ['Swimming', '🏊'], ['Gym', '🏋️'], ['Grandma & Grandpa', '👵'], ['Shops', '🛒'], ['Doctor', '🩺'], ['Park', '🌳']];
 function places() {
   const st = settings(), out = [];

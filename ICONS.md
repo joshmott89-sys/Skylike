@@ -1,6 +1,6 @@
 # Icon provenance
 
-`icon-180.png`, `icon-192.png` and `icon-512.png` were drawn programmatically with Python Pillow (a sky gradient, a sun setting on a sea horizon) by Claude while building Skylike in November 2026. No stock or third-party imagery is used.
+`icon-180.png`, `icon-192.png`, `icon-512.png` and `icon-maskable-512.png` were drawn by Claude as an SVG (a sky gradient, a sun setting on the sea, and the sky strip's event dots on the horizon) and rendered to PNG, November 2026. The maskable one keeps everything inside the central circle Android crops to. No stock or third-party imagery is used.
 
 ## In-app artwork (November 2026)
 

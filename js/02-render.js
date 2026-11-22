@@ -102,8 +102,8 @@ function upNextHTML(limit = 4) {
   if (!list.length) { list = eventsOnKey(addDaysKey(k, 1)).filter(e => !e.all_day); label = 'Tomorrow'; }
   const rows = list.slice(0, limit).map((e, i) => agendaRow(e, {first: i === 0 && label === 'Up next', until: true, meta: true})).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
-    ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
-    : `<div class="empty"><b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);
+    ? `<div class="empty">${emptyArt('sunrise')}<b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
+    : `<div class="empty">${emptyArt('cal')}<b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);
   return `<div class="zone up-z"><h2><button class="h2link" data-act="go" data-view="calendar" data-mode="day" data-k="${label === 'Tomorrow' ? addDaysKey(k, 1) : k}">${label}${icon('right')}</button><button class="more" data-act="go" data-view="calendar" data-mode="week">Week</button></h2>${body}</div>`;
 }
 // One shared price book for the household: each item is priced once and kept (refreshed after 30 days), so totals stay steady.
@@ -121,7 +121,7 @@ function listsZoneHTML() {
   const items = listItems(l.id, false), cap = 12;
   return `<div class="zone lists-z">${isPhone() ? '' : `<div class="qa-in">${quickAddHTML()}</div>`}<h2><button class="h2link" data-act="go" data-view="lists" data-list="${l.id}">Lists${icon('right')}</button>
       <span class="seg sm">${shown.map(x => `<button class="${x.id === l.id ? 'on' : ''}" data-act="home-list" data-kind="${x.kind}">${esc(x.name)}<span class="n num">${listItems(x.id, false).length}</span></button>`).join('')}</span></h2>
-    <div class="items scroll"><ul class="items">${items.slice(0, cap).map(i => itemRow(i)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up' : 'Nothing to do'}</li>`}</ul>
+    <div class="items scroll"><ul class="items">${items.slice(0, cap).map(i => itemRow(i)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up' : 'Nothing to do'}</li>`}</ul>
     ${items.length > cap ? `<button class="btn ghost" style="margin-top:8px" data-act="go" data-view="lists" data-list="${l.id}">${items.length - cap} more in ${esc(l.name)}</button>` : ''}</div></div>`;
 }
 function noteHTML(n, i) {
@@ -130,7 +130,7 @@ function noteHTML(n, i) {
 }
 function notesZoneHTML() {
   return `<div class="zone notes-z"><h2><button class="h2link" data-act="go" data-view="notes">Notes${icon('right')}</button><button class="more" data-act="add-note">Add</button></h2>
-    <div class="notes">${S.notes.slice(0, 6).map(noteHTML).join('') || '<div class="empty"><b>No notes</b>Leave one for the family.</div>'}</div></div>`;
+    <div class="notes">${S.notes.slice(0, 6).map(noteHTML).join('') || `<div class="empty">${emptyArt('note')}<b>No notes</b>Leave one for the family.</div>`}</div></div>`;
 }
 /* Kitchen card on home: tonight's dinner, defrost reminders, and what's missing for tomorrow. Each line only shows when it has something to say. */
 // things worth defrosting (frozen peas or chips go straight in)
@@ -148,7 +148,7 @@ function kitchenHTML() {
   const mk = hr < 16 ? k : tmr, mm = mealOn(mk), miss = missing(mm);
   if (miss.length) lines.push(`<div class="kline"><span class="ki">${icon('cart')}</span><span><b>Missing for ${mk === k ? 'tonight' : 'tomorrow'}:</b> ${esc(miss.slice(0, 4).join(', '))}${miss.length > 4 ? ` +${miss.length - 4}` : ''}</span><button class="btn soft sm" data-act="kitchen-missing" data-k="${mk}">Add to list</button></div>`);
   if (!tonight && !lines.length) return '';
-  const head = tonight ? `<button class="ktonight" data-act="meal-open" data-k="${k}"><span class="ke">${esc(tonight.emoji || '🍽️')}</span><span><span class="kl">${hr >= 20 ? 'Tonight was' : 'Tonight'}</span><span class="kt2">${esc(tonight.leftovers_of ? 'Leftovers: ' + tonight.leftovers_of : tonight.title)}</span>${tonight.prep_time ? `<span class="km">${esc(tonight.prep_time)}${tonight.cooked ? ' · cooked' : ''}</span>` : ''}</span></button>`
+  const head = tonight ? `<button class="ktonight" data-act="meal-open" data-k="${k}">${foodArt(tonight.leftovers_of ? 'leftovers' : tonight.title, 'ke')}<span><span class="kl">${hr >= 20 ? 'Tonight was' : 'Tonight'}</span><span class="kt2">${esc(tonight.leftovers_of ? 'Leftovers: ' + tonight.leftovers_of : tonight.title)}</span>${tonight.prep_time ? `<span class="km">${esc(tonight.prep_time)}${tonight.cooked ? ' · cooked' : ''}</span>` : ''}</span></button>`
     : `<button class="ktonight empty" data-act="go" data-view="meals"><span class="ke">🍽️</span><span><span class="kl">Tonight</span><span class="kt2">No dinner planned</span></span></button>`;
   return `<div class="kitchen">${head}${lines.length ? `<div class="klines">${lines.join('')}</div>` : ''}</div>`;
 }

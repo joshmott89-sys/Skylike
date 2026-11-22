@@ -29,7 +29,7 @@ function cropSheet(file, id) {
 /* Location box: saved places as one-tap chips, and type-to-search (OpenStreetMap's Photon, near home). */
 function locField(value, opts = {}) {
   const pl = places(), lid = 'loc' + Math.random().toString(36).slice(2, 8);
-  return `<div class="locf">${opts.noChips || !pl.length ? '' : `<div class="locchips">${pl.map(p => `<button type="button" class="chip3 ${value && normLoc(value) === normLoc(p.name) ? 'on' : ''}" data-act="loc-place" data-name="${esc(p.name)}">${p.emoji || '📍'} ${esc(p.name)}</button>`).join('')}</div>`}
+  return `<div class="locf">${opts.noChips || !pl.length ? '' : `<div class="locchips">${pl.map(p => `<button type="button" class="chip3 ${value && normLoc(value) === normLoc(p.name) ? 'on' : ''}" data-act="loc-place" data-name="${esc(p.name)}">${placeIcon(p.emoji)} ${esc(p.name)}</button>`).join('')}</div>`}
     <div class="row locrow"><input class="input grow" id="${lid}" name="${opts.name || 'location'}" data-locsearch="1" placeholder="${opts.ph || 'Where? Type or say it, e.g. Bounce'}" value="${esc(value || '')}" maxlength="200" autocomplete="off" autocapitalize="words">${micBtn('#' + lid)}</div>
     <input type="hidden" name="${opts.name || 'location'}_lat"><input type="hidden" name="${opts.name || 'location'}_lon">
     <div class="locsug" role="listbox" hidden></div></div>`;
@@ -60,15 +60,15 @@ document.addEventListener('focusout', e => { const t = e.target; if (t && t.data
 function placesPanelHTML() {
   const pl = places(), st = settings();
   return `<div class="panel" id="placespanel"><h2>Places</h2><p class="help">Places you go a lot. They show as one-tap buttons when you add an event, and driving times and leave reminders use them.</p>
-    <ul class="plist">${st.location && st.location.lat ? '' : `<li class="pl-none">🏠 <span><b>Home</b><small>Not set yet, so drives are worked out from the city.</small></span><button class="btn soft sm" data-act="place-edit" data-id="home">Set home</button></li>`}
-    ${pl.map(p => `<li>${p.emoji || '📍'} <span><b>${esc(p.name)}</b><small>${esc(p.address || (p.home ? "Set from this device's location" : ''))}</small></span><button class="btn soft sm" data-act="place-edit" data-id="${p.id}">Edit</button></li>`).join('')}</ul>
+    <ul class="plist">${st.location && st.location.lat ? '' : `<li class="pl-none"><span class="plic">${icon('home', 'xs')}</span> <span><b>Home</b><small>Not set yet, so drives are worked out from the city.</small></span><button class="btn soft sm" data-act="place-edit" data-id="home">Set home</button></li>`}
+    ${pl.map(p => `<li><span class="plic">${placeIcon(p.emoji)}</span> <span><b>${esc(p.name)}</b><small>${esc(p.address || (p.home ? "Set from this device's location" : ''))}</small></span><button class="btn soft sm" data-act="place-edit" data-id="${p.id}">Edit</button></li>`).join('')}</ul>
     <button class="btn soft" data-act="place-edit" data-id="">${icon('plus')} Add a place</button></div>`;
 }
 function placeSheet(id) {
   const p = id ? places().find(x => x.id === id) || (id === 'home' ? {id: 'home', name: 'Home', emoji: '🏠', home: true} : null) : null, isHome = p && p.home || id === 'home';
   sheet(`<h2>${isHome ? 'Home' : p ? 'Edit place' : 'Add a place'}</h2>
     <form data-form="place-save" data-id="${esc(id || '')}">
-      ${isHome ? '' : `<div class="presets">${PLACE_PRESETS.map(([n, e]) => `<button type="button" class="chip3" data-act="place-preset" data-n="${esc(n)}" data-e="${e}">${e} ${esc(n)}</button>`).join('')}</div>
+      ${isHome ? '' : `<div class="presets">${PLACE_PRESETS.map(([n, e]) => `<button type="button" class="chip3" data-act="place-preset" data-n="${esc(n)}" data-e="${e}">${placeIcon(e)} ${esc(n)}</button>`).join('')}</div>
       <div class="row" style="gap:8px;flex-wrap:nowrap"><input class="input" name="emoji" value="${esc(p ? p.emoji || '📍' : '📍')}" maxlength="4" style="width:64px;text-align:center;font-size:22px" aria-label="Emoji"><input class="input grow" name="name" placeholder="Name, e.g. School" value="${esc(p ? p.name : '')}" maxlength="40" required></div>`}
       <label class="lbl" style="margin-top:10px">Address</label>${locField(p ? p.address : '', {noChips: true, ph: isHome ? 'Start typing your street' : 'Start typing, e.g. Bounce Malaga'})}
       ${isHome ? `<p class="help">Or stand at home and <button type="button" class="linkbtn" data-act="use-location">use this device's location</button>.</p>` : ''}
@@ -334,13 +334,43 @@ const KART = {
   wash: '<path d="M10 15h18v-4h6v8H16v-4" fill="#D5DEE4"/><path d="M31 23c2 3.2 3 5.2 3 6.6a3 3 0 0 1-6 0c0-1.4 1-3.4 3-6.6z" fill="#9ADAEC" stroke-width="1.8"/><path d="M6 32c4-2 9-2.4 13-1l8 2.6c1.6.6 1.6 2.9-.2 3.2L19 38" fill="#F2C9A7"/><path d="M6 32v10h14c3 0 6-1 9-3l11-7c1.4-1 .4-3.2-1.3-2.7L28 32" fill="#F2C9A7"/>',
   star: '<path d="M24 5l5.6 11.4 12.6 1.8-9.1 8.9 2.1 12.5L24 33.7l-11.2 5.9 2.1-12.5-9.1-8.9 12.6-1.8z" fill="#F7BC2A"/>',
   gift: '<rect x="7" y="18" width="34" height="8" rx="2.5" fill="#EF7A6B"/><rect x="10" y="26" width="28" height="16" rx="2.5" fill="#EF7A6B"/><path d="M24 18v24" stroke-width="2.2"/><rect x="21" y="18" width="6" height="24" fill="#FFD45C" stroke-width="2"/><path d="M24 18c-3-6-10-8-11-4s5 4 11 4zM24 18c3-6 10-8 11-4s-5 4-11 4z" fill="#FFD45C"/>',
+  clear: '<circle cx="24" cy="25" r="15" fill="#B9E3C6"/><path d="M16.5 25.5l5 5 10-11" fill="none" stroke-width="3"/><path d="M38 8v5M35.5 10.5h5M9 9v4M7 11h4" stroke="#F2B53A" stroke-width="2.2"/>',
+  note: '<path d="M10 8h28v22l-10 10H10z" fill="#FFE27A"/><path d="M28 40V30h10" fill="#F2C94C"/><path d="M15 16h18M15 22h14" stroke-width="2"/>',
+  cal: '<rect x="7" y="10" width="34" height="30" rx="5" fill="#fff"/><path d="M7 15a5 5 0 0 1 5-5h24a5 5 0 0 1 5 5v4H7z" fill="#EF7A6B"/><path d="M16 6v8M32 6v8" stroke-width="2.4"/><circle cx="17" cy="27" r="2" fill="#6FB3E0" stroke="none"/><circle cx="24" cy="27" r="2" fill="#6FB3E0" stroke="none"/><circle cx="31" cy="27" r="2" fill="#6FB3E0" stroke="none"/><circle cx="17" cy="34" r="2" fill="#6FB3E0" stroke="none"/>',
   water: '<rect x="18" y="4" width="12" height="6" rx="2" fill="#4E97C9"/><path d="M16.5 10h15l1.5 4v24.5A4.5 4.5 0 0 1 28.5 43h-9A4.5 4.5 0 0 1 15 38.5V14z" fill="#9ADAEC"/><path d="M15 22h18" stroke-width="2"/><path d="M19 27v10" stroke="#fff" stroke-width="2.6"/>',
 };
 // which picture goes with which emoji (the ones families already use); custom steps keep their own emoji
 const KART_OF = {'🚽': 'toilet', '🪥': 'teeth', '👕': 'dress', '👚': 'dress', '🥣': 'breakfast', '👟': 'shoes', '🎒': 'bag', '🛁': 'bath', '🩲': 'pjs', '📖': 'book', '💡': 'bulb', '🧸': 'teddy', '🍽': 'plate', '🐟': 'fish', '📺': 'screen', '🧢': 'hat', '🩱': 'swim', '📚': 'books', '🍦': 'icecream', '🛝': 'slide', '🎬': 'movie', '🌅': 'sunrise', '⏳': 'timer', '🧼': 'wash', '💧': 'water', '🌙': 'sleep', '😴': 'sleep', '⭐': 'star', '🌟': 'star', '🎁': 'gift'};
 const kartKey = (emoji, label = '') => { const e = String(emoji || '').replace(/️/g, '').trim(); if (/lights? out|sleep|go to bed/i.test(label) && (e === '💡' || e === '🌙' || !e)) return 'sleep'; return KART_OF[e] || ''; };
 const STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.75 5.6 6.15.9-4.45 4.33 1.05 6.12L12 16.66l-5.5 2.89 1.05-6.12L3.1 9.1l6.15-.9z"/></svg>';
+const emptyArt = k => `<span class="emart kart" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="var(--kart-ink,#1F3442)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${KART[k]}</svg></span>`;
 const kart = (emoji, label = '', cls = 'em') => { const k = kartKey(emoji, label); return k ? `<span class="${cls} kart" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="var(--kart-ink,#1F3442)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${KART[k]}</svg></span>` : `<span class="${cls}">${esc(emoji || '⭐')}</span>`; };
+
+// Dinner pictures: same sticker style as the kids' tiles, picked from the meal's name (foodArt), so every planned dinner gets one.
+const FOOD = {
+  pasta: '<path d="M6 24h36c0 9-8 16-18 16S6 33 6 24z" fill="#F4F0E6"/><ellipse cx="24" cy="24" rx="18" ry="4.5" fill="#F7C948"/><path d="M14 23c3-3 7 2 10-1s7 2 10-1M16 26c3-2 6 1 9-1s6 1 8-1" fill="none" stroke="#C98F12" stroke-width="1.8"/><circle cx="21" cy="21.5" r="2.6" fill="#E2553D" stroke-width="1.6"/><circle cx="28" cy="22.5" r="2.4" fill="#E2553D" stroke-width="1.6"/><path d="M34 6v14M37 6v6c0 2-1.5 3-3 3M31 6v6c0 2 1.5 3 3 3" fill="none" stroke-width="2"/>',
+  bake: '<rect x="5" y="17" width="38" height="20" rx="4" fill="#4E97C9"/><path d="M2 21h5M41 21h5" stroke-width="2.6"/><path d="M9 21c2-2 5-2 7 0s5 2 7 0 5-2 7 0 5 2 7 0v8H9z" fill="#F2B54A"/><circle cx="15" cy="25" r="1.4" fill="#C9772B" stroke="none"/><circle cx="24" cy="24" r="1.4" fill="#C9772B" stroke="none"/><circle cx="32" cy="26" r="1.4" fill="#C9772B" stroke="none"/><path d="M17 12c0-2 2-2 2-4M24 12c0-2 2-2 2-4M31 12c0-2 2-2 2-4" fill="none" stroke-width="1.8"/>',
+  curry: '<path d="M5 24h38c0 9-8.5 16-19 16S5 33 5 24z" fill="#fff"/><ellipse cx="24" cy="24" rx="19" ry="4.5" fill="#F0A33C"/><path d="M8 24c2-4 9-6 13-4 0 3-6 5-13 4z" fill="#fff" stroke-width="1.8"/><circle cx="27" cy="22.5" r="2" fill="#7CC48B" stroke-width="1.4"/><circle cx="33" cy="24" r="2" fill="#C9772B" stroke-width="1.4"/><path d="M19 12c0-2 2-2 2-4M26 12c0-2 2-2 2-4" fill="none" stroke-width="1.8"/>',
+  stirfry: '<path d="M6 21h32c0 9-7 16-16 16S6 30 6 21z" fill="#4F5D75"/><path d="M38 23l7-3" stroke-width="2.6"/><path d="M10 21c2-4 5-1 7-4s5 1 7-3 5 2 7-1 4 2 6 1" fill="#F7C948" stroke-width="1.8"/><circle cx="16" cy="18" r="1.8" fill="#7CC48B" stroke-width="1.4"/><circle cx="27" cy="17" r="1.8" fill="#EF7A6B" stroke-width="1.4"/><path d="M30 4l-8 14M35 5l-8 13" stroke="#B9835A" stroke-width="2.2"/>',
+  soup: '<path d="M5 22h38c0 10-8.5 17-19 17S5 32 5 22z" fill="#6FB3E0"/><ellipse cx="24" cy="22" rx="19" ry="4.5" fill="#F2B54A"/><circle cx="17" cy="21.5" r="1.8" fill="#EF7A6B" stroke-width="1.4"/><circle cx="29" cy="22.5" r="1.8" fill="#7CC48B" stroke-width="1.4"/><path d="M17 13c0-2.5 3-2.5 3-5M24 13c0-2.5 3-2.5 3-5M31 13c0-2.5 3-2.5 3-5" fill="none" stroke-width="2"/>',
+  taco: '<path d="M5 34a19 19 0 0 1 38 0z" fill="#F7C948"/><path d="M10 31c2-6 6-9 9-9M14 30c3-5 7-6 9-6" fill="none" stroke-width="1.6"/><path d="M8 33c2-5 5-8 8-9 1 3 4 4 7 3 2 2 5 2 7 0 3 1 6 3 8 6" fill="#7CC48B" stroke-width="1.8"/><circle cx="18" cy="27" r="2" fill="#EF5A5A" stroke-width="1.4"/><circle cx="29" cy="27.5" r="2" fill="#EF5A5A" stroke-width="1.4"/><path d="M4 34h40" stroke-width="2.4"/>',
+  pizza: '<path d="M24 42L6 10c11-5 25-5 36 0z" fill="#F7C948"/><path d="M6 10c11-5 25-5 36 0l-2 4c-10-4-22-4-32 0z" fill="#D9925A"/><circle cx="20" cy="20" r="3" fill="#E2553D" stroke-width="1.6"/><circle cx="29" cy="22" r="3" fill="#E2553D" stroke-width="1.6"/><circle cx="24" cy="31" r="2.6" fill="#E2553D" stroke-width="1.6"/>',
+  burger: '<path d="M7 21c0-8 8-13 17-13s17 5 17 13z" fill="#F2B54A"/><circle cx="18" cy="14" r=".9" fill="#1F3442" stroke="none"/><circle cx="25" cy="12" r=".9" fill="#1F3442" stroke="none"/><circle cx="31" cy="15" r=".9" fill="#1F3442" stroke="none"/><path d="M5 24c3-2 5 2 8 0s5 2 8 0 5 2 8 0 5 2 8 0 4 1 6 0" fill="none" stroke="#5DAA6B" stroke-width="2.6"/><rect x="6" y="26" width="36" height="6" rx="3" fill="#8A5A3A"/><path d="M7 34h34c0 4-3 6-7 6H14c-4 0-7-2-7-6z" fill="#F2B54A"/>',
+  salad: '<path d="M5 24h38c0 9-8.5 16-19 16S5 33 5 24z" fill="#fff"/><path d="M8 24c0-5 4-8 8-7 1-4 6-6 10-3 3-3 9-2 10 3 4 0 6 4 5 7" fill="#7CC48B"/><circle cx="18" cy="21" r="2.4" fill="#EF5A5A" stroke-width="1.4"/><circle cx="30" cy="20" r="2.4" fill="#EF5A5A" stroke-width="1.4"/><path d="M23 18l3 4" stroke-width="1.6"/>',
+  sausage: '<ellipse cx="24" cy="30" rx="19" ry="8" fill="#fff"/><rect x="10" y="20" width="26" height="7" rx="3.5" transform="rotate(-12 23 23)" fill="#B5603A"/><rect x="12" y="27" width="26" height="7" rx="3.5" transform="rotate(-6 25 30)" fill="#C9724A"/><path d="M15 24l3-1M22 22l3-1M17 31l3-.5M25 30l3-.5" stroke="#F2C9A7" stroke-width="1.6"/>',
+  fish: '<ellipse cx="24" cy="30" rx="20" ry="9" fill="#fff"/><path d="M34 27l8-6v12z" fill="#F5A25D"/><path d="M9 27c3-6 9-8 14-8s10 3 12 8c-2 5-6 8-12 8S12 33 9 27z" fill="#F5A25D"/><circle cx="15" cy="25.5" r="1.4" fill="#1F3442" stroke="none"/><path d="M21 20c1.6 2.4 1.6 11.6 0 14" fill="none" stroke-width="1.8"/>',
+  roast: '<ellipse cx="24" cy="34" rx="20" ry="7" fill="#fff"/><path d="M9 29c-2-7 3-14 11-14 6 0 10 4 10 9 0 3-1 5-3 6l-8 2c-4 1-8 0-10-3z" fill="#E59A4C"/><path d="M27 25l8-8" stroke-width="5.5"/><path d="M27 25l8-8" stroke="#fff" stroke-width="2.4"/><circle cx="37" cy="14.5" r="2.6" fill="#fff" stroke-width="1.8"/><circle cx="38.8" cy="18" r="2.6" fill="#fff" stroke-width="1.8"/><path d="M14 22c1.5-2 4-3 6-3" fill="none" stroke="#fff" stroke-width="2.2"/>',
+  steak: '<ellipse cx="24" cy="31" rx="20" ry="9" fill="#fff"/><path d="M11 27c0-6 6-10 13-10 8 0 13 4 13 9 0 4-3 6-7 6-3 0-5-2-8-2-3 0-5 3-8 2-2-1-3-3-3-5z" fill="#A9583A"/><path d="M15 26c3-3 9-4 14-1" fill="none" stroke="#F2C9A7" stroke-width="2"/><circle cx="33" cy="24" r="2" fill="#7CC48B" stroke-width="1.4"/>',
+  leftovers: '<rect x="7" y="20" width="34" height="19" rx="4" fill="#E3F4FC"/><rect x="5" y="14" width="38" height="7" rx="3" fill="#6FB3E0"/><rect x="19" y="10" width="10" height="5" rx="2" fill="#4E97C9"/><path d="M12 30c3-3 6 0 9-2s6 1 9-1 4 1 6 0" fill="none" stroke="#F2A93A" stroke-width="2.4"/><path d="M12 34h24" stroke-width="1.6"/>',
+  plate: '<path d="M7 8v9a3 3 0 0 0 3 3v21M4.5 8v8M9.5 8v8" fill="none" stroke-width="2.2"/><path d="M42 8c-3 1.5-4 6-4 12h4v21" fill="none" stroke-width="2.2"/><circle cx="24" cy="25" r="13.5" fill="#fff"/><circle cx="24" cy="25" r="8.5" fill="#EAF1F5" stroke-width="1.8"/>',
+};
+const FOOD_RULES = [[/leftover/, 'leftovers'], [/taco|burrito|nacho|quesadilla|tortilla|fajita|enchilada|mexican/, 'taco'], [/pizza/, 'pizza'], [/burger|slider/, 'burger'],
+  [/soup|chowder|broth|laksa|pho\b/, 'soup'], [/\bbake\b|casserole|pie\b|lasagn|gratin|shepherd|mornay|moussaka|crumble/, 'bake'], [/curry|korma|tikka|masala|dahl|dal\b|rendang|butter chicken|biryani|vindaloo/, 'curry'],
+  [/stir|noodle|fried rice|teriyaki|chow mein|pad thai|udon|ramen|satay|wok|dumpling|sushi/, 'stirfry'], [/pasta|spaghetti|bolognese|penne|macaroni|mac and|carbonara|gnocchi|ravioli|fettuccin|linguin|risotto/, 'pasta'],
+  [/fish|salmon|tuna|barramundi|prawn|seafood|cod\b|snapper|calamari/, 'fish'], [/sausage|snag|bbq|barbecue|hot dog/, 'sausage'], [/salad|poke|buddha bowl/, 'salad'],
+  [/steak|beef|lamb|pork|cutlet|meatball|rissole|mince/, 'steak'], [/roast|chicken|drumstick|wings|schnitzel|nugget|turkey/, 'roast']];
+const foodKey = t => { t = String(t || '').toLowerCase(); const r = FOOD_RULES.find(([re]) => re.test(t)); return r ? r[1] : 'plate'; };
+const foodArt = (title, cls = 'fart') => `<span class="${cls} kart" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="var(--kart-ink,#1F3442)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">${FOOD[foodKey(title)]}</svg></span>`;
 
 // Assistant portraits: bespoke line marks on a tinted tile, one drawing style for all eight.
 const PAV = {
@@ -541,7 +571,7 @@ V.focus = () => {
   // the rest of today, five lines at most
   const lines = [];
   N.rest.forEach(e => lines.push(`<li class="flev">${agendaRow(e, {size: 'md'})}</li>`));
-  const din = mealOn(k); if (din && hr < 21) lines.push(`<li><span class="fw">${esc(din.emoji || '🍽️')}</span><span>Dinner: ${esc(din.leftovers_of ? 'leftovers' : din.title)}</span></li>`);
+  const din = mealOn(k); if (din && hr < 21) lines.push(`<li><span class="fw">${foodArt(din.leftovers_of ? 'leftovers' : din.title, 'fwart')}</span><span>Dinner: ${esc(din.leftovers_of ? 'leftovers' : din.title)}</span></li>`);
   N.chips.forEach(c => lines.push(`<li><span class="fw">${icon(c.bins ? 'bin' : c.icon === 'list' ? 'cart' : c.icon || 'check', 'xs')}</span><span>${esc(c.text)}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</span></li>`));
   const showAll = isOpen('ftoday'), shown = showAll ? lines : lines.slice(0, 5);
   const t = listByKind('todo'), allT = t ? listItems(t.id, false) : [], mineFirst = it => it.assignee && me && it.assignee === me.id ? 0 : !it.assignee ? 1 : 2;
@@ -552,7 +582,7 @@ V.focus = () => {
     <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="fhr">${briefShow() ? `<button class="fbrief sm" data-act="brief-open" aria-label="Hear today's brief">${icon('sun')}<span>Brief</span></button>` : ''}<span class="num">${esc(fmtTime(now))}</span></span></div>
     ${hero}
     ${quickAddHTML()}
-    <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : '<p class="fempty">Nothing else today.</p>'}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
+    <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : `<p class="fempty">${emptyArt('sunrise')}Nothing else today.</p>`}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
     <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul>${gave.length ? `<p class="fgave">You've handed off ${gave.length}: ${[...new Set(gave.map(i => (memberById(i.assignee) || {}).name))].map(n => `${esc(n)} ${gave.filter(i => (memberById(i.assignee) || {}).name === n).length}`).join(', ')}</p>` : ''}</section>
   </div>`;
 };
@@ -570,7 +600,7 @@ V.planner = () => {
   return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">
     <div class="zone"><h2>Today's checklist${me ? ' · ' + esc(me.name) : ''}<span class="more num" style="color:var(--ink-2)">${done.length}/${items.length}</span></h2>
       <div class="qa-in">${quickAddHTML()}</div>
-      <ul class="items scroll">${open.map(i => itemRow(i, true)).join('') || '<li class="empty">All done for today.</li>'}${done.length ? `<li class="pdone"><button class="fold ${isOpen('pdone') ? 'open' : ''}" data-act="fold" data-k="pdone">${icon('right')}${done.length} done</button></li>${isOpen('pdone') ? done.map(i => itemRow(i, true)).join('') : ''}` : ''}</ul></div>
+      <ul class="items scroll">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}All done for today.</li>`}${done.length ? `<li class="pdone"><button class="fold ${isOpen('pdone') ? 'open' : ''}" data-act="fold" data-k="pdone">${icon('right')}${done.length} done</button></li>${isOpen('pdone') ? done.map(i => itemRow(i, true)).join('') : ''}` : ''}</ul></div>
     <div class="zone"><h2>This week<button class="more" data-act="go" data-view="lists">Groceries · ${gc}</button></h2><div class="scroll">${days}</div></div>
   </div>`;
 };
@@ -664,7 +694,7 @@ V.lists = () => {
       <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200">${micBtn('#list-add', true)}<button class="btn">${icon('plus')}Add</button></form>
         ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops</button>` : ''}
         ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
-        <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
+        <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
         <div class="foldbar">${done.length ? `<button class="fold ${showDone ? 'open' : ''}" data-act="fold" data-k="ldone:${l.id}" aria-expanded="${showDone}">${icon('right')}${showDone ? 'Hide' : 'Show'} ${done.length} done</button>` : ''}<button class="fold ${more ? 'open' : ''}" data-act="fold" data-k="ltools:${l.id}" aria-expanded="${more}">${icon('right')}More</button></div>
         ${showDone ? `<ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul><div class="row"><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div>` : ''}
         ${more ? `<div class="foldbody">${sug.length ? `<div class="lbl">Quick add</div><div class="quick">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : ''}
@@ -678,12 +708,12 @@ V.lists = () => {
       ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops <small>${open.length} item${open.length === 1 ? '' : 's'}, in aisle order</small></button>` : ''}
       ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
       ${l.kind === 'grocery' ? `<div class="row gtools"><button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${(b => b ? `<span class="lbl num">Total about <b>$${Math.round(listItems(l.id, false).reduce((a, it) => a + (priceOf(it) || 0), 0) || b.total)}</b> · prices per item below · ${esc(ago((Date.now() - b.at) / 60e3))}</span>` : '')(LS.get('gbudget:' + l.id, null))}</div>` : ''}
-      <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
+      <ul class="items">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}${l.kind === 'grocery' ? 'All stocked up.' : 'Nothing here yet.'}</li>`}</ul>
       ${done.length ? `<div class="row" style="margin-top:16px"><span class="lbl">Done · ${done.length}</span><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div><ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul>` : ''}
       ${l.kind === 'custom' ? `<div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button></div>` : ''}
     </div></div>`;
 };
 
 V.notes = () => `<div class="page" style="max-width:none"><h1>Notes<span class="sp"></span><button class="btn" data-act="add-note">${icon('plus')}New note</button></h1>
-  <div class="notes" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${S.notes.map(noteHTML).join('') || '<div class="empty"><b>No notes yet</b>Notes show on the family screen until someone clears them.</div>'}</div></div>`;
+  <div class="notes" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">${S.notes.map(noteHTML).join('') || `<div class="empty">${emptyArt('note')}<b>No notes yet</b>Notes show on the family screen until someone clears them.</div>`}</div></div>`;
 
