@@ -786,15 +786,16 @@ V.lists = () => {
   if (S.shop) return shopHTML();
   if (isCalm()) {
     const more = isOpen('ltools:' + l.id), showDone = isOpen('ldone:' + l.id), sug = suggestionsFor(l), b = l.kind === 'grocery' ? LS.get('gbudget:' + l.id, null) : null;
-    return `<div class="page calm"><h1>Lists</h1><div class="tabs">${tabs}</div>
+    return `<div class="page calm"><h1>Lists<span class="sp"></span><button class="btn soft" data-act="new-list">${icon('plus')}New list</button></h1><div class="tabs">${tabs}</div>
       <div class="panel"><form class="addbar" data-form="add-item" data-list="${l.id}"><input class="input" id="list-add" name="text" placeholder="Add to ${esc(l.name)}" autocomplete="off" maxlength="200">${micBtn('#list-add', true)}<button class="btn">${icon('plus')}Add</button></form>
+        ${sug.length ? `<div class="quick" aria-label="Quick add">${sug.slice(0, 8).map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : ''}
         ${l.kind === 'grocery' && open.length ? `<button class="btn shopgo" data-act="shop-mode" data-list="${l.id}">${icon('bag')}I'm at the shops</button>` : ''}
         ${l.kind === 'grocery' && done.length ? `<button class="btn soft clearticked" data-act="clear-done" data-id="${l.id}">${icon('check')}Clear ${done.length} ticked</button>` : ''}
         ${openGroupsHTML(l, open)}
         <div class="foldbar">${done.length ? `<button class="fold ${showDone ? 'open' : ''}" data-act="fold" data-k="ldone:${l.id}" aria-expanded="${showDone}">${icon('right')}${showDone ? 'Hide' : 'Show'} ${done.length} done</button>` : ''}<button class="fold ${more ? 'open' : ''}" data-act="fold" data-k="ltools:${l.id}" aria-expanded="${more}">${icon('right')}More</button></div>
         ${showDone ? `<ul class="items">${done.map(i => itemRow(i, true)).join('')}</ul><div class="row"><span class="grow"></span><button class="btn ghost" data-act="clear-done" data-id="${l.id}">Clear done</button></div>` : ''}
-        ${more ? `<div class="foldbody">${sug.length ? `<div class="lbl">Quick add</div><div class="quick">${sug.map(t => `<button class="qa" data-act="quick-add" data-list="${l.id}" data-text="${esc(t)}">${icon('plus')}<span>${esc(t)}</span></button>`).join('')}</div>` : ''}
-          <div class="row" style="flex-wrap:wrap">${l.kind === 'grocery' ? `<button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${b ? `<span class="lbl num">About <b>$${Math.round(listItems(l.id, false).reduce((a, i) => a + (+priceOf(i) || 0), 0))}</b></span>` : ''}` : ''}<button class="btn soft" data-act="new-list">${icon('plus')}New list</button>${l.kind === 'custom' ? `<button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button>` : ''}</div></div>` : ''}
+        ${more ? `<div class="foldbody">
+          <div class="row" style="flex-wrap:wrap">${l.kind === 'grocery' ? `<button class="btn soft" data-act="brain-dump" data-list="${l.id}">${icon('sparkle')}Add lots at once</button><button class="btn soft" data-act="grocery-budget" data-list="${l.id}">$ Estimate cost</button>${b ? `<span class="lbl num">About <b>$${Math.round(listItems(l.id, false).reduce((a, i) => a + (+priceOf(i) || 0), 0))}</b></span>` : ''}` : ''}${l.kind === 'custom' ? `<button class="btn ghost" data-act="del-list" data-id="${l.id}">Delete this list</button>` : ''}</div></div>` : ''}
       </div></div>`;
   }
   return `<div class="page"><h1>Lists<span class="sp"></span><button class="btn soft" data-act="new-list">${icon('plus')}New list</button></h1>
