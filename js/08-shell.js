@@ -1,6 +1,6 @@
 // Skylike: shell. Part 8 of 11; all parts share one global scope and load in order (index.html).
 /* ----- shell ----- */
-const NAV = [['family','Home','home'],['kids','Kids','star'],['calendar','Calendar','cal'],['meals','Meals','meal'],['lists','Lists','list'],['notes','Notes','note'],['sitter','Sitter','sitter'],['settings','Settings','gear']];
+const NAV = [['family','Home','home'],['kids','Kids','star'],['calendar','Calendar','cal'],['meals','Meals','meal'],['lists','Lists','list'],['house','House','family-home'],['notes','Notes','note'],['sitter','Sitter','sitter'],['settings','Settings','gear']];
 function railHTML() {
   const adults = S.members.filter(m => m.kind !== 'kid');
   const sync = DEMO ? ['warn', 'Sample'] : !S.online ? ['bad', 'Offline'] : S.realtime === 'live' ? ['', 'Live'] : ['warn', S.realtime === 'lost' ? 'Retrying' : 'Linking'];
@@ -13,7 +13,7 @@ function railHTML() {
 }
 function tabbarHTML() {
   const T = [['family','Today','home'],['calendar','Calendar','cal'],['lists','Lists','list'],['meals','Meals','meal'],['settings','More','gear']];
-  return T.map(([v, l, ic]) => `<button class="${S.view === v || (v === 'family' && ['focus','planner'].includes(S.view)) || (v === 'settings' && ['sitter', 'notes', 'kids'].includes(S.view)) || (v === 'meals' && S.view === 'spend') ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('');
+  return T.map(([v, l, ic]) => `<button class="${S.view === v || (v === 'family' && ['focus','planner'].includes(S.view)) || (v === 'settings' && ['sitter', 'notes', 'kids', 'house'].includes(S.view)) || (v === 'meals' && S.view === 'spend') ? 'on' : ''}" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('');
 }
 function renderRail() { const r = $('.rail'); if (!r) return; const h = railHTML(); if (r._h !== h) { r.innerHTML = h; r._h = h; } }
 // any touch or typing may change the page directly (drags, folds, toggles), so the next redraw always runs in full
