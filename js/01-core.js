@@ -612,9 +612,14 @@ function inWindow(startStr, endStr, h) {
   return s < e ? h >= s && h < e : h >= s || h < e;
 }
 function touch() {
+  const wasIdle = ['#saver', '#glance', '#night'].some(q => $(q).classList.contains('on'));
   S.lastTouch = Date.now();
   if ($('#saver').classList.contains('on')) stopSaver();
   $('#glance').classList.remove('on');
+  // routine time: waking the tablet goes straight to the kids' pictures, no hunting for faces
+  if (wasIdle && S.household && deviceKind() === 'tablet' && kids().length && liveRoutine() && !['kids', 'settings'].includes(S.view) && !document.querySelector('.sheet-bg')) {
+    $('#night').classList.remove('on'); S._woke = Date.now(); S.view = 'kids'; S.activeMember = null; render();
+  }
 }
 ['pointerdown','keydown','wheel'].forEach(ev => document.addEventListener(ev, touch, {passive: true}));
 // For little ones: just the two nearest countdowns, a big number, the event's emoji, and moons to count when it's close.
@@ -631,11 +636,13 @@ function glanceHTML(now) {
   const key = e ? `<div class="key" style="--c:${eventColour(e)}"><i></i><div style="text-align:left"><div class="lbl2">${new Date(e.starts_at) <= now ? 'Now' : 'Next'}</div><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span> ${esc(e.title || 'Busy')}</div></div>`
     : allDay.length ? `<div class="key" style="--c:${eventColour(allDay[0])}"><i></i><div style="text-align:left"><div class="lbl2">Today</div>${esc(allDay[0].title)}</div></div>`
     : `<div class="key" style="--c:rgba(255,255,255,.7)"><i></i><div style="text-align:left"><div class="lbl2">Today</div>Nothing else on</div></div>`;
+  const lr = kids().length ? liveRoutine(now) : null;
+  const prompt = lr ? `<div class="gprompt">${lr.emoji ? kart(lr.emoji, lr.name, 'gpe') : ''}<span><b>${esc(routineName(lr))}</b>Tap anywhere to start</span></div>` : '';
   const right = glanceCountdowns(k) + (kids().length && S.rewards.length ? `<div class="gstars">${kids().map(kd => `<div class="gsrow">${avatar(kd)}<b>${esc(kd.name)}</b>${starTrack(kd, 'xl')}</div>`).join('')}</div>` : '');
   return `<div class="gl-left"><div class="clock num">${clockHTML(now)}</div>
     <div class="date">${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}</div>
     ${wx ? `<div class="gwx">${Math.round(wx.current.temperature_2m)}° · ${esc(wxWords(wx.current.weather_code))}${(r => r ? ' · ' + esc(r) : '')(rainNote(wx))}</div>` : ''}
-    ${key}${(br => br.length ? `<div class="cds">${br.map(x => `<span class="cd">${icon(x.icon)} ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.icon === 'bag'))}${(bins => bins.length ? `<div class="cds">${bins.map(x => `<span class="cd"><span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span> ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.bins))}</div>${right ? `<div class="gl-right">${right}</div>` : ''}`;
+    ${key}${(br => br.length ? `<div class="cds">${br.map(x => `<span class="cd">${icon(x.icon)} ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.icon === 'bag'))}${(bins => bins.length ? `<div class="cds">${bins.map(x => `<span class="cd"><span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span> ${esc(x.text)} <b>${esc(x.sub)}</b></span>`).join('')}</div>` : '')(chipsFor(k, now).filter(x => x.bins))}${prompt}</div>${right ? `<div class="gl-right">${right}</div>` : ''}`;
 }
 function idleTick() {
   if (!S.household) return;
@@ -662,7 +669,7 @@ function idleTick() {
       const gh = glanceHTML(now); if (glanceEl._h !== gh) { glanceEl.innerHTML = gh; glanceEl._h = gh; } glanceEl.classList.add('on');
     }
   } else glanceEl.classList.remove('on');
-  if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= (S.view === 'kid' ? Math.max(10, st.idleReturn) : st.idleReturn) && !document.querySelector('.sheet-bg') && !['settings', 'kids'].includes(S.view)) {
+  if (S.view !== 'family' && deviceKind() === 'tablet' && idle >= (S.view === 'kid' ? Math.max(10, st.idleReturn) : st.idleReturn) && !document.querySelector('.sheet-bg') && S.view !== 'settings' && !(S.view === 'kids' && liveRoutine())) {
     S.view = 'family'; S.activeMember = null; render();
   }
 }

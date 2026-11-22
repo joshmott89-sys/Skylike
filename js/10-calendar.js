@@ -217,7 +217,7 @@ const F = {
     const steps = f.steps.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const m = l.match(/^(\S+)\s+(.+)$/); const emoji = m && /\p{Extended_Pictographic}/u.test(m[1]) ? m[1] : '⭐'; return {id: uid().slice(0, 8), emoji, label: (m && emoji !== '⭐' ? m[2] : l).slice(0, 24)}; });
     const old = S.routines.find(x => x.id === f.dataset.id);
     if (old) steps.forEach(st => { const same = (old.steps || []).find(o => o.label === st.label); if (same) st.id = same.id; }); // keep today's ticks
-    const row = {household_id: S.hid, name: f.name.value.trim(), emoji: f.emoji.value.trim() || null, member_id: f.who.value || null, starts: f.starts.value || '06:00', ends: f.ends.value || '09:00', days: [0,1,2,3,4,5,6].filter(i => f['d' + i].checked), steps};
+    const row = {household_id: S.hid, name: f.name.value.trim(), emoji: f.emoji.value.trim() || null, member_id: f.who.value || null, starts: f.starts.value || '06:00', ends: f.ends.value || '09:00', days: [0,1,2,3,4,5,6].filter(i => f['d' + i].checked), steps, step_stars: Math.max(0, Math.min(5, +f.each.value || 0)), bonus: Math.max(0, Math.min(10, f.bonus.value === '' ? 1 : +f.bonus.value || 0))};
     const q = old ? sb.from('routines').update(row).eq('id', old.id).select().single() : sb.from('routines').insert(Object.assign(row, {sort: S.routines.length})).select().single();
     const {data, error} = await q; if (error) return toast("Couldn't save that routine.");
     const i = S.routines.findIndex(x => x.id === data.id); if (i >= 0) S.routines[i] = data; else S.routines.push(data); closeSheet(); render();

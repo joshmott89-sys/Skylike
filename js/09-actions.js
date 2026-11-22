@@ -11,15 +11,17 @@ async function db(op, msg) { const {error} = await op; if (error) { console.erro
 const A = {
   async 'forget-device'(el) { S.devices = S.devices.filter(d => d.id !== el.dataset.id); render(); await db(sb.from('devices').delete().eq('id', el.dataset.id)); },
   async 'kid-step'(el) {
+    if (Date.now() - (S._woke || 0) < 700) return; // the wake-up tap shouldn't tick a picture
     const kid = memberById(el.dataset.kid), r = S.routines.find(x => x.id === el.dataset.r), k = dayKey(new Date()); if (!kid || !r) return;
     const ref = r.id + ':' + el.dataset.s, had = tickOf(kid, 'step', ref, k);
-    await toggleTick(kid, 'step', ref, k, 0, had);
+    await toggleTick(kid, 'step', ref, k, stepStars(r), had);
     const all = (r.steps || []).every(st => tickOf(kid, 'step', r.id + ':' + st.id, k)), bonus = tickOf(kid, 'step', 'done:' + r.id, k);
-    if (all && !bonus) { await toggleTick(kid, 'step', 'done:' + r.id, k, 1, null); cheer(el, true); }
-    else if (!all && bonus) await toggleTick(kid, 'step', 'done:' + r.id, k, 1, bonus);
-    else if (!had) cheer(el);
+    if (all && !bonus) { await toggleTick(kid, 'step', 'done:' + r.id, k, bonusOf(r), null); cheer(el, true); }
+    else if (!all && bonus) await toggleTick(kid, 'step', 'done:' + r.id, k, bonusOf(r), bonus);
+    else if (!had) cheer(el, stepStars(r) > 0);
   },
   async 'kid-chore'(el) {
+    if (Date.now() - (S._woke || 0) < 700) return;
     const kid = memberById(el.dataset.kid), c = S.chores.find(x => x.id === el.dataset.c), k = dayKey(new Date()); if (!kid || !c) return;
     const had = tickOf(kid, 'chore', c.id, k); await toggleTick(kid, 'chore', c.id, k, c.stars, had); if (!had) cheer(el, c.stars > 0);
   },
@@ -45,6 +47,8 @@ const A = {
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:6px">${D.map((d, i) => `<label class="daychk"><input type="checkbox" name="d${i}" ${(r.days || []).includes(i) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
       <div class="lbl" style="margin-top:12px">Steps (one per line: emoji, then a word or two)</div>
       <textarea class="input" name="steps" rows="7" placeholder="🪥 Teeth&#10;👕 Get dressed">${esc((r.steps || []).map(x => `${x.emoji} ${x.label}`).join('\n'))}</textarea>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap"><label class="lbl">Stars for each picture <input class="input" type="number" min="0" max="5" name="each" value="${+r.step_stars || 0}" style="width:80px"></label><label class="lbl">Bonus for finishing <input class="input" type="number" min="0" max="10" name="bonus" value="${r.bonus == null ? 1 : r.bonus}" style="width:80px"></label></div>
+      <p class="help">The kids see these on the pictures, so they know what each one is worth.</p>
       <button class="btn" style="margin-top:12px">Save routine</button></form>`);
   },
   async 'kids-starter'() {

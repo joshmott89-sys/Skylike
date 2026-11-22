@@ -952,3 +952,15 @@ body.night .hdi.on{background:#5A4520;color:#FFD48A}
   .hnow{grid-template-columns:1fr 1fr}
 }
 body.night .hdev.on circle{fill:#FFD48A;stroke:#E0A040}body.night .hdev.alert circle{fill:var(--bad)}
+/* kids board: one place for both kids, routine first, what each picture is worth */
+.faces .kidsbtn{position:relative}.kstack{display:flex;justify-content:center}.kstack .face{width:34px;height:34px;font-size:16px;border:2px solid var(--ocean,#0d4a66)}.kstack .face+.face{margin-left:-12px}
+.kdot{position:absolute;top:4px;right:12px;width:12px;height:12px;border-radius:50%;background:var(--apricot);box-shadow:0 0 0 3px rgba(247,188,42,.3)}
+.ktitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1.1}.ktitle .kti{font-size:1.1em}.ktitle small{flex-basis:100%;font-size:18px;font-weight:600;color:var(--ink-2);letter-spacing:0}
+.kworth{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:-4px 0 12px;font-size:17px;font-weight:650;color:var(--ink-2)}.kworth svg{width:20px;height:20px;fill:#F7BC2A;stroke:#C98F12;stroke-width:1.6;vertical-align:-4px;margin-right:3px}.kworth b{color:var(--ink);margin-right:3px}.kworth i{width:4px;height:4px;border-radius:50%;background:var(--ink-3)}
+.ktile .sv b{font-size:14px;font-weight:800;color:var(--ink);margin-left:2px}
+.kgoal{border-style:dashed;background:transparent;cursor:default}.kgoal .kgs{display:flex;align-items:center;gap:2px}.kgoal .kgs svg{width:50px;height:50px;fill:none;stroke:#C98F12;stroke-width:1.4;stroke-linejoin:round}.kgoal .kgs b{font-size:24px;font-weight:800;color:#9a6c0d}
+.kgoal.got{border-style:solid;border-color:#E0A21B;background:color-mix(in srgb,#F7BC2A 22%,var(--surface))}.kgoal.got .kgs svg{fill:#F7BC2A}
+.kid.live .kstars{margin-top:12px}
+.gprompt{display:flex;align-items:center;gap:14px;margin-top:22px;padding:14px 26px 14px 18px;border-radius:24px;background:rgba(255,255,255,.92);color:#16324a;text-align:left;box-shadow:0 6px 24px rgba(6,30,48,.25)}.gprompt .gpe{font-size:46px}.gprompt span{display:flex;flex-direction:column;font-size:18px;font-weight:600;color:#3d5a70}.gprompt b{font-size:26px;font-weight:800;color:#16324a}
+body.night .kgoal .kgs b{color:#f2c45a}
+.kworth>span{white-space:nowrap}

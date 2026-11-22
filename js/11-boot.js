@@ -46,7 +46,7 @@ function startDemo() {
   S.calStatus = {connected: true, last_sync_at: now.toISOString()}; S.realtime = 'live'; S.lastData = Date.now();
   S.devices = [{id: S.deviceId, name: 'Family screen', kind: 'tablet', app_version: APP_VERSION, last_seen: now.toISOString()}];
   const st2 = (e, l, id) => ({id, emoji: e, label: l});
-  S.routines = [{id: 'r1', name: 'Morning', emoji: '🌅', starts: '06:00', ends: '09:30', days: [0,1,2,3,4,5,6], member_id: null, steps: [st2('🚽','Toilet','a'), st2('🪥','Teeth','b'), st2('👕','Get dressed','c'), st2('🥣','Breakfast','d'), st2('👟','Shoes on','e'), st2('🎒','Bag','f')]},
+  S.routines = [{id: 'r1', name: 'Morning', emoji: '🌅', step_stars: 1, bonus: 2, starts: '06:00', ends: '09:30', days: [0,1,2,3,4,5,6], member_id: null, steps: [st2('🚽','Toilet','a'), st2('🪥','Teeth','b'), st2('👕','Get dressed','c'), st2('🥣','Breakfast','d'), st2('👟','Shoes on','e'), st2('🎒','Bag','f')]},
     {id: 'r2', name: 'Bedtime', emoji: '🌙', starts: '17:30', ends: '20:30', days: [0,1,2,3,4,5,6], member_id: null, steps: [st2('🛁','Bath','g'), st2('🩲','PJs on','h'), st2('🪥','Teeth','i'), st2('📖','Story','j'), st2('💡','Lights out','k')]}];
   S.chores = [{id: 'c1', title: 'Pack away toys', emoji: '🧸', stars: 1, days: [0,1,2,3,4,5,6], member_id: null}, {id: 'c2', title: 'Plate to the sink', emoji: '🍽️', stars: 1, days: [0,1,2,3,4,5,6], member_id: null}, {id: 'c3', title: 'Feed the fish', emoji: '🐟', stars: 2, days: [0,1,2,3,4,5,6], member_id: 'm3'}];
   S.rewards = [{id: 'w1', title: 'Ice cream treat', emoji: '🍦', cost: 10}, {id: 'w2', title: 'Trip to the park', emoji: '🛝', cost: 15}, {id: 'w3', title: 'Movie night pick', emoji: '🎬', cost: 25}];
