@@ -533,7 +533,7 @@ function speak(text, tone, onEnd, g = '', uk = false) {
   ss.speak(u); return true;
 }
 try { window.speechSynthesis && speechSynthesis.getVoices(); if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch {}
-V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
@@ -626,7 +626,8 @@ V.calendar = () => {
     <button class="btn cal-add" data-act="ev-add" data-k="${mode === 'day' || mode === 'people' ? S.dayKey : ''}" aria-label="Add an event">${icon('plus')}<span>Add</span></button>
     <button class="icon-btn cref" data-act="cal-refresh" aria-label="Refresh calendar" title="Refresh calendar">${icon('refresh')}</button></h1>`;
   const noCal = S.calStatus && S.calStatus.connected ? '' : `<p class="help" style="color:var(--ink-2)">Add a calendar in Settings to fill this in.</p>`;
-  if (mode === 'people') return `<div class="page wide">${head}${noCal}${peopleHTML(S.dayKey)}</div>`;
+  const mailN = mailNoteHTML();
+  if (mode === 'people') return `<div class="page wide">${head}${mailN}${noCal}${peopleHTML(S.dayKey)}</div>`;
   if (mode === 'day') {
     const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const nowH = hoursFloat(new Date());
@@ -636,7 +637,7 @@ V.calendar = () => {
       return `<section class="band ${live ? 'live' : ''}"><div class="band-sky" style="background:linear-gradient(180deg,${t},${bt})">${icon(ic)}<b>${label}</b></div>
         <div class="band-evs">${list.map(e => evRow(e, true)).join('') || '<div class="free">Free</div>'}</div></section>`;
     }).join('');
-    return `<div class="page">${head}${noCal}
+    return `<div class="page">${head}${mailN}${noCal}
       ${notes.length || allDay.length ? `<div class="row" style="margin-bottom:14px">${notes.map(n => `<span class="hol">${esc(n)}</span>`).join('')}${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)};border:0;color:#fff" data-act="open-event" data-id="${e.id}">${esc(e.title)}</button>`).join('')}</div>` : ''}
       ${bands}</div>`;
   }
@@ -652,7 +653,7 @@ V.calendar = () => {
         ${(w => w ? `<div class="dwx" title="${esc(wxWords(w.code))}">${icon(wxIcon(w.code, 1))}<span class="num"><b>${w.hi}°</b> ${w.lo}°</span>${w.mm >= 1 ? `<span class="mm num">${Math.round(w.mm)}mm</span>` : ''}</div>` : '')(k >= today ? dayWx(k) : null)}
         ${WA_HOLIDAYS[k] && settings().holidays ? `<div class="hol">${esc(WA_HOLIDAYS[k])}</div>` : term ? '<div class="hol" style="background:color-mix(in srgb,#3A9AA0 18%,transparent);color:#246B70">School holidays</div>' : ''}
         ${allDay.map(e => `<button class="wev ad" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}" ${canEdit(e) ? `data-ev="${e.id}"` : ''}>${esc(e.title)}</button>`).join('')}${timedHTML}</div>`; }).join('');
-    return `<div class="page" style="max-width:none">${head}${noCal}<div class="week">${cols}</div></div>`;
+    return `<div class="page" style="max-width:none">${head}${mailN}${noCal}<div class="week">${cols}</div></div>`;
   }
   const p = tzParts(new Date()); let y = p.y, m = p.m - 1 + S.calOffset; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
   const first = `${y}-${String(m + 1).padStart(2, '0')}-01`, start = addDaysKey(first, -((weekdayOfKey(first) + 6) % 7));
@@ -660,7 +661,7 @@ V.calendar = () => {
     return `<button class="mc ${k.slice(5, 7) !== first.slice(5, 7) ? 'out' : ''} ${k === today ? 'today' : ''}" data-act="open-day" data-k="${k}" aria-label="Open ${esc(fmtDay(k, {weekday: 'long', day: 'numeric', month: 'long'}))}"><span class="n num">${keyToDate(k).getUTCDate()}</span>
       ${WA_HOLIDAYS[k] && settings().holidays ? `<span class="e" style="--c:#D9773B"><i></i><span>${esc(WA_HOLIDAYS[k])}</span></span>` : ''}
       ${evs.slice(0, 3).map(e => `<span class="e" style="--c:${eventColour(e)}"><i></i><span>${esc(e.title)}</span></span>`).join('')}${evs.length > 3 ? `<span class="e" style="color:var(--ink-3)">+${evs.length - 3}</span>` : ''}</button>`; }).join('');
-  return `<div class="page" style="max-width:none">${head.replace('<h1>Month<', '<h1>' + esc(fmtDay(first, {month: 'long', year: 'numeric'})) + '<')}${noCal}
+  return `<div class="page" style="max-width:none">${head.replace('<h1>Month<', '<h1>' + esc(fmtDay(first, {month: 'long', year: 'numeric'})) + '<')}${mailN}${noCal}
     <div class="month">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="mh">${d}</div>`).join('')}${cells}</div></div>`;
 };
 

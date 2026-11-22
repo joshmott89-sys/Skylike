@@ -153,7 +153,7 @@ let BRIDGE_SRC = null;
 function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
 function calendarSettingsHTML() {
   if (!BRIDGE_SRC) prefetchBridge();
-  return calendarSettingsInner();
+  return calendarSettingsInner() + mailSettingsHTML();
 }
 function calendarSettingsInner() {
   const cs = S.calStatus || {};

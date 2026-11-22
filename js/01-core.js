@@ -221,8 +221,8 @@ setInterval(() => { // quiet nightly refresh on the family screen
 }, 60e3);
 
 /* ============ data ============ */
-const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules','meals','pantry','local_events','recipes'];
-const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules', meals:'meals', pantry:'pantry', recipes:'recipes', local_events:'localEvents'};
+const TABLES = ['members','lists','list_items','notes','events_cache','calendars','countdowns','reminders','photos','devices','routines','chores','ticks','star_ledger','rewards','bring_rules','meals','pantry','local_events','recipes','email_suggestions'];
+const KEY_OF = {members:'members', lists:'lists', list_items:'items', notes:'notes', events_cache:'events', calendars:'calendars', countdowns:'countdowns', reminders:'reminders', photos:'photos', devices:'devices', routines:'routines', chores:'chores', ticks:'ticks', star_ledger:'ledger', rewards:'rewards', bring_rules:'bringRules', meals:'meals', pantry:'pantry', recipes:'recipes', email_suggestions:'mail', local_events:'localEvents'};
 
 async function loadAll() {
   const hid = S.hid;
@@ -233,7 +233,7 @@ async function loadAll() {
     q('members').order('sort'), q('lists').order('sort'), q('list_items').order('sort'), q('notes').order('created_at', {ascending: false}).limit(200),
     q('events_cache').gte('ends_at', since).order('starts_at'), q('calendars'), q('countdowns').order('date'), q('reminders'), q('photos').order('created_at', {ascending: false}).limit(300), q('devices'),
     q('routines').order('sort'), q('chores').order('sort'), q('ticks').gte('day', addDaysKey(dayKey(new Date()), -1)), q('star_ledger').order('created_at', {ascending: false}).limit(200), q('rewards').order('cost'), q('bring_rules'),
-    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').or(`starts_at.gte.${since},repeat.not.is.null`).order('starts_at'), q('recipes').order('title')
+    q('meals').gte('day', addDaysKey(dayKey(new Date()), -14)).order('day'), q('pantry').order('name'), q('local_events').or(`starts_at.gte.${since},repeat.not.is.null`).order('starts_at'), q('recipes').order('title'), q('email_suggestions').eq('status', 'new').order('received_at', {ascending: false}).limit(30)
   ]);
   if (hh.error) throw hh.error;
   if (!hh.data) { S.hid = null; LS.set('hid', null); return false; }

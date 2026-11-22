@@ -11,6 +11,13 @@
  * 3. Approve access (click "Advanced" > "Go to project" on the unverified warning - it's your own script).
  * 4. Copy the Web app URL and paste it into Skylike > Settings > Calendar.
  *
+ * Email to calendar (optional): in Gmail, put the label "Skylike" on emails with dates in them
+ * (school newsletters, party invites, appointment letters). A Gmail filter can do it automatically.
+ * Skylike reads only emails with that label, suggests the events, and adds the label "Skylike/done".
+ *
+ * Already set up an older copy? Paste this version over it, then Deploy > Manage deployments >
+ * edit (pencil) > Version: New version > Deploy. The web app address stays the same.
+ *
  * Only requests carrying the secret key below are answered. Don't share this file.
  */
 const KEY = '__SKYLIKE_KEY__';
@@ -95,8 +102,25 @@ function handle_(p) {
         ev.deleteEvent();
         return out_({ ok: true });
       }
+      case 'mail': { // emails labelled "Skylike" that haven't been read by Skylike yet
+        const label = GmailApp.getUserLabelByName('Skylike');
+        if (!label) return out_({ ok: true, mail: [] });
+        const threads = GmailApp.search('label:Skylike -label:Skylike-done newer_than:45d', 0, 8);
+        return out_({ ok: true, mail: threads.map(function (t) {
+          const m = t.getMessages()[t.getMessageCount() - 1];
+          const ics = [];
+          m.getAttachments().forEach(function (a) { if (/\.ics$/i.test(a.getName()) || /calendar/i.test(a.getContentType())) ics.push(a.getDataAsString().slice(0, 20000)); });
+          return { id: t.getId(), subject: t.getFirstMessageSubject(), from: m.getFrom(), date: m.getDate().toISOString(),
+            body: m.getPlainBody().replace(/\n{3,}/g, '\n\n').slice(0, 8000), ics: ics };
+        }) });
+      }
+      case 'mail-done': {
+        const done = GmailApp.getUserLabelByName('Skylike/done') || GmailApp.createLabel('Skylike/done');
+        String(p.ids || '').split(',').filter(String).forEach(function (id) { const t = GmailApp.getThreadById(id); if (t) t.addLabel(done); });
+        return out_({ ok: true });
+      }
       default:
-        return out_({ ok: true, pong: true, tz: Session.getScriptTimeZone() });
+        return out_({ ok: true, pong: true, v: 2, tz: Session.getScriptTimeZone() });
     }
   } catch (err) {
     return out_({ ok: false, error: String(err) });

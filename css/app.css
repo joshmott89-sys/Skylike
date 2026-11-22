@@ -727,3 +727,15 @@ body.night .hero .leave{color:var(--apricot)}
 .rsteps{padding-left:22px;display:grid;gap:8px;font-size:16.5px;line-height:1.45}.rdays .ptag.busy{opacity:.7}
 
 .ing .inote{color:var(--ink-3);font-weight:400}
+/* email to calendar */
+.mailnote{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 14px;padding:14px 18px;border:0;border-radius:var(--radius-s);background:var(--raise);box-shadow:var(--shadow);color:var(--ink);font:inherit;text-align:left;cursor:pointer;border-left:5px solid var(--apricot)}
+.mailnote>.ico,.mailnote>svg{width:26px;height:26px;flex:none;color:var(--apricot-ink)}
+.mailnote>span:not(.n){display:flex;flex-direction:column;min-width:0;flex:1}
+.mailnote b{font-size:18px}
+.mailnote small{color:var(--ink-2);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mailnote .n{flex:none;min-width:34px;height:34px;border-radius:17px;display:grid;place-items:center;background:var(--apricot);color:#3b1f05;font-weight:800}
+.mlist{list-style:none;margin:0;padding:0}
+.mlist li{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.mlist li span{display:flex;flex-direction:column;min-width:0}
+.mlist small{color:var(--ink-2)}
+.mfrom{display:flex;align-items:center;gap:6px;margin:-4px 0 10px;color:var(--ink-2);font-size:15px}
