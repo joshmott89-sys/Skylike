@@ -9,11 +9,17 @@ A calm family screen for a wall tablet, with a phone companion. Today drawn as a
 
 | Part | What it does |
 | --- | --- |
-| `index.html` | The whole app: tablet family screen, Focus and Planner views, phone layout |
+| `index.html` | The page: icons, the app version (`APP_VERSION`), and the list of parts to load |
+| `css/app.css` | All styles |
+| `js/01-core.js` … `js/11-boot.js` | The app, split by feature (core, render, views, setup, kids, kitchen, settings, shell, actions, calendar, boot). They share one global scope and load in order. |
+| `vendor/` | The Supabase library, kept in the repo rather than loaded from a CDN |
+| `tests/smoke.mjs` | Smoke test: every view on tablet and phone, the smart Add, and a clean boot. Runs on every push. |
 | Supabase (Sydney) | Sign-in, database with row level security, live sync, photo storage |
 | `supabase/functions/calendar` | Syncs calendar links (iCal) and the optional two-way bridge every 5 minutes |
 | `apps-script/bridge.gs` | Runs in a parent's Google account; reads and writes their calendars |
-| `.github/workflows` | Daily keep-alive ping; optional weekly encrypted backup |
+| `.github/workflows` | Tests on every push; daily keep-alive ping; optional weekly encrypted backup |
+
+**Releasing a change:** bump `APP_VERSION` in `index.html`. Tablets pick it up within 10 minutes, and every part is loaded with that version, so a phone never mixes new and old files.
 
 ## One-time setup (Josh)
 

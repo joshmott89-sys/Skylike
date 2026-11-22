@@ -1,0 +1,63 @@
+// Skylike: kitchen. Part 6 of 11; all parts share one global scope and load in order (index.html).
+/* ----- kitchen: meals, pantry, groceries ----- */
+const STAPLES = /^(salt|pepper|black pepper|water|oil|olive oil|vegetable oil|cooking oil|sugar|flour|plain flour)$/i;
+const normFood = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z ]/g, ' ').replace(/\b(fresh|large|small|medium|chopped|diced|sliced|minced|finely|to serve|optional|of|a|tin|can|cans|tins)\b/g, ' ').replace(/\s+/g, ' ').trim();
+function haveIt(name) {
+  const n = normFood(name); if (!n || STAPLES.test(n)) return true;
+  return S.pantry.some(p => { const q = normFood(p.name); return q && (q === n || n.includes(q) || q.includes(n) || q.split(' ').pop() === n.split(' ').pop()); });
+}
+const placeGuess = n => /frozen|ice cream|ice block|peas|chips|nuggets/i.test(n) ? 'freezer' : /milk|cheese|yog|butter|cream|egg|chicken|mince|beef|pork|lamb|fish|salmon|ham|bacon|sausage|tofu|lettuce|spinach|berries|juice|dip/i.test(n) ? 'fridge' : 'pantry';
+const recipeLink = t => 'https://www.recipetineats.com/?s=' + encodeURIComponent(t);
+const lbox = () => Object.assign({staples: '', kids: {}}, kset().lunchbox || {});
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const kidDays = id => { const d = (lbox().kids[id] || {}).days; return Array.isArray(d) ? d : [1, 2, 3, 4, 5]; };
+const kidsAtSchool = k => kids().filter(c => kidDays(c.id).includes(weekdayOfKey(k)));
+const lunchKids = () => (kids().length ? kids() : [{id: 'k', name: 'Kids'}]).map(k => ({name: k.name, school_days: kidDays(k.id).map(d => WD[d]), likes: (lbox().kids[k.id] || {}).likes || '', wont_eat: (lbox().kids[k.id] || {}).nope || ''}));
+const kset = () => Object.assign({prefs: '', servings: 4, budget: 0}, settings().kitchen || {});
+function weekStart(off = 0) { const t = dayKey(new Date()); return addDaysKey(t, -((weekdayOfKey(t) + 6) % 7) + off * 7); }
+const mealOn = (k, slot = 'dinner') => S.meals.find(m => m.day === k && (m.slot || 'dinner') === slot);
+const schoolDay = k => weekdayOfKey(k) % 6 !== 0 && !WA_HOLIDAYS[k] && (!settings().school || WA_TERMS.some(([a, b]) => a <= k && k <= b));
+V.meals = () => {
+  const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date());
+  const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));
+  const total = days.reduce((a, k) => a + (+(mealOn(k) || {}).est_cost || 0) + (+(mealOn(k, 'lunch') || {}).est_cost || 0), 0), budget = +kset().budget || 0;
+  const cards = days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const m = mealOn(k), need = m ? (m.ingredients || []).filter(x => !haveIt(x.name)).length : 0;
+    return `<button class="mday ${k === today ? 'today' : ''} ${k < today ? 'past' : ''} ${m && m.cooked ? 'cooked' : ''}" data-act="meal-open" data-k="${k}" data-slot="dinner"><span class="dn">${esc(fmtDay(k, {weekday: 'short'}))} <b class="num">${keyToDate(k).getUTCDate()}</b></span>
+      ${m ? `<span class="me">${esc(m.emoji || '🍽️')}</span><span class="mt">${esc(m.leftovers_of ? 'Leftovers night' : m.title)}</span><span class="mm">${m.cooked ? 'Cooked' : m.leftovers_of ? 'Nothing to buy' : need ? `${need} to buy` : 'All in'}${m.double_batch ? ' · ×2' : ''}${m.est_cost ? ` · <span class="num">$${Math.round(m.est_cost)}</span>` : ''}</span>` : `<span class="me add">${icon('plus')}</span><span class="mt muted">Add dinner</span>`}</button>`; }).join('');
+  const places = [['fridge', 'Fridge', 'fridge'], ['freezer', 'Freezer', 'snow'], ['pantry', 'Pantry', 'jar']];
+  const low = S.pantry.filter(p => p.low), calm = isCalm();
+  return `<div class="page ${calm ? 'calm' : ''}" style="max-width:none"><h1>Meals<span class="sp"></span>
+      <button class="icon-btn" data-act="meal-week" data-n="-1" aria-label="Previous week">${icon('left')}</button><button class="btn soft" data-act="meal-week" data-n="0">This week</button><button class="icon-btn" data-act="meal-week" data-n="1" aria-label="Next week">${icon('right')}</button>
+      ${S.planning ? `<span class="btn planning" aria-live="polite"><span class="spin"></span><span id="plan-stage">${planStage()}</span></span>` : `<button class="btn" data-act="meal-plan">${icon('sparkle')}Plan this week</button>`}</h1>
+    ${!S.aiOn && !DEMO ? `<p class="help" style="color:var(--ink-2)">Planning, pantry photos and the grocery brain-dump need a free Gemini key. <button class="linkbtn" data-act="go" data-view="settings" data-tab="kitchen">Set it up</button></p>` : ''}
+    <div class="mweek">${cards}</div>${!calm && S.meals.some(m => days.includes(m.day)) ? `<p class="help dnd-hint">${isPhone() || matchMedia('(pointer:coarse)').matches ? 'Press and hold a meal, then drag it to another day.' : 'Drag a meal to another day to move or swap it.'}</p>` : ''}
+    ${(lun => lun ? `<div class="kt row" style="margin:16px 0 8px;justify-content:space-between">Lunches <button class="linkbtn" data-act="lunch-faves">⭐ Favourites</button></div><div class="mweek lunchrow">${days.filter(k => !isPhone() || off !== 0 || k >= today).map(k => { const l = mealOn(k, 'lunch'); return l ? `<button class="mday lunch ${k < today ? 'past' : ''}" data-act="lunch-open" data-k="${k}" data-slot="lunch"><span class="dn">${esc(fmtDay(k, {weekday: 'short'}))}</span>${lunchGlance(l) || `<span class="mt">${esc(l.title)}</span>`}</button>` : `<span class="mday lunch empty" data-k="${k}" data-slot="lunch"></span>`; }).join('')}</div>` : '')(days.some(k => mealOn(k, 'lunch')))}
+    <div class="row mtotal"><span>Food this week: <b class="num">$${Math.round(total)}</b>${budget ? ` of <span class="num">$${budget}</span> budget` : ''} (estimate)</span><span class="grow"></span><button class="btn soft" data-act="meal-shop">${icon('list')}Add to groceries</button></div>
+    <div class="panel pantry-p"><h2>What's in<span class="sp"></span>${S.scanning ? `<span class="scanning">${icon('camera')}${esc(S.scanning)}</span>` : ''}</h2>
+      ${calm ? '' : '<p class="help">Tap <b>Scan</b> on the fridge, freezer or pantry to read it from a photo (you can pick several). It also updates when groceries are ticked off and when you cook. Tap an item to mark it running low.</p>'}
+      <div class="leftz"><div class="kt">🍱 Leftovers<span class="num">${S.pantry.filter(p => p.leftover).reduce((a, p) => a + (p.portions || 1), 0)} portions</span><button class="scanbtn" data-act="left-new">${icon('plus')}Add</button></div>
+        <div class="pchips">${S.pantry.filter(p => p.leftover).map(p => `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Eat one portion of ${esc(p.name)}">${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">None right now. Add them after dinner, or answer "Any leftovers?" when you tick a meal as cooked.</span>'}</div>
+        ${!calm && S.pantry.some(p => p.leftover) ? '<p class="help" style="margin:8px 0 0">Tap one when it gets eaten. Planning uses them first.</p>' : ''}</div>
+      <div class="pgrid">${places.map(([pl, name, e]) => { const items = S.pantry.filter(p => p.place === pl && !p.leftover);
+        if (calm) { const op = isOpen('pl:' + pl), lowN = items.filter(p => p.low).length;
+          return `<div class="pcol calmcol ${op ? 'open' : ''}"><div class="kt"><button class="fold ${op ? 'open' : ''}" data-act="fold" data-k="pl:${pl}" aria-expanded="${op}">${icon('right')}<span class="fname">${icon(e, 'xs')}&nbsp;${name}</span><span class="fsub">${items.length ? `${items.length} item${items.length === 1 ? '' : 's'}${lowN ? ` · ${lowN} low` : ''}` : 'empty'}</span></button><button class="scanbtn ${S.scanning ? 'off' : ''}" data-act="scan-pick" data-place="${pl}" ${S.scanning ? 'disabled' : ''} aria-label="Scan the ${name.toLowerCase()}">${icon('camera')}Scan</button></div>
+            ${op ? `<div class="pchips">${items.map(p => `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}" aria-label="${esc(p.name)}${p.low ? ', running low' : ''}">${esc(p.name)}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing listed. Tap Scan.</span>'}</div>${items.length ? `<div class="row"><span class="grow"></span><button class="clearbtn" data-act="pantry-clear" data-place="${pl}">Clear ${name.toLowerCase()}</button></div>` : ''}` : ''}</div>`; }
+        return `<div class="pcol"><div class="kt">${icon(e, 'xs')} ${name}<span class="num">${items.length}</span><button class="scanbtn ${S.scanning ? 'off' : ''}" data-act="scan-pick" data-place="${pl}" ${S.scanning ? 'disabled' : ''} aria-label="Scan the ${name.toLowerCase()}">${icon('camera')}Scan</button>${items.length ? `<button class="clearbtn" data-act="pantry-clear" data-place="${pl}">Clear</button>` : ''}</div><div class="pchips">${items.map(p => p.leftover ? `<span class="pchip left"><button data-act="left-use" data-id="${p.id}" aria-label="Use one portion of ${esc(p.name)}">🍱 ${esc(p.name.replace(/^leftovers?\s*/i, ''))} <small class="num">×${p.portions || 1}</small></button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>` : `<span class="pchip ${p.low ? 'low' : ''}"><button data-act="pantry-low" data-id="${p.id}">${esc(p.name)}${p.qty ? ` <small>${esc(p.qty)}</small>` : ''}</button><button class="x" data-act="del-row" data-table="pantry" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">${icon('x')}</button></span>`).join('') || '<span class="help">Nothing yet</span>'}</div></div>`; }).join('')}</div>
+      ${calm && !isOpen('padd') ? `<div class="foldbar"><button class="fold" data-act="fold" data-k="padd" aria-expanded="false">${icon('plus')}Add an item by hand</button></div>` : `<form data-form="pantry-add" class="row" style="margin-top:10px">`}${calm && !isOpen('padd') ? '<!--' : ''}<input class="input grow" name="name" placeholder="Add what's in, e.g. eggs, rice, frozen peas" maxlength="200"><select class="input" name="place" style="width:auto"><option value="">Auto</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option><option value="pantry">Pantry</option></select><button class="btn">Add</button></form>${calm && !isOpen('padd') ? '-->' : ''}
+      ${low.length ? `<div class="row" style="margin-top:12px"><span class="lbl">Running low: ${low.map(p => esc(p.name)).join(', ')}</span><span class="grow"></span><button class="btn soft" data-act="pantry-shop">Add to groceries</button></div>` : ''}</div></div>`;
+};
+
+V.sitter = () => {
+  const s = settings().sitter || {};
+  const contacts = (s.contacts || []).map(c => `<div class="contact ${c.emergency ? 'emerg' : ''}"><span class="nm">${esc(c.name)}</span>${c.role ? `<span class="rl">${esc(c.role)}</span>` : ''}<a href="tel:${esc(String(c.phone).replace(/\s/g, ''))}" class="num">${esc(c.phone)}</a></div>`).join('');
+  const bed = (s.bedtimes || []).map(b => `<div class="item" style="font-size:22px">${icon('bed')}<span class="txt">${esc(b.name)}</span><b class="num">${esc(b.time)}</b></div>`).join('');
+  return `<div class="page"><h1>For the babysitter</h1>
+    <div class="contacts" style="margin-bottom:18px"><div class="contact emerg"><span class="nm">Emergency</span><span class="rl">Police, fire, ambulance</span><a href="tel:000">000</a></div>${contacts}</div>
+    <div class="split">
+      <div class="panel"><h2 class="row">${icon('bed')} Bedtimes</h2>${bed || '<p class="help">Add bedtimes in Settings.</p>'}</div>
+      <div class="panel"><h2 class="row">${icon('wifi')} Wifi</h2>${s.wifi && s.wifi.name ? `<div class="lbl">Network</div><div style="font-size:24px;font-weight:750;margin-bottom:10px">${esc(s.wifi.name)}</div><div class="lbl">Password</div><div class="code" style="display:inline-block;font-size:22px;letter-spacing:.06em">${esc(s.wifi.password)}</div>` : '<p class="help">Add the wifi in Settings.</p>'}</div>
+    </div>
+    ${s.notes ? `<div class="panel"><h2>House notes</h2><p style="white-space:pre-wrap;font-size:19px;margin:0">${esc(s.notes)}</p></div>` : ''}
+    ${!contacts && !bed ? '<p class="help" style="color:var(--ink-2)">Parents: fill this in under Settings → Babysitter.</p>' : ''}</div>`;
+};
+
