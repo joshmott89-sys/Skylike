@@ -100,12 +100,7 @@ function upNextHTML(limit = 4) {
   let list = eventsOnKey(k).filter(e => !e.all_day && new Date(e.ends_at) > now);
   let label = 'Up next';
   if (!list.length) { list = eventsOnKey(addDaysKey(k, 1)).filter(e => !e.all_day); label = 'Tomorrow'; }
-  const rows = list.slice(0, limit).map((e, i) => {
-    const m = eventMember(e), st = new Date(e.starts_at), live = st <= now;
-    return `<div class="ev ${i === 0 && label === 'Up next' ? 'next' : ''}" style="--c:${eventColour(e)}">
-      <div class="when num">${live ? 'Now' : esc(fmtTime(st))}${untilHTML(e)}</div>
-      <div><div class="what">${esc(e.title || 'Busy')}</div><div class="who">${whoMeta(e, (S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div></div></div>`;
-  }).join('');
+  const rows = list.slice(0, limit).map((e, i) => agendaRow(e, {first: i === 0 && label === 'Up next', until: true, meta: true})).join('');
   const body = rows || (S.calStatus && S.calStatus.connected
     ? `<div class="empty"><b>Nothing else today</b>${label === 'Tomorrow' ? 'Tomorrow is clear too.' : ''}</div>`
     : `<div class="empty"><b>No calendar yet</b>Connect Google Calendar in Settings to see your day here.</div>`);

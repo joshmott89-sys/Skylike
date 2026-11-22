@@ -15,6 +15,8 @@ jobs:
           node-version: 20
       - name: Check every script parses
         run: for f in js/*.js; do node --check "$f"; done
+      - name: Check for style-name clashes
+        run: node tests/css-guard.mjs
       - name: Install a browser
         run: |
           npm init -y >/dev/null

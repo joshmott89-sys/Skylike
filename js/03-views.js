@@ -540,7 +540,7 @@ V.focus = () => {
   } else hero = `<div class="fnow calmnow"><div class="fk">Right now</div><div class="ft">Nothing urgent.</div><div class="fs">${hr >= 20 ? 'Rest up.' : 'Breathe. The rest can wait.'}</div></div>`;
   // the rest of today, five lines at most
   const lines = [];
-  N.rest.forEach(e => lines.push(`<li><span class="fw num">${esc(fmtTime(new Date(e.starts_at)))}</span><span>${esc(e.title)}</span></li>`));
+  N.rest.forEach(e => lines.push(`<li class="flev">${agendaRow(e, {size: 'md'})}</li>`));
   const din = mealOn(k); if (din && hr < 21) lines.push(`<li><span class="fw">${esc(din.emoji || '🍽️')}</span><span>Dinner: ${esc(din.leftovers_of ? 'leftovers' : din.title)}</span></li>`);
   N.chips.forEach(c => lines.push(`<li><span class="fw">${icon(c.bins ? 'bin' : c.icon === 'list' ? 'cart' : c.icon || 'check', 'xs')}</span><span>${esc(c.text)}${c.sub ? ` <small>${esc(c.sub)}</small>` : ''}</span></li>`));
   const showAll = isOpen('ftoday'), shown = showAll ? lines : lines.slice(0, 5);
@@ -564,7 +564,7 @@ V.planner = () => {
   const days = [...Array(7)].map((_, i) => addDaysKey(k, i)).map(dk => {
     const evs = eventsOnKey(dk);
     return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="lbl">${i18nDay(dk, k)}${WA_HOLIDAYS[dk] && settings().holidays ? ` · <span class="hol">${esc(WA_HOLIDAYS[dk])}</span>` : ''}</div>
-      ${evs.length ? evs.map(e => `<div class="ev" style="--c:${eventColour(e)};padding:6px 0;border:0"><div class="when num" style="font-size:15px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at)))}</div><div class="who" style="font-size:17px;color:var(--ink);margin:0"><i></i>${esc(e.title)}</div></div>`).join('') : '<div class="empty" style="padding:4px 0;font-size:16px">Free</div>'}</div>`;
+      ${evs.length ? evs.map(e => agendaRow(e, {size: 'sm'})).join('') : '<div class="empty" style="padding:4px 0;font-size:16px">Free</div>'}</div>`;
   }).join('');
   const g = listByKind('grocery'), gc = g ? listItems(g.id, false).length : 0;
   return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">

@@ -110,6 +110,14 @@ const addDaysKey = (k, n) => { const d = keyToDate(k); d.setUTCDate(d.getUTCDate
 const weekdayOfKey = k => keyToDate(k).getUTCDay();
 const daysBetween = (a, b) => Math.round((keyToDate(b) - keyToDate(a)) / 864e5);
 const untilHTML = e => `<span class="til">to ${esc(fmtTime(new Date(e.ends_at)))}</span>`;
+// One event row for every "what's on" list (family screen, Focus, Planner). size: '' = roomy (wall), 'md' (Focus), 'sm' (Planner week).
+// Always a button: tapping any row opens that event.
+function agendaRow(e, opt = {}) {
+  const st = new Date(e.starts_at), now = new Date(), live = !e.all_day && st <= now && new Date(e.ends_at) > now;
+  const when = e.all_day ? 'All day' : live ? 'Now' : esc(fmtTime(st));
+  const meta = opt.meta ? `<div class="who">${whoMeta(e, (S.calendars.find(c => c.google_id === e.calendar_id) || {}).name || 'Family')}${e.location ? ' · ' + esc(e.location) : ''}</div>` : '';
+  return `<button class="ev evbtn ${opt.size ? 'ev-' + opt.size : ''} ${opt.first ? 'next' : ''}" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}"><div class="when num">${when}${opt.until && !e.all_day ? untilHTML(e) : ''}</div><div><div class="what">${opt.size ? '<i class="evdot"></i>' : ''}${esc(e.title || 'Busy')}</div>${meta}</div></button>`;
+}
 const fmtTime = d => new Intl.DateTimeFormat('en-AU', {timeZone: TZ, hour:'numeric', minute:'2-digit', hour12:true}).format(d).replace(/\s?([ap])\.?m\.?/i, (m, a) => a.toLowerCase() + 'm');
 const fmtDay = (k, opts) => new Intl.DateTimeFormat('en-AU', Object.assign({timeZone:'UTC'}, opts)).format(keyToDate(k));
 const hoursFloat = d => { const p = tzParts(d); return p.h + p.min / 60; };
