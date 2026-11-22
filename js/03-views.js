@@ -585,6 +585,22 @@ function focusNow(now, k) {
   if (evs[0]) return {ev: evs[0], rest: evs.slice(1), chips};
   return {rest: [], chips};
 }
+// Focus background: a pale sky that follows the time of day (same colours as the sky strip elsewhere),
+// a soft sun that crosses it, and low hills fading into the page. Decoration only.
+function focusBgHTML(now) {
+  const h = hoursFloat(now), night = document.body.classList.contains('night'), [t, b] = skyAt(h);
+  const st = settings(), ds = st.dayStart || 6, de = st.dayEnd || 20, sunX = Math.max(8, Math.min(92, (h - ds) / Math.max(1, de - ds) * 84 + 8));
+  const sky1 = night ? mix(t, '#0C1424', .55) : mix(t, '#FFFFFF', .36), sky2 = night ? mix(b, '#0C1424', .6) : mix(b, '#FFFFFF', .5);
+  const sun = night ? 'rgba(220,228,255,.16)' : h < 9 || h > 17 ? 'rgba(255,214,170,.75)' : 'rgba(255,246,214,.85)';
+  const hill = (c, a) => night ? mix(c, '#0C1424', .6) : mix(c, '#FFFFFF', a);
+  return `<div class="fbg" aria-hidden="true" style="--fs1:${sky1};--fs2:${sky2};--sun:${sun};--sunx:${sunX.toFixed(1)}%">
+    ${['M30 62c-26 0-40-15-36-31 4-15 22-21 36-15 7-19 33-27 52-15 13-15 44-12 51 9 20-3 34 10 31 26-2 15-17 26-36 26z', 'M28 58c-20 0-31-11-28-24 3-12 17-16 28-12 6-15 26-21 41-12 10-12 34-9 40 7 16-2 27 8 24 20-2 12-13 21-28 21z'].map((d, n) => `<svg class="fcloud c${n + 1}" viewBox="-8 0 180 70" focusable="false"><path d="${d}" fill="${night ? 'rgba(200,212,240,.08)' : 'rgba(255,255,255,.75)'}"/></svg>`).join('')}
+    <svg class="fhills" viewBox="0 0 1200 200" preserveAspectRatio="none" focusable="false">
+      <path d="M0 118 C150 82 300 96 430 112 C560 128 700 70 860 78 C1000 86 1100 110 1200 98 V200 H0 Z" fill="${hill('#A9C7BE', .55)}"/>
+      <path d="M0 146 C180 118 330 130 470 142 C640 156 760 112 930 118 C1060 123 1140 140 1200 136 V200 H0 Z" fill="${hill('#9BBFA8', .62)}"/>
+      <path d="M0 172 C200 150 380 162 560 170 C720 177 880 150 1040 156 C1120 159 1170 166 1200 164 V200 H0 Z" fill="${hill('#C9DCC4', .5)}"/>
+    </svg></div>`;
+}
 V.focus = () => {
   const me = meMember(), now = new Date(), k = dayKey(now), st = settings(), hr = now.getHours();
   const N = focusNow(now, k);
@@ -608,13 +624,13 @@ V.focus = () => {
   const openT = allT.filter(i => !i.assignee || !me || i.assignee === me.id).sort((a, b) => mineFirst(a) - mineFirst(b)), top = openT.slice(0, 5);
   const gave = me ? allT.filter(i => i.assignee && i.assignee !== me.id && i.added_by === me.id) : [];
   const last = S._fqLast;
-  return `<div class="page focus2">
+  return `<div class="fwrap">${focusBgHTML(now)}<div class="page focus2">
     <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="fhr">${briefShow() ? `<button class="fbrief sm" data-act="brief-open" aria-label="Hear today's brief">${icon('sun')}<span>Brief</span></button>` : ''}<span class="num">${esc(fmtTime(now))}</span></span></div>
     ${hero}
     ${quickAddHTML()}
     <section class="fsec"><h2>Later today</h2>${shown.length ? `<ul class="fl">${shown.join('')}</ul>` : `<p class="fempty">${emptyArt('sunrise')}Nothing else today.</p>`}${lines.length > 5 ? `<button class="fold ${showAll ? 'open' : ''}" data-act="fold" data-k="ftoday">${icon('right')}${showAll ? 'Show less' : `${lines.length - 5} more`}</button>` : ''}</section>
     <section class="fsec"><h2>Your five${openT.length > 5 ? `<button class="more" data-act="go" data-view="lists">+${openT.length - 5} more</button>` : ''}</h2><ul class="items">${top.map(i => itemRow(i)).join('') || '<li class="fempty">All clear. Nice.</li>'}</ul>${gave.length ? `<p class="fgave">You've handed off ${gave.length}: ${[...new Set(gave.map(i => (memberById(i.assignee) || {}).name))].map(n => `${esc(n)} ${gave.filter(i => (memberById(i.assignee) || {}).name === n).length}`).join(', ')}</p>` : ''}</section>
-  </div>`;
+  </div></div>`;
 };
 
 V.planner = () => {
