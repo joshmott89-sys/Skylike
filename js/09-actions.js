@@ -207,6 +207,8 @@ const A = {
   'brief-voice'(el) { LS.set('briefVoice', el.dataset.v); document.querySelectorAll('#sheet-root [data-act="brief-voice"]').forEach(b => b.classList.toggle('on', b === el)); },
   'brief-open'() { sheet(`<h2>Today's brief</h2>${briefCardHTML(true).replace('class="brief"', 'class="brief insheet"')}`); },
   'fq-mic'(el) { listen(t => { const f = el.closest('form') || document.querySelector('form[data-form="fquick"]'); if (f) { f.text.value = t; F.fquick(f); } }, el); },
+  async 'home-view-set'(el) { const me = meMember(); if (!me) return; me.home_view = el.dataset.v; render(); toast(`Home is now ${el.dataset.v === 'family' ? 'the family board' : el.dataset.v === 'focus' ? 'Focus' : 'Planner'}`);
+    if (!DEMO) await db(sb.from('members').update({home_view: me.home_view}).eq('id', me.id)); },
   'calm-set'(el) { LS.set('calm', el.dataset.v); render(); },
   fold(el) { S.fold = S.fold || {}; S.fold[el.dataset.k] = !S.fold[el.dataset.k]; render(); },
   async feedback() { S._fb = null; feedbackSheet(); if (!DEMO) { const {data} = await sb.from('feedback').select('body,status,created_at').eq('household_id', S.hid).eq('user_id', S.session ? S.session.user.id : null).order('created_at', {ascending: false}).limit(5); S._fbMine = data || []; if (document.querySelector('#fb-body')) feedbackSheet(); } },

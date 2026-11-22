@@ -823,3 +823,6 @@ b.lowt{color:#8A5A00}b.outt{color:var(--bad)}
 body.night .focus2 .fsec,body.night .focus2 .fnow{background:var(--surface)}
 .focus2 .fq .input{background:color-mix(in srgb,var(--raise) 92%,transparent)}
 @media (min-width:900px){.fbg{height:clamp(360px,60vh,620px)}.fhills{height:38%}}
+/* night: links were drawn in the dark ocean colour and disappeared */
+body.night .linkbtn,body.night a:not(.btn){color:#8CC4E2}
+.famqa{margin:0 var(--pad) 12px}

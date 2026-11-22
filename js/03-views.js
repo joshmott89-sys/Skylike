@@ -50,7 +50,7 @@ function locSearch(inp) {
     try {
       const qq = expandStreet(q), num = (qq.match(/^\s*(\d+[a-z]?(?:[\/-]\d+[a-z]?)?)\s+\D/i) || [])[1];
       // a street on the map without this house number: keep the number you typed, use the street for drive times
-      const withNum = (name, street, area, isStreet, sub) => isStreet && num && !/^\d/.test(name) ? {name: `${num} ${name}`, sub: [area, 'number not on the map, street used'].filter(Boolean).join(' · ')} : {name, sub};
+      const withNum = (name, street, area, isStreet, sub) => isStreet && num && !/^\d/.test(name) ? {name: `${num} ${name}`, sub: [area, 'street found, fine for drive times'].filter(Boolean).join(' · ')} : {name, sub};
       const r = await fetch(`https://photon.komoot.io/api/?limit=7&lang=en&lat=${h.lat}&lon=${h.lon}&location_bias_scale=0.6&q=${encodeURIComponent(qq)}`); const d = await r.json(); if (seq !== locSeq) return;
       const seen = new Set();
       let list = (d.features || []).filter(f => (f.properties.countrycode || 'AU') === 'AU').map(f => {
@@ -59,12 +59,15 @@ function locSearch(inp) {
         ({name, sub} = withNum(name, street, area, P.type === 'street' && !P.housenumber, sub) );
         return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
       }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
-      // nothing from the first map: ask the other free one (it understands more address styles)
-      if (!list.length) { try {
+      // nothing exact from the first map: ask the other free one (it knows more house numbers and address styles)
+      const exact = list.some(x => !/street found/.test(x.sub || ''));
+      if (!list.length || (num && !exact)) { try {
         const n = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=au&addressdetails=1&viewbox=${[h.lon - 1, h.lat + 1, h.lon + 1, h.lat - 1].join(',')}&q=${encodeURIComponent(qq)}`)).json(); if (seq !== locSeq) return;
-        list = (Array.isArray(n) ? n : []).map(x => { const A = x.address || {}, street = [A.house_number, A.road].filter(Boolean).join(' '), area = A.suburb || A.town || A.city || '';
+        const prevList = list; list = (Array.isArray(n) ? n : []).map(x => { const A = x.address || {}, street = [A.house_number, A.road].filter(Boolean).join(' '), area = A.suburb || A.town || A.city || '';
           const nm = x.name && x.name !== A.road ? x.name : street || x.name; const w = withNum(nm, street, area, x.class === 'highway' && !A.house_number, [x.name && x.name !== A.road ? street : '', area].filter(Boolean).join(', '));
-          return {name: w.name, sub: w.sub, label: [w.name, area].filter(Boolean).join(', '), lat: +x.lat, lon: +x.lon}; }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
+          return {name: w.name, sub: w.sub, label: [w.name, area].filter(Boolean).join(', '), lat: +x.lat, lon: +x.lon}; }).filter(x => x.name);
+        const exactN = list.filter(x => !/street found/.test(x.sub || ''));
+        const seen2 = new Set(); list = (exactN.length ? exactN.concat(prevList) : prevList.length ? prevList : list).filter(x => !seen2.has(x.label) && seen2.add(x.label)).slice(0, 6);
       } catch {} }
       S._locList = list;
       const asis = `<button type="button" class="locopt asis" data-act="loc-asis"><b>${icon('check', 'xs')} Use “${esc(q)}” as written</b><small>${list.length ? 'None of these? Keep what you typed' : 'Not on the free map (small businesses often aren\'t). Add a street address later for drive times.'}</small></button>`;
@@ -578,7 +581,7 @@ function speak(text, tone, onEnd, g = '', uk = false) {
   ss.speak(u); return true;
 }
 try { window.speechSynthesis && speechSynthesis.getVoices(); if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch {}
-V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${isPhone() ? `<div class="qa-in famqa">${quickAddHTML()}</div>` : ''}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
