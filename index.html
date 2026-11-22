@@ -556,7 +556,7 @@ body.night .qa{color:#9CC3D3;border-color:rgba(156,195,211,.4)}
 .panel{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
 .panel h2{font-size:22px;margin:0 0 6px;font-weight:700}
 .panel p.help{color:var(--ink-2);margin:0 0 16px;font-size:16.5px}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.sgroups{display:grid;gap:10px;margin-bottom:18px}.sgroup{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}.sgroup .tabs{margin:0}.sgl{min-width:150px;font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}@media (max-width:760px){.sgl{min-width:0;flex-basis:100%}}
 .tab{border:0;background:var(--surface);box-shadow:var(--shadow);padding:10px 16px;border-radius:99px;font-weight:700;font-size:16px;color:var(--ink-2);display:inline-flex;gap:8px;align-items:center}
 .tab.on{background:var(--ocean);color:#fff}
 .tab .n{background:rgba(255,255,255,.22);border-radius:99px;padding:0 8px;font-size:14px}
@@ -780,7 +780,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1430'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1450'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -2013,8 +2013,8 @@ function personaPickerHTML() {
   return `<h3 style="margin-top:6px">Voice</h3><div class="chips2 gsel" role="group" aria-label="Voice">${[['f', 'Female'], ['m', 'Male']].map(([k, l]) => `<button class="chip2 ${g === k ? 'on' : ''}" data-act="voice-g" data-v="${k}" aria-pressed="${g === k}">${l}</button>`).join('')}</div>
     <h3 style="margin-top:14px">Personality</h3><div class="asgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}">${pavatar(p)}<b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
     <p class="help">${who ? `This is ${esc(who.name)}'s assistant.` : 'This is the family screen\'s assistant.'} Each person can pick their own.</p>
-    <h3 style="margin-top:14px">Read by</h3><div class="chips2 gsel">${[['natural', 'Natural (Google)', 'sparkle'], ['device', 'This device', 'mobile']].map(([k, l, ic]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${icon(ic, 'xs')} ${l}</button>`).join('')}</div>
-    <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`;
+    ${S.view === 'settings' ? `<h3 style="margin-top:14px">Read by</h3><div class="chips2 gsel">${[['natural', 'Natural (Google)', 'sparkle'], ['device', 'This device', 'mobile']].map(([k, l, ic]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${icon(ic, 'xs')} ${l}</button>`).join('')}</div>
+    <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>` : ''}`;
 }
 /* Your assistant's voice in the app's own messages. Facts stay the same; only the wording changes. */
 const VOICE = {
@@ -2551,6 +2551,8 @@ V.sitter = () => {
 };
 
 /* ----- settings ----- */
+// Settings in three groups, so 12 tabs read as three short rows
+const SGROUPS = [['Family', ['household', 'family', 'kids', 'assistant', 'sitter']], ['Home', ['calendar', 'reminders', 'kitchen', 'photos']], ['Screens and alerts', ['screen', 'notify', 'admin']]];
 const STABS = [['household','Household'],['family','Family'],['assistant','Assistant'],['kids','Kids'],['kitchen','Kitchen'],['calendar','Calendar'],['reminders','Reminders'],['sitter','Babysitter'],['screen','Screen'],['notify','Notifications'],['photos','Photos'],['admin','Devices']];
 const FB_MODULES = [['family', 'Home screen'], ['calendar', 'Calendar'], ['lists', 'Lists & groceries'], ['meals', 'Meals & lunches'], ['pantry', 'Fridge & pantry'], ['kids', 'Kids'], ['notes', 'Notes'], ['photos', 'Photos & idle screen'], ['sitter', 'Sitter'], ['setup', 'Setup & settings'], ['other', 'Other']];
 const FB_KINDS = [['bug', 'Something\'s wrong', 'bug'], ['idea', 'Idea', 'idea'], ['confusing', 'Confusing', 'help'], ['love', 'Love this', 'heart']];
@@ -2696,7 +2698,7 @@ V.settings = () => {
       <p class="help" style="margin-top:10px">Each browser or home-screen app counts as its own device, so the same phone can show twice. Forget old ones here; anything unseen for 14 days is removed automatically.</p>
       <button class="btn" style="margin-top:14px" data-act="cmd" data-cmd="reload">${icon('refresh')}Refresh every screen</button></div>
     <div class="panel"><h2>About</h2><p class="help">Skylike v${APP_VERSION}. Data last updated ${S.lastData ? esc(ago((Date.now() - S.lastData) / 60e3)) : 'never'}.</p></div>`;
-  return `<div class="page">${isPhone() ? `<div class="quick-go">${[['kids','Kids','star'],['notes','Notes','note'],['sitter','Sitter','sitter']].map(([v, l, ic]) => `<button class="btn soft" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}</div>` : ''}<h1>Settings<span class="sp"></span><button class="btn soft" data-act="feedback">${icon('note')}Send feedback</button></h1><div class="tabs">${STABS.map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div>${body}</div>`;
+  return `<div class="page">${isPhone() ? `<div class="quick-go">${[['kids','Kids','star'],['notes','Notes','note'],['sitter','Sitter','sitter']].map(([v, l, ic]) => `<button class="btn soft" data-act="go" data-view="${v}">${icon(ic)}${l}</button>`).join('')}</div>` : ''}<h1>Settings<span class="sp"></span><button class="btn soft" data-act="feedback">${icon('note')}Send feedback</button></h1><div class="sgroups">${SGROUPS.map(([g, ks]) => `<div class="sgroup"><span class="sgl">${g}</span><div class="tabs">${ks.map(k => STABS.find(x => x[0] === k)).filter(Boolean).map(([k, l]) => `<button class="tab ${t === k ? 'on' : ''}" data-act="stab" data-tab="${k}">${l}</button>`).join('')}</div></div>`).join('')}</div>${body}</div>`;
 };
 let BRIDGE_SRC = null;
 function prefetchBridge() { return fetch('apps-script/bridge.gs', {cache: 'no-store'}).then(r => r.ok ? r.text() : null).then(t => { BRIDGE_SRC = t; }).catch(() => {}); }
