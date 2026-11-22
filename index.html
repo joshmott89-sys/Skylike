@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Skylike">
 <meta name="theme-color" content="#0B4F6C">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; media-src 'self' data: blob: https://sroxxxuurhdugvfmwwyw.supabase.co; connect-src 'self' https://sroxxxuurhdugvfmwwyw.supabase.co wss://sroxxxuurhdugvfmwwyw.supabase.co https://api.open-meteo.com https://photon.komoot.io https://nominatim.openstreetmap.org https://router.project-osrm.org; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
@@ -428,7 +429,7 @@ body[data-drag="pev"] .ppcol{transition:outline .1s}
 .locopt{display:grid;gap:2px;width:100%;text-align:left;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;color:var(--ink);cursor:pointer;min-height:52px}.locopt:last-child{border-bottom:0}.locopt small{color:var(--ink-2);font-size:13.5px}.locopt:hover,.locopt:focus{background:color-mix(in srgb,var(--ocean-2) 8%,transparent)}
 .locrow{gap:8px;flex-wrap:nowrap}.locopt.asis b{color:var(--pick)}body.night .locopt.asis b{color:#8CC3DC}
 .locnone{margin:0;padding:12px 14px;color:var(--ink-2);font-size:14px}
-.plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.focus.plan2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}@media (max-width:760px){.focus.plan2{grid-template-columns:minmax(0,1fr);flex:none;min-height:auto}.focus.plan2 .zone{min-height:auto}.focus.plan2 .scroll{flex:none;overflow:visible;max-height:none;min-height:auto}.focus.plan2 .items.scroll{-webkit-mask-image:none;mask-image:none;padding-bottom:0}}.plist .face{width:36px;height:36px;font-size:15px;flex:none}.joinnote{display:flex;align-items:center;gap:12px;margin:12px var(--pad) 0;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--warn) 12%,var(--surface));border:1.5px solid color-mix(in srgb,var(--warn) 40%,transparent)}.joinnote small{display:block;color:var(--ink-2);font-size:13.5px}.joinnote svg.i{color:var(--warn);flex:none}.plist{list-style:none;padding:0;margin:8px 0 12px;display:grid;gap:8px}.plist li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent);font-size:22px}.plist li span{display:grid;flex:1;min-width:0;font-size:16px}.plist small{color:var(--ink-2);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .smarthint{margin:-4px 0 0;font-size:14px;font-weight:700;color:var(--pick)}body.night .smarthint{color:#8CC3DC}
 .asgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
@@ -774,11 +775,11 @@ body.night .hero .leave{color:var(--apricot)}
 <div id="saver" class="overlay" data-act="wake"></div>
 <div id="sheet-root"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase-js-2.49.4.js"></script>
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-1245'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1315'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1010,12 +1011,16 @@ async function loadAll() {
   refreshCalStatus(); loadHistory(); loadBalances(); loadTravel().then(() => setTimeout(computeTravel, 3000));
   if (!S._deep) { S._deep = 1; const q = new URLSearchParams(location.search), v = q.get('view'); if (v && V[v]) S.view = v; if (q.has('brief')) setTimeout(() => A['brief-open'](), 800);
     if (v || q.has('brief')) { q.delete('view'); q.delete('brief'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '')); } }
+  sb.from('memberships').select('user_id,created_at,role').eq('household_id', hid).then(({data}) => { if (data) { S.joins = data; render(); } });
   sb.rpc('ai_keys', {p_household: S.hid}).then(({data, error}) => { if (error) return sb.rpc('ai_status', {p_household: S.hid}).then(({data}) => { S.aiOn = !!data; }); S.aiGemini = !!data?.gemini; S.aiBackup = !!data?.openrouter; S.aiOn = S.aiGemini || S.aiBackup; });
   return true;
 }
 // Driving times worked out on the server (home → event address), used for "leave in" countdowns.
 async function loadTravel() { const {data} = await sb.from('event_travel').select('event_id,location,minutes,km,status,computed_at').eq('household_id', S.hid); if (data) S.travel = data; }
 /* Saved places: Home (settings.location) plus the family's own (school, kindy, swimming…), one tap in any event. */
+// a second tap within 4 seconds confirms something that can't be undone
+const confirmTap = (k, msg) => { const now = Date.now(); if (S._confirm && S._confirm.k === k && now - S._confirm.at < 4000) { S._confirm = null; return true; } S._confirm = {k, at: now}; toast(msg, 4000); return false; };
+const fmtCode = c => { c = String(c || ''); return c.length === 10 ? c.slice(0, 5) + '-' + c.slice(5) : c; };
 const PLACE_PRESETS = [['School', '🏫'], ['Kindy', '🧸'], ['Daycare', '🍼'], ['Work', '💼'], ['Swimming', '🏊'], ['Gym', '🏋️'], ['Grandma & Grandpa', '👵'], ['Shops', '🛒'], ['Doctor', '🩺'], ['Park', '🌳']];
 function places() {
   const st = settings(), out = [];
@@ -2129,7 +2134,7 @@ function speak(text, tone, onEnd, g = '', uk = false) {
   ss.speak(u); return true;
 }
 try { window.speechSynthesis && speechSynthesis.getVoices(); if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch {}
-V.family = () => `${skyHTML(isPhone())}${setupCardHTML()}${briefCardHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"
@@ -2195,7 +2200,7 @@ V.planner = () => {
       ${evs.length ? evs.map(e => `<div class="ev" style="--c:${eventColour(e)};padding:6px 0;border:0"><div class="when num" style="font-size:15px">${e.all_day ? 'All day' : esc(fmtTime(new Date(e.starts_at)))}</div><div class="who" style="font-size:17px;color:var(--ink);margin:0"><i></i>${esc(e.title)}</div></div>`).join('') : '<div class="empty" style="padding:4px 0;font-size:16px">Free</div>'}</div>`;
   }).join('');
   const g = listByKind('grocery'), gc = g ? listItems(g.id, false).length : 0;
-  return `${skyHTML(true)}${chipsHTML()}<div class="focus" style="grid-template-columns:1fr 1fr">
+  return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">
     <div class="zone"><h2>Today's checklist${me ? ' · ' + esc(me.name) : ''}<span class="more num" style="color:var(--ink-2)">${done.length}/${items.length}</span></h2>
       <form class="addbar" data-form="add-item" data-list="${t ? t.id : ''}"><input class="input" id="plan-add" name="text" placeholder="Add to the checklist" autocomplete="off" maxlength="200"><button class="btn" aria-label="Add">${icon('plus')}</button></form>
       <ul class="items scroll">${open.map(i => itemRow(i, true)).join('')}${done.map(i => itemRow(i, true)).join('')}</ul></div>
@@ -2331,6 +2336,20 @@ function setupSteps() {
 }
 function setupListHTML() {
   return setupSteps().map(([id, t, sub, done, go]) => `<div class="sstep ${done ? 'done' : ''}"><span class="sdot">${done ? icon('check') : ''}</span><div class="grow"><b>${t}</b><div class="lbl">${sub}</div></div>${done ? '' : `<button class="btn soft" data-act="${go.act}" ${go.view ? `data-view="${go.view}"` : ''} ${go.tab ? `data-tab="${go.tab}"` : ''}>Start</button>`}</div>`).join('');
+}
+function joinersHTML(days) {
+  const cut = Date.now() - days * 864e5, me = (S.session && S.session.user || {}).id;
+  const list = (S.joins || []).filter(j => j.user_id !== me && Date.parse(j.created_at) > cut);
+  if (!list.length) return '';
+  return `<div class="lbl" style="margin-top:12px">Joined lately</div><ul class="plist">${list.map(j => { const m = S.members.find(x => x.user_id === j.user_id); return `<li>${m ? avatar(m) : ''}<span><b>${esc(m ? m.name : 'Someone')}</b><small>${esc(fmtDay(j.created_at.slice(0, 10), {weekday: 'short', day: 'numeric', month: 'short'}))}</small></span></li>`; }).join('')}</ul>`;
+}
+function joinNoticeHTML() {
+  if (DEMO) return '';
+  const me = (S.session && S.session.user || {}).id, seen = +LS.get('joinSeen', 0) || 0;
+  const j = (S.joins || []).filter(x => x.user_id !== me && Date.parse(x.created_at) > Date.now() - 7 * 864e5 && Date.parse(x.created_at) > seen).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  if (!j) return '';
+  const m = S.members.find(x => x.user_id === j.user_id);
+  return `<div class="joinnote">${icon('family')}<span class="grow"><b>${esc(m ? m.name : 'Someone new')} joined the family</b><small>${esc(fmtDay(j.created_at.slice(0, 10), {weekday: 'long', day: 'numeric', month: 'short'}))}. Not someone you know? Make a new code in Settings, Household.</small></span><button class="btn ghost sm" data-act="joiner-ok" data-at="${Date.parse(j.created_at)}">OK</button></div>`;
 }
 function setupCardHTML() {
   if ((DEMO && !window.__showSetup) || settings().setupHidden) return '';
@@ -2573,7 +2592,7 @@ V.settings = () => {
     <div class="panel"><h2>Household</h2><p class="help">Shared by everyone who joins with the code below.</p>
       <form data-form="hh-name" class="row"><input class="input grow" name="name" value="${esc(hh.name)}" maxlength="80" aria-label="Household name"><button class="btn">Save</button></form></div>
     <div class="panel"><h2>Setup checklist</h2>${setupListHTML()}<div class="row" style="margin-top:12px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><button class="btn ghost" data-act="device-setup">Set up this device</button>${st.setupHidden ? `<button class="btn ghost" data-act="setup-show">Show on home screen</button>` : ''}</div></div>
-    <div class="panel"><h2>Invite your partner</h2><p class="help">On their phone: open Skylike, sign in with their email, choose “Join a household” and enter this code.</p><span class="code">${esc(hh.join_code)}</span><div class="row" style="margin-top:12px"><button class="btn" data-act="invite">Send an invite</button></div></div>
+    <div class="panel"><h2>Invite your partner</h2><p class="help">On their phone: open Skylike, sign in with their email, choose “Join a household” and enter this code.</p><span class="code">${esc(fmtCode(hh.join_code))}</span><div class="row" style="margin-top:12px"><button class="btn" data-act="invite">Send an invite</button><button class="btn ghost" data-act="code-new">Make a new code</button></div><p class="help">Only share it with family. A new code stops the old one working; people already in stay in.</p>${joinersHTML(30)}</div>
     <div class="panel"><h2>Weather location</h2><p class="help">Currently ${esc(st.location.name || 'set')} (${st.location.lat.toFixed(2)}, ${st.location.lon.toFixed(2)}).</p>
       <button class="btn soft" data-act="use-location">Use this device's location</button></div>
     <div class="panel"><h2>School and holidays</h2>
@@ -2753,7 +2772,7 @@ function renderOnboard() {
       <button class="btn soft" style="width:100%" data-act="onboard" data-mode="join">Join with a code</button>`
     : mode === 'create' ? `<h1>Your household</h1><p>Name it and add yourself. A short checklist then walks you through the rest (about 10 minutes).</p><form data-form="create-hh"><div class="field"><label for="hn">Household name</label><input class="input" id="hn" name="name" placeholder="The Smiths" required maxlength="80"></div>
       <div class="field"><label for="yn">Your first name</label><input class="input" id="yn" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Create</button></form>`
-    : `<h1>Join a household</h1><form data-form="join-hh"><div class="field"><label for="jc">Code</label><input class="input" id="jc" name="code" required maxlength="6" value="${esc((new URLSearchParams(location.search).get('join') || '').toUpperCase())}" style="text-transform:uppercase;letter-spacing:.2em;font-size:24px"></div>
+    : `<h1>Join a household</h1><form data-form="join-hh"><div class="field"><label for="jc">Code</label><input class="input" id="jc" name="code" required maxlength="14" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCDE-FGHJK" value="${esc((new URLSearchParams(location.search).get('join') || '').toUpperCase())}" style="text-transform:uppercase;letter-spacing:.2em;font-size:24px"></div>
       <div class="field"><label for="yn2">Your first name</label><input class="input" id="yn2" name="me" required maxlength="40"></div><button class="btn" style="width:100%">Join</button></form>`}
     ${mode !== 'choose' ? `<button class="btn ghost" style="width:100%;margin-top:6px" data-act="onboard" data-mode="choose">Back</button>` : ''}
     <p class="err" id="gate-err" role="alert"></p><button class="btn ghost" style="width:100%" data-act="sign-out">Sign out</button></div></div>`;
@@ -3091,9 +3110,16 @@ const A = {
   },
   async 'ai-test'() { const r = await callAI({action: 'test'}); if (r.error) return toast(r.error, 5000); S.aiModel = r.model; toast(r.gemini ? r.gemini : `Connected ✓${r.backup ? (r.backup === 'rejected' ? ' Backup key was rejected.' : ' Backup ready too.') : ''}`, 4000); render(); },
   async 'or-off'() { const {error} = await sb.rpc('set_openrouter_key', {p_household: S.hid, p_key: ''}); if (error) return toast("Couldn't remove it."); S.aiBackup = false; S.aiOn = !!S.aiGemini; toast('Backup key removed'); render(); },
+  async 'code-new'() {
+    if (!confirmTap('code-new', 'Tap again to make a new code. The old one stops working.')) return;
+    const {data, error} = await sb.rpc('new_join_code', {p_household: S.hid});
+    if (error || !data) return toast("Couldn't make a new code. Try again.", 4000);
+    S.household.join_code = data; render(); toast(`New code: ${fmtCode(data)}`, 4000);
+  },
+  'joiner-ok'(el) { LS.set('joinSeen', Math.max(+LS.get('joinSeen', 0) || 0, +el.dataset.at)); render(); },
   invite() {
     const code = (S.household || {}).join_code || '', link = location.origin + location.pathname + '?join=' + encodeURIComponent(code);
-    const msg = `Join our family on Skylike, our shared calendar, lists and meals. Open ${link} on your phone, sign in with your email, and the code ${code} is filled in for you.`;
+    const msg = `Join our family on Skylike, our shared calendar, lists and meals. Open ${link} on your phone, sign in with your email, and the code ${fmtCode(code)} is filled in for you.`;
     const enc = encodeURIComponent(msg);
     sheet(`<h2>Invite your partner</h2><p class="help">Send them this. The link opens Skylike with your code ready; they just sign in with their email.</p>
       <div class="invite-msg">${esc(msg)}</div>
@@ -3571,6 +3597,7 @@ const F = {
   async 'join-hh'(f) {
     const {data, error} = await sb.rpc('join_household', {p_code: f.code.value.trim(), p_member_name: f.me.value.trim()});
     if (error) return gateErr(error.message.includes('match') ? "That code didn't match a household." : error.message);
+    if (!data) return gateErr("That code didn't match a household. Check it with whoever sent it: it's 10 letters and numbers.");
     S.hid = data; LS.set('hid', data); await start();
   },
   async 'add-item'(f) {
