@@ -346,7 +346,7 @@ const A = {
   },
   async 'invite-share'() { try { await navigator.share({title: 'Join our family on Skylike', text: S._inviteMsg}); } catch {} },
   async 'invite-copy'() { try { await navigator.clipboard.writeText(S._inviteMsg); toast('Copied'); } catch { toast('Press and hold the message to copy it.'); } },
-  'setup-all'() { sheet(`<h2>Get Skylike ready</h2><p class="help">About 10 minutes. Do them in any order; each one ticks itself off.</p>${setupListHTML()}<div class="row" style="margin-top:14px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><span class="grow"></span><button class="btn ghost" data-act="setup-hide">Hide this checklist</button></div>`); },
+  'setup-all'() { sheet(`<h2>Get Skylike ready</h2><p class="help">About 10 minutes. Do them in any order; each one ticks itself off.</p>${setupListHTML()}<div class="row" style="margin-top:14px"><button class="btn ghost" data-act="tour" data-i="0">Take the quick tour</button><button class="btn ghost" data-act="quest-setup">🎁 Make it a quest</button><span class="grow"></span><button class="btn ghost" data-act="setup-hide">Hide this checklist</button></div>`); },
   async 'setup-hide'() { closeSheet(); await saveSettings({setupHidden: true}); toast('Hidden. Find it again in Settings → Household.', 3500); },
   async 'setup-show'() { await saveSettings({setupHidden: false}); S.view = 'family'; render(); },
   tour(el) { tourSheet(+el.dataset.i); },

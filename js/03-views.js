@@ -583,7 +583,7 @@ function speak(text, tone, onEnd, g = '', uk = false) {
   ss.speak(u); return true;
 }
 try { window.speechSynthesis && speechSynthesis.getVoices(); if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch {}
-V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${setupCardHTML()}${briefCardHTML()}${isPhone() ? `<div class="qa-in famqa">${quickAddHTML()}</div>` : ''}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${(qc => qc || setupCardHTML())(questCardHTML())}${briefCardHTML()}${isPhone() ? `<div class="qa-in famqa">${quickAddHTML()}</div>` : ''}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"

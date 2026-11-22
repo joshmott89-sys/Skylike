@@ -964,3 +964,17 @@ body.night .hdev.on circle{fill:#FFD48A;stroke:#E0A040}body.night .hdev.alert ci
 .gprompt{display:flex;align-items:center;gap:14px;margin-top:22px;padding:14px 26px 14px 18px;border-radius:24px;background:rgba(255,255,255,.92);color:#16324a;text-align:left;box-shadow:0 6px 24px rgba(6,30,48,.25)}.gprompt .gpe{font-size:46px}.gprompt span{display:flex;flex-direction:column;font-size:18px;font-weight:600;color:#3d5a70}.gprompt b{font-size:26px;font-weight:800;color:#16324a}
 body.night .kgoal .kgs b{color:#f2c45a}
 .kworth>span{white-space:nowrap}
+/* partner quest card */
+.questcard{margin:16px var(--pad) 0;padding:16px 18px;border-radius:var(--radius);background:color-mix(in srgb,var(--c) 7%,var(--surface));box-shadow:var(--shadow);border-left:6px solid var(--c)}
+.questcard header{display:flex;align-items:center;gap:12px}.questcard header .grow{flex:1;display:flex;flex-direction:column;min-width:0}.questcard header b{font-size:19px;font-weight:800}.questcard header small{font-size:15px;color:var(--ink-2);font-weight:600}
+.qpath{display:flex;align-items:center;gap:0;margin:14px 0 12px}
+.qstone{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--surface);border:2px solid var(--line);font-size:18px;position:relative}.qstone i{font-style:normal;line-height:1;opacity:.55}
+.qpath>*{position:relative}.qpath>*+*{margin-left:clamp(6px,2.4vw,26px)}
+.qstone.done{background:var(--c);border-color:var(--c);color:#fff}.qstone.done svg{width:20px;height:20px;stroke-width:3}
+.qstone.next{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent)}.qstone.next i{opacity:1}
+.qgift{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--surface);border:2px dashed color-mix(in srgb,#E0A21B 60%,transparent);font-size:22px;filter:grayscale(.6);opacity:.8}
+.qgift.open{filter:none;opacity:1;border-style:solid;border-color:#E0A21B;background:color-mix(in srgb,#F7BC2A 22%,var(--surface))}.qgift.claimed{font-size:20px;font-weight:800;color:#9a6c0d}
+.qnext,.qprize{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface)}.questcard .qprize{background:color-mix(in srgb,#F7BC2A 18%,var(--surface));border:2px solid #E0A21B}.qnext .grow,.qprize .grow{flex:1;display:flex;flex-direction:column;min-width:0}.qnext b,.qprize b{font-size:17px}.qnext small,.qprize small{font-size:14.5px;color:var(--ink-2);line-height:1.35}
+.qne,.qpe{font-size:30px;line-height:1;flex:none}.qn{font-weight:700;color:var(--ink-3);margin-left:4px}
+.qmile{margin:2px 0 8px 44px;padding:8px 12px;border-radius:12px;border:2px dashed color-mix(in srgb,#E0A21B 55%,transparent);font-size:15px;color:var(--ink-2)}.qmile.open{border-style:solid;border-color:#E0A21B;background:color-mix(in srgb,#F7BC2A 16%,transparent);color:var(--ink)}
+@media (max-width:560px){.qpath{justify-content:space-between}.qpath>*+*{margin-left:0}.qstone{width:34px;height:34px;font-size:16px}.qgift{width:38px;height:38px;font-size:19px}.questcard{padding:14px}.qnext,.qprize{display:grid;grid-template-columns:auto 1fr;align-items:start}.qnext .btn,.qprize .btn{grid-column:1/-1;justify-content:center}.qne,.qpe{font-size:26px;margin-top:2px}}
