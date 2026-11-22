@@ -32,7 +32,7 @@ function spendHTML() {
     ${calm ? '' : `<div class="sweeks" aria-label="Last six weeks">${weeks.map(w => `<div class="swk ${w.o === 0 ? 'now' : ''} ${B && w.t > B ? 'over' : ''}"><span class="v num">${w.t ? money(w.t) : ''}</span><span class="b" style="height:${Math.max(w.t ? 4 : 0, w.t / top * 100).toFixed(0)}%"></span><span class="l">${w.o === 0 ? 'Now' : esc(fmtDay(w.k, {day: 'numeric', month: 'short'}))}</span></div>`).join('')}</div>`}
     <p class="help">${avg ? `Average <b class="num">${money(avg)}</b> a week over the last ${past.length === 1 ? 'week' : past.length + ' weeks'}. ` : ''}${prices >= 5 ? `${prices} prices remembered for meal planning.` : 'A few receipts teach the meal planner what you pay.'}</p>
     <ul class="slist">${rows.map(r => `<li><button data-act="spend-open" data-id="${r.id}"><span class="grow"><b>${esc(r.store || 'Shop')}</b><small>${esc(fmtDay(r.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${(r.items || []).length ? ` · ${r.items.length} items` : ''}</small></span><b class="num">${money(r.total)}</b></button></li>`).join('')}</ul>
-    ${(S.spend || []).length > 3 ? `<button class="linkbtn" data-act="spend-all">All shops</button>` : ''}</div>`;
+    <div class="row" style="margin-top:10px"><button class="btn soft" data-act="spend-review">${icon('chart')}See spending</button>${(S.spend || []).length > 3 ? `<button class="linkbtn" data-act="spend-all">All shops</button>` : ''}</div></div>`;
 }
 
 function spendSheet(r) {
