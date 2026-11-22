@@ -186,26 +186,31 @@ function wav(pcm: Uint8Array, rate = 24000) {
   const out = new Uint8Array(44 + pcm.length); out.set(new Uint8Array(h), 0); out.set(pcm, 44); return out;
 }
 // Assistant personalities: a Gemini voice, how it speaks (director's notes, never read aloud) and how it writes the brief.
-const PERSONAS: Record<string, { voice: string; speak: string; write: string; accent?: string }> = {
-  sterling: { voice: "Algieba", accent: "a crisp, refined British accent", speak: "smooth, precise and composed, with dry understated wit", write: "a sleek, ultra-capable AI aide with a refined British manner: precise, composed, quietly anticipates needs, dry understated wit, phrases like 'departure advised' or 'I've taken the liberty', never gushing" },
-  ambrose: { voice: "Gacrux", accent: "a warm, refined British accent", speak: "warm, mature and gently formal, kindly and unhurried", write: "a devoted old-school family butler: warm, wise and gently formal ('if you please', 'very good'), quietly looks out for everyone, offers one small sensible suggestion (a jacket, a hat, an early night), a touch of dry humour" },
-  sunny: { voice: "Laomedeia", speak: "cheerful and upbeat, smiling as you speak", write: "bubbly and upbeat, warm, encouraging, a little playful, one light joke at most" },
-  mate: { voice: "Zubenelgenubi", speak: "relaxed and casual, like a laid-back Aussie mate", write: "a laid-back Australian mate: relaxed and friendly, a touch of Aussie slang (at most two words like reckon or arvo), keeps it real" },
-  sass: { voice: "Kore", speak: "dry and cheeky with a little attitude, warm underneath", write: "cheeky and a bit sassy, dry Aussie humour, playful teasing, still kind" },
-  willow: { voice: "Vindemiatrix", speak: "slow, gentle and calm, soft and reassuring", write: "calm, gentle and reassuring: short simple sentences, one thing at a time, never rushed" },
-  news: { voice: "Charon", speak: "clear and brisk, like a friendly radio newsreader", write: "a matter-of-fact radio newsreader: brisk, clear, no fluff" },
-  coach: { voice: "Sadachbia", speak: "energetic and motivating, punchy and upbeat", write: "an energetic coach: motivating, short punchy sentences, celebrates small wins" },
+// Each has a female and a male Gemini voice (g = the one it uses until the person picks).
+const PERSONAS: Record<string, { voices: { f: string; m: string }; g: "f" | "m"; speak: string; write: string; accent?: string }> = {
+  sunny: { voices: { f: "Laomedeia", m: "Puck" }, g: "f", speak: "cheerful and upbeat, smiling as you speak", write: "bubbly and upbeat, warm, encouraging, a little playful, one light joke at most" },
+  mate: { voices: { f: "Callirrhoe", m: "Zubenelgenubi" }, g: "m", speak: "relaxed and casual, like a laid-back Aussie mate", write: "a laid-back Australian mate: relaxed and friendly, a touch of Aussie slang (at most two words like reckon or arvo), keeps it real" },
+  sass: { voices: { f: "Kore", m: "Orus" }, g: "f", speak: "dry and cheeky with a little attitude, warm underneath", write: "cheeky and a bit sassy, dry Aussie humour, playful teasing, still kind" },
+  willow: { voices: { f: "Vindemiatrix", m: "Enceladus" }, g: "f", speak: "slow, gentle and calm, soft and reassuring", write: "calm, gentle and reassuring: short simple sentences, one thing at a time, never rushed" },
+  news: { voices: { f: "Erinome", m: "Charon" }, g: "m", speak: "clear and brisk, like a friendly radio newsreader", write: "a matter-of-fact radio newsreader: brisk, clear, no fluff" },
+  sterling: { voices: { f: "Despina", m: "Algieba" }, g: "m", accent: "a crisp, refined British accent", speak: "smooth, precise and composed, with dry understated wit", write: "a sleek, ultra-capable AI aide with a refined British manner: precise, composed, quietly anticipates needs, dry understated wit, phrases like 'departure advised' or 'I've taken the liberty', never gushing" },
+  ambrose: { voices: { f: "Gacrux", m: "Sadaltager" }, g: "m", accent: "a warm, refined British accent", speak: "warm, mature and gently formal, kindly and unhurried", write: "a devoted old-school family butler: warm, wise and gently formal ('if you please', 'very good'), quietly looks out for everyone, offers one small sensible suggestion (a jacket, a hat, an early night), a touch of dry humour" },
+  coach: { voices: { f: "Zephyr", m: "Sadachbia" }, g: "m", speak: "energetic and motivating, punchy and upbeat", write: "an energetic coach: motivating, short punchy sentences, celebrates small wins" },
 };
 const TONE_PERSONA: Record<string, string> = { bubbly: "sunny", sassy: "sass", plain: "news", calm: "willow" };
-async function speak(key: string, hid: string, text: string, pid: string) {
-  const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voice;
+async function speak(key: string, hid: string, text: string, pid: string, gender = "", shared = false) {
+  const P = PERSONAS[pid] || PERSONAS[TONE_PERSONA[pid]] || PERSONAS.sunny, voice = P.voices[gender === "f" || gender === "m" ? gender : P.g];
   const notes = `You are a voice actor reading a family's morning brief. Speak the text exactly as written, word for word, with ${P.accent || "a warm Australian accent"}: ${P.speak}. These are directions only: never say them out loud.`;
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("v4|" + voice + "|" + P.speak + "|" + text));
   const hash = [...new Uint8Array(digest)].slice(0, 12).map(b => b.toString(16).padStart(2, "0")).join("");
-  const path = `${hid}/brief/${hash}.wav`, store = admin.storage.from("photos");
+  const dir = shared ? "shared/samples" : `${hid}/brief`, path = `${dir}/${hash}.wav`, store = admin.storage.from("photos");
   const signed = async () => (await store.createSignedUrl(path, 12 * 3600)).data?.signedUrl;
-  const { data: have } = await store.list(`${hid}/brief`, { search: hash + ".wav" });
+  const { data: have } = await store.list(dir, { search: hash + ".wav" });
   if (have && have.length) return { url: await signed(), cached: true };
+  if (shared) { // already recorded for this family before samples were shared: reuse it
+    const { data: mine } = await store.list(`${hid}/brief`, { search: hash + ".wav" });
+    if (mine && mine.length && !(await store.copy(`${hid}/brief/${hash}.wav`, path)).error) return { url: await signed(), cached: true };
+  }
   let lastErr = "";
   for (const model of (await ttsModels(key)).slice(0, 3)) {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 45000);
@@ -229,6 +234,7 @@ async function speak(key: string, hid: string, text: string, pid: string) {
       const up = await store.upload(path, wav(soften(got.pcm, got.rate), got.rate), { contentType: "audio/wav", upsert: true });
       if (up.error) throw new Error("couldn't save the audio");
       // tidy: keep only the last few days of briefs
+      if (shared) return { url: await signed(), cached: false };
       const { data: old } = await store.list(`${hid}/brief`, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
       const stale = (old || []).filter((f: any) => f.created_at && Date.now() - new Date(f.created_at).getTime() > 3 * 864e5).map((f: any) => `${hid}/brief/${f.name}`);
       if (stale.length) await store.remove(stale);
@@ -330,7 +336,7 @@ Return JSON: {"text":"..."}`);
       if (!keys.g) return json({ error: "voice-nokey" }, 400);
       const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 1400);
       if (!text) return json({ error: "Nothing to read." }, 400);
-      try { return json(await speak(keys.g, hid, text, String(body.persona || body.tone || "sunny"))); }
+      try { return json(await speak(keys.g, hid, text, String(body.persona || body.tone || "sunny"), String(body.gender || ""), !!body.sample)); }
       catch (e) { return json({ error: String((e as Error).message) }, 502); }
     }
     if (a === "event_parse") {

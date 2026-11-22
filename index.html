@@ -416,7 +416,7 @@ body.night .kid{border-top-color:var(--c)}
 .pev{display:grid;gap:2px;text-align:left;border:0;border-left:5px solid var(--c);border-radius:14px;padding:10px 12px;background:color-mix(in srgb,var(--c) 12%,var(--raise,var(--surface)));font:inherit;color:var(--ink);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .pev .pt{font-size:14px;font-weight:700;color:var(--ink-2)}.pev b{font-size:17px;line-height:1.25}.pev small{font-size:13.5px;color:var(--ink-2)}
 .ptk{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:13.5px;font-weight:700}.ptk .face{width:22px;height:22px;font-size:11px;border-width:0}
-.evppl{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chips2.gsel .chip2{padding:4px 18px}.evppl{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.chips2{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .chip2{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 14px 4px 6px;border-radius:99px;border:1.5px solid var(--line);background:var(--surface);font:inherit;font-weight:700;color:var(--ink);cursor:pointer}.chip2 .face{width:32px;height:32px;font-size:15px;border-width:0}.chip2.on{background:var(--pick);border-color:var(--pick);color:#fff}.chip2.on .face{box-shadow:0 0 0 2px #fff}
 body[data-drag="pev"] .pcol{transition:outline .1s}
 .hint{font-weight:600;color:var(--muted);font-size:13px;text-transform:none;letter-spacing:0;margin-left:6px}
@@ -778,7 +778,7 @@ body.night .hero .leave{color:var(--apricot)}
 <script>
 "use strict";
 /* ============ config ============ */
-const APP_VERSION = '22.11-0945'; // day.month-time of the build, shown in Settings → Devices
+const APP_VERSION = '22.11-1010'; // day.month-time of the build, shown in Settings → Devices
 const SUPABASE_URL = 'https://sroxxxuurhdugvfmwwyw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_u9_0WMubobaQmBt3pe5ovA_o2lbOre5';
 const FN_URL = SUPABASE_URL + '/functions/v1/calendar';
@@ -1883,25 +1883,29 @@ function lockPanelHTML() {
    then (if the AI helper is on) rewritten in the chosen tone. Read aloud with the device's own voice. */
 /* Assistant personalities: each has its own voice and its own way of writing the brief. Picked per person (the family screen has its own). */
 const PERSONAS = [
-  {id: 'sunny', name: 'Sunny', emoji: '☀️', blurb: 'Bright and bubbly, cheers you on', tone: 'bubbly', sample: "Morning! Big day, but you've totally got this. Swimming's at nine, so let's get those hats on!"},
-  {id: 'mate', name: 'Mate', emoji: '🦘', blurb: 'Laid-back Aussie, keeps it real', tone: 'plain', sample: "G'day. Pretty easy one today. Swimming at nine, bins out tonight, and that's about it, mate."},
-  {id: 'sass', name: 'Sass', emoji: '💅', blurb: 'Cheeky, dry humour, still kind', tone: 'sassy', sample: "Rise and shine. Swimming's at nine, and no, the bins won't take themselves out tonight."},
-  {id: 'willow', name: 'Willow', emoji: '🌿', blurb: 'Calm and gentle, one thing at a time', tone: 'calm', sample: "Good morning. Take a breath. First, swimming at nine. That's all you need to think about for now."},
-  {id: 'news', name: 'Newsreader', emoji: '📻', blurb: 'Straight to the point', tone: 'plain', sample: "Good morning. Swimming at nine. Lunchboxes to pack. Bins out tonight. Top of twenty-eight."},
-  {id: 'sterling', name: 'Sterling', emoji: '🤖', blurb: 'Sleek AI aide, dry British wit', tone: 'plain', sample: "Good morning. Swimming is at nine, so departure is advised by eight forty. Lunchboxes are pending, and the bins go out tonight."},
-  {id: 'ambrose', name: 'Ambrose', emoji: '🎩', blurb: 'Devoted family butler, warm and wise', tone: 'calm', sample: "Good morning. Swimming at nine, so do leave by twenty to, if you please. Lunches want packing, and I'd suggest a hat. It'll be warm."},
-  {id: 'coach', name: 'Coach', emoji: '💪', blurb: 'Energetic, gets you moving', tone: 'bubbly', sample: "Let's go! Swimming at nine, lunches packed by eight thirty. Three things today, and we'll smash every one."},
+  {id: 'sunny', g: 'f', name: 'Sunny', emoji: '☀️', blurb: 'Bright and bubbly, cheers you on', tone: 'bubbly', sample: "Morning! Big day, but you've totally got this. Swimming's at nine, so let's get those hats on!"},
+  {id: 'mate', g: 'm', name: 'Mate', emoji: '🦘', blurb: 'Laid-back Aussie, keeps it real', tone: 'plain', sample: "G'day. Pretty easy one today. Swimming at nine, bins out tonight, and that's about it, mate."},
+  {id: 'sass', g: 'f', name: 'Sass', emoji: '💅', blurb: 'Cheeky, dry humour, still kind', tone: 'sassy', sample: "Rise and shine. Swimming's at nine, and no, the bins won't take themselves out tonight."},
+  {id: 'willow', g: 'f', name: 'Willow', emoji: '🌿', blurb: 'Calm and gentle, one thing at a time', tone: 'calm', sample: "Good morning. Take a breath. First, swimming at nine. That's all you need to think about for now."},
+  {id: 'news', g: 'm', name: 'Newsreader', emoji: '📻', blurb: 'Straight to the point', tone: 'plain', sample: "Good morning. Swimming at nine. Lunchboxes to pack. Bins out tonight. Top of twenty-eight."},
+  {id: 'sterling', g: 'm', uk: true, name: 'Sterling', emoji: '🤖', blurb: 'Sleek AI aide, dry British wit', tone: 'plain', sample: "Good morning. Swimming is at nine, so departure is advised by eight forty. Lunchboxes are pending, and the bins go out tonight."},
+  {id: 'ambrose', g: 'm', uk: true, name: 'Ambrose', emoji: '🎩', blurb: 'Devoted family butler, warm and wise', tone: 'calm', sample: "Good morning. Swimming at nine, so do leave by twenty to, if you please. Lunches want packing, and I'd suggest a hat. It'll be warm."},
+  {id: 'coach', g: 'm', name: 'Coach', emoji: '💪', blurb: 'Energetic, gets you moving', tone: 'bubbly', sample: "Let's go! Swimming at nine, lunches packed by eight thirty. Three things today, and we'll smash every one."},
 ];
 const briefWho = () => S.activeMember ? memberById(S.activeMember) : (isPhone() ? meMember() : null);
 const personaKey = () => (briefWho() || {}).id || 'family';
 const personaId = () => (settings().persona || {})[personaKey()] || ({bubbly: 'sunny', sassy: 'sass', plain: 'news', calm: 'willow'})[LS.get('briefTone', '')] || 'sunny';
 const persona = (id = personaId()) => PERSONAS.find(p => p.id === id) || PERSONAS[0];
 const briefTone = () => persona().tone;
+const gselShow = g => document.querySelectorAll('[data-act="voice-g"]').forEach(b => { b.classList.toggle('on', b.dataset.v === g); b.setAttribute('aria-pressed', b.dataset.v === g); });
+// Female or male voice, chosen per person; until they choose, each personality uses its own usual voice.
+const voiceG = (pid = personaId()) => (settings().voiceG || {})[personaKey()] || persona(pid).g || 'f';
 function personaPickerHTML() {
-  const cur = personaId(), who = briefWho();
-  return `<div class="pgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}"><span class="pe">${p.emoji}</span><b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
+  const cur = personaId(), who = briefWho(), g = voiceG(cur);
+  return `<h3 style="margin-top:6px">Voice</h3><div class="chips2 gsel" role="group" aria-label="Voice">${[['f', 'Female'], ['m', 'Male']].map(([k, l]) => `<button class="chip2 ${g === k ? 'on' : ''}" data-act="voice-g" data-v="${k}" aria-pressed="${g === k}">${l}</button>`).join('')}</div>
+    <h3 style="margin-top:14px">Personality</h3><div class="pgrid">${PERSONAS.map(p => `<div class="pcard ${p.id === cur ? 'on' : ''}" data-pid="${p.id}"><button class="pmain" data-act="persona-set" data-v="${p.id}" aria-pressed="${p.id === cur}"><span class="pe">${p.emoji}</span><b>${p.name}</b><small>${p.blurb}</small></button><button class="psample" data-act="persona-sample" data-v="${p.id}" aria-label="Hear ${p.name}">▶</button></div>`).join('')}</div>
     <p class="help">${who ? `This is ${esc(who.name)}'s assistant.` : 'This is the family screen\'s assistant.'} Each person can pick their own.</p>
-    <h3 style="margin-top:14px">Voice</h3><div class="chips2">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
+    <h3 style="margin-top:14px">Read by</h3><div class="chips2 gsel">${[['natural', '✨ Natural (Google)'], ['device', '📱 This device']].map(([k, l]) => `<button class="chip2 ${LS.get('briefVoice', 'natural') === k ? 'on' : ''}" data-act="brief-voice" data-v="${k}">${l}</button>`).join('')}</div>
     <p class="help">${S.aiGemini ? 'Natural uses your free Gemini key: about 10 new recordings a day. Each brief is recorded once and every screen reuses it. If it runs out, this device\'s voice reads instead.' : 'Natural needs the free Gemini key (Settings → Kitchen). Until then, this device\'s voice reads it.'}</p>`;
 }
 /* Your assistant's voice in the app's own messages. Facts stay the same; only the wording changes. */
@@ -1925,23 +1929,29 @@ const VOICE = {
 };
 const pv = (k, ...a) => { const P = VOICE[personaId()] || VOICE.sunny, v = P[k] !== undefined ? P[k] : VOICE.news[k]; return typeof v === 'function' ? v(...a) : v; };
 // Play text in a personality's voice: the natural recording if we can, otherwise the device's best voice.
-function playSpeech(text, pid, onStart, onEnd) {
-  const P = persona(pid); S._speaking = true; onStart && onStart();
-  const done = () => { S._speaking = false; onEnd && onEnd(); };
+// One voice at a time: each play gets a number, and anything still arriving from an older play is ignored.
+const _say = {id: 0, end: null};
+function playSpeech(text, pid, onStart, onEnd, opts = {}) {
+  stopSpeech();
+  const id = ++_say.id, live = () => _say.id === id, P = persona(pid), g = opts.g || voiceG(P.id);
+  S._speaking = true; onStart && onStart();
+  _say.end = () => { S._speaking = false; onEnd && onEnd(); };
+  const done = () => { if (!live()) return; _say.end = null; S._speaking = false; onEnd && onEnd(); };
+  const device = () => { if (live() && !speak(text, P.tone, done, g, P.uk)) done(); };
   if (!DEMO && S.aiOn && S.aiGemini !== false && LS.get('briefVoice', 'natural') === 'natural') {
     const a = S._audio || (S._audio = new Audio()); a.onended = a.onerror = null;
     try { a.src = silentWav(); a.play().catch(() => {}); } catch {}
-    const slow = setTimeout(() => S._speaking && toast(pv('ready'), 3000), 900);
-    callAI({action: 'speak', text, persona: P.id}).then(r => {
-      clearTimeout(slow); if (!S._speaking) return;
-      const fallback = msg => { if (!S._speaking) return; if (msg) toast(msg, 4000); if (!speak(text, P.tone, done)) done(); };
+    const slow = setTimeout(() => live() && toast(pv('ready'), 3000), 900);
+    callAI({action: 'speak', text, persona: P.id, gender: g, sample: !!opts.sample}).then(r => {
+      clearTimeout(slow); if (!live()) return;
+      const fallback = msg => { if (!live()) return; if (msg) toast(msg, 4000); device(); };
       if (!r || !r.url) return fallback(r && r.error === 'voice-limit' ? pv('limit') : r && r.error === 'voice-nokey' ? '' : pv('busy'));
       a.onended = done; a.onerror = () => fallback(pv('busy'));
       a.src = r.url; a.play().catch(() => fallback('Tap play again to hear it.'));
     });
     return;
   }
-  if (!speak(text, P.tone, done)) done();
+  device();
 }
 const andList = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 const sayTime = d => fmtTime(d).replace(':00', '');
@@ -2002,23 +2012,36 @@ function briefCardHTML(force) {
     <p class="btxt" ${force ? '' : 'data-act="brief-more" role="button" tabindex="0" aria-label="Show the whole brief"'}>${esc(briefText())}</p></section>`;
 }
 function sayBtn(on) { const b = $('.bplay'); if (!b) return; b.classList.toggle('on', on); b.innerHTML = on ? '■ Stop' : '▶ <span class="rl">Read it to me</span><span class="rs">Listen</span>'; }
-function stopSpeech() { try { speechSynthesis.cancel(); } catch {} try { S._audio && S._audio.pause(); } catch {} S._speaking = false; sayBtn(false); }
+function stopSpeech() {
+  _say.id++; const end = _say.end; _say.end = null;
+  try { speechSynthesis.cancel(); } catch {}
+  try { if (S._audio) { S._audio.onended = S._audio.onerror = null; S._audio.pause(); } } catch {}
+  S._speaking = false; sayBtn(false); end && end();
+}
 let _silent = '';
 function silentWav() { if (_silent) return _silent; const n = 800, b = new ArrayBuffer(44 + n), v = new DataView(b), w = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
   w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
   return (_silent = URL.createObjectURL(new Blob([b], {type: 'audio/wav'}))); }
-// Best voice this device has: prefer the natural/enhanced/online ones, Australian first.
-function bestVoice() {
+// Best voice this device has: prefer the natural/enhanced/online ones, Australian first (British for the British assistants),
+// and the chosen female or male voice where the device says which is which.
+const FEM = /female|woman|\b(karen|kate|serena|samantha|catherine|martha|moira|tessa|fiona|libby|sonia|natasha|hazel|susan|zira|aria|jenny|olivia|isla|matilda)\b/i;
+const MAL = /\bmale\b|\bman\b|\b(daniel|arthur|oliver|george|james|thomas|fred|aaron|lee|gordon|rishi|malcolm|ryan|william|david|mark|guy|liam|noah)\b/i;
+const genderOf = v => FEM.test(v.name) ? 'f' : MAL.test(v.name) ? 'm' : '';
+function bestVoice(g, uk) {
   const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
-  const score = v => (/natural|neural|online|premium|enhanced|siri/i.test(v.name) ? 6 : 0) + (/en[-_]AU/i.test(v.lang) ? 3 : /en[-_]GB/i.test(v.lang) ? 2 : /^en/i.test(v.lang) ? 1 : -20) + (v.localService === false ? 2 : 0) - (/compact|espeak|robot/i.test(v.name) ? 4 : 0);
+  const score = v => (/natural|neural|online|premium|enhanced|siri/i.test(v.name) ? 6 : 0) + (uk ? (/en[-_]GB/i.test(v.lang) ? 4 : /en[-_]AU/i.test(v.lang) ? 1 : /^en/i.test(v.lang) ? 1 : -20) : (/en[-_]AU/i.test(v.lang) ? 3 : /en[-_]GB/i.test(v.lang) ? 2 : /^en/i.test(v.lang) ? 1 : -20))
+    + (v.localService === false ? 2 : 0) - (/compact|espeak|robot/i.test(v.name) ? 4 : 0) + (g && genderOf(v) === g ? 7 : g && genderOf(v) ? -7 : 0);
   return vs.filter(v => /^en/i.test(v.lang)).sort((a, b) => score(b) - score(a))[0] || null;
 }
-function speak(text, tone, onEnd) {
+function speak(text, tone, onEnd, g = '', uk = false) {
   const ss = window.speechSynthesis; if (!ss || !window.SpeechSynthesisUtterance) { toast("This device can't read aloud."); return false; }
   ss.cancel();
-  const u = new SpeechSynthesisUtterance(text), vs = ss.getVoices();
-  u.voice = bestVoice();
-  u.lang = (u.voice && u.voice.lang) || 'en-AU'; u.rate = ({calm: .9, bubbly: 1.04, sassy: 1, plain: 1.08})[tone] || 1; u.pitch = tone === 'bubbly' ? 1.08 : 1;
+  const u = new SpeechSynthesisUtterance(text), v = bestVoice(g, uk);
+  u.voice = v;
+  u.lang = (v && v.lang) || (uk ? 'en-GB' : 'en-AU'); u.rate = ({calm: .9, bubbly: 1.04, sassy: 1, plain: 1.08})[tone] || 1;
+  // No labelled voice of the right kind on this device: nudge the pitch instead.
+  const off = g && (!v || genderOf(v) !== g) ? (g === 'm' ? -.22 : .12) : 0;
+  u.pitch = Math.max(.5, (tone === 'bubbly' ? 1.08 : 1) + off);
   u.onend = u.onerror = () => onEnd && onEnd();
   ss.speak(u); return true;
 }
@@ -2858,13 +2881,19 @@ const A = {
     playSpeech(($('.brief .btxt') || {}).textContent || briefText(), personaId(), () => sayBtn(true), () => sayBtn(false));
   },
   'persona-sample'(el) {
-    if (S._speaking) stopSpeech();
-    const P = persona(el.dataset.v); el.classList.add('on'); el.textContent = '■';
-    playSpeech(P.sample, P.id, null, () => { el.classList.remove('on'); el.textContent = '▶'; });
+    const was = el.classList.contains('on'); stopSpeech(); if (was) return; // tapping ■ just stops
+    const P = persona(el.dataset.v); el.classList.add('on'); el.textContent = '■'; el.setAttribute('aria-label', `Stop ${P.name}`);
+    playSpeech(P.sample, P.id, null, () => { el.classList.remove('on'); el.textContent = '▶'; el.setAttribute('aria-label', `Hear ${P.name}`); }, {sample: true});
+  },
+  async 'voice-g'(el) {
+    stopSpeech(); const v = el.dataset.v;
+    gselShow(v);
+    await saveSettings({voiceG: Object.assign({}, settings().voiceG, {[personaKey()]: v})}, true);
+    toast(v === 'm' ? 'Male voice it is.' : 'Female voice it is.', 2000);
   },
   async 'persona-set'(el) {
     const v = el.dataset.v; document.querySelectorAll('.pcard').forEach(c => { const on = c.dataset.pid === v; c.classList.toggle('on', on); const m = c.querySelector('.pmain'); m && m.setAttribute('aria-pressed', on); });
-    await saveSettings({persona: Object.assign({}, settings().persona, {[personaKey()]: v})}, true); toast(pv('hello'), 3000);
+    await saveSettings({persona: Object.assign({}, settings().persona, {[personaKey()]: v})}, true); gselShow(voiceG(v)); toast(pv('hello'), 3000);
   },
   'brief-more'() { S._briefOpen = !S._briefOpen; const b = $('.brief'); if (b) b.classList.toggle('open', S._briefOpen); },
   'brief-hide'() { LS.set('briefHide', dayKey(new Date())); stopSpeech(); render(); toast(pv('hide')); },
