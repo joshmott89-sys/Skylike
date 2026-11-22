@@ -50,23 +50,23 @@ function locSearch(inp) {
     try {
       const qq = expandStreet(q), num = (qq.match(/^\s*(\d+[a-z]?(?:[\/-]\d+[a-z]?)?)\s+\D/i) || [])[1];
       // a street on the map without this house number: keep the number you typed, use the street for drive times
-      const withNum = (name, street, area, isStreet, sub) => isStreet && num && !/^\d/.test(name) ? {name: `${num} ${name}`, sub: [area, 'street found, fine for drive times'].filter(Boolean).join(' · ')} : {name, sub};
+      const withNum = (name, street, area, isStreet, sub) => isStreet && num && !/^\d/.test(name) ? {name: `${num} ${name}`, sub: area, streetOnly: true} : {name, sub};
       const r = await fetch(`https://photon.komoot.io/api/?limit=7&lang=en&lat=${h.lat}&lon=${h.lon}&location_bias_scale=0.6&q=${encodeURIComponent(qq)}`); const d = await r.json(); if (seq !== locSeq) return;
       const seen = new Set();
       let list = (d.features || []).filter(f => (f.properties.countrycode || 'AU') === 'AU').map(f => {
         const P = f.properties, street = [P.housenumber, P.street].filter(Boolean).join(' '), area = P.suburb || P.district || P.locality || P.city || '';
         let name = P.name || street, sub = [P.name && street ? street : '', area !== name ? area : '', P.state && P.state !== 'Western Australia' ? P.state : ''].filter(Boolean).join(', ');
-        ({name, sub} = withNum(name, street, area, P.type === 'street' && !P.housenumber, sub) );
-        return {name, sub, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
+        let so; ({name, sub, streetOnly: so} = withNum(name, street, area, P.type === 'street' && !P.housenumber, sub));
+        return {name, sub, streetOnly: !!so, label: [name, P.name && street ? street : '', area !== name ? area : ''].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]};
       }).filter(x => x.name && !seen.has(x.label) && seen.add(x.label)).slice(0, 6);
       // nothing exact from the first map: ask the other free one (it knows more house numbers and address styles)
-      const exact = list.some(x => !/street found/.test(x.sub || ''));
+      const exact = list.some(x => !x.streetOnly);
       if (!list.length || (num && !exact)) { try {
         const n = await (await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=au&addressdetails=1&viewbox=${[h.lon - 1, h.lat + 1, h.lon + 1, h.lat - 1].join(',')}&q=${encodeURIComponent(qq)}`)).json(); if (seq !== locSeq) return;
         const prevList = list; list = (Array.isArray(n) ? n : []).map(x => { const A = x.address || {}, street = [A.house_number, A.road].filter(Boolean).join(' '), area = A.suburb || A.town || A.city || '';
           const nm = x.name && x.name !== A.road ? x.name : street || x.name; const w = withNum(nm, street, area, x.class === 'highway' && !A.house_number, [x.name && x.name !== A.road ? street : '', area].filter(Boolean).join(', '));
-          return {name: w.name, sub: w.sub, label: [w.name, area].filter(Boolean).join(', '), lat: +x.lat, lon: +x.lon}; }).filter(x => x.name);
-        const exactN = list.filter(x => !/street found/.test(x.sub || ''));
+          return {name: w.name, sub: w.sub, streetOnly: !!w.streetOnly, label: [w.name, area].filter(Boolean).join(', '), lat: +x.lat, lon: +x.lon}; }).filter(x => x.name);
+        const exactN = list.filter(x => !x.streetOnly);
         const seen2 = new Set(); list = (exactN.length ? exactN.concat(prevList) : prevList.length ? prevList : list).filter(x => !seen2.has(x.label) && seen2.add(x.label)).slice(0, 6);
       } catch {} }
       S._locList = list;
