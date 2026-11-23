@@ -66,23 +66,48 @@ async function getPage(u: URL) {
 }
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
+// Free-tier Gemini gets "high demand" (503) spells. Try several Flash models (each one a second time after a pause),
+// within a time budget, and only then give a plain message.
+const listCache = new Map<string, { list: string[]; at: number }>();
+async function flashModels(key: string): Promise<string[]> {
+  const c = listCache.get(key); if (c && Date.now() - c.at < 6 * 3600e3) return c.list;
+  let names: string[] = [];
+  try {
+    const d = await (await fetch(`${API}/models?pageSize=200&key=${encodeURIComponent(key)}`)).json();
+    names = (d.models || []).filter((m: any) => (m.supportedGenerationMethods || []).includes("generateContent")).map((m: any) => String(m.name).replace(/^models\//, ""))
+      .filter((n: string) => /flash/.test(n) && !/image|tts|live|audio|embed|exp|preview/.test(n));
+  } catch { /* use the aliases below */ }
+  const ver = (n: string) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0");
+  const full = names.filter(n => !/lite/.test(n) && !/latest/.test(n)).sort((a, b) => ver(b) - ver(a)).slice(0, 1);
+  const lite = names.filter(n => /lite/.test(n) && !/latest/.test(n)).sort((a, b) => ver(b) - ver(a)).slice(0, 1);
+  const list = [...new Set(["gemini-flash-latest", ...full, "gemini-flash-lite-latest", ...lite])];
+  listCache.set(key, { list, at: Date.now() }); return list;
+}
 async function gemini(key: string, prompt: string, images: string[] = []) {
   const parts: any[] = [{ text: prompt }, ...images.map(d => ({ inline_data: { mime_type: "image/jpeg", data: d } }))];
-  let last = "";
-  for (const model of ["gemini-flash-latest", "gemini-flash-lite-latest"]) {
-    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 55000);
-    try {
-      const r = await fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.2 } }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.status === 429) { last = "Today's free AI limit is used up for now. Try again later."; continue; }
-      if (!r.ok) { last = d?.error?.message || "The AI is busy. Try again in a minute."; continue; }
-      const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
-      return JSON.parse(text.replace(/^```json\s*|```$/g, ""));
-    } catch (e) { last = (e as Error).name === "AbortError" ? "The AI took too long. Try again." : "The AI reply couldn't be read. Try again."; }
-    finally { clearTimeout(t); }
+  const t0 = Date.now(), budget = 125000; let last = "", busy = false;
+  for (const model of await flashModels(key)) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const left = budget - (Date.now() - t0); if (left < 8000) break;
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), Math.min(left, images.length ? 50000 : 40000));
+      try {
+        const call = (thinking: boolean) => fetch(`${API}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json", temperature: 0.2, ...(thinking ? { thinkingConfig: { thinkingLevel: "minimal" } } : {}) } }) });
+        let r = await call(true); if (r.status === 400 && /thinking/i.test(await r.clone().text())) r = await call(false);
+        const d = await r.json().catch(() => ({}));
+        console.log(JSON.stringify({ model, attempt, ms: Date.now() - t0, status: r.status, err: d?.error?.message?.slice(0, 120) }));
+        if (r.status === 429) { last = "limit"; break; }
+        if (r.status === 503 || r.status === 500 || r.status === 404) { busy = true; if (attempt === 0 && r.status !== 404) { await new Promise(z => setTimeout(z, 2000)); continue; } break; }
+        if (!r.ok) { last = d?.error?.message || "busy"; break; }
+        const text = d?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "{}";
+        return JSON.parse(text.replace(/^```json\s*|```$/g, ""));
+      } catch (e) { last = (e as Error).name === "AbortError" ? "slow" : "unreadable"; break; }
+      finally { clearTimeout(t); }
+    }
   }
-  throw new Error(last || "The AI is busy. Try again in a minute.");
+  throw new Error(last === "limit" && !busy ? "Today's free AI limit is used up for now. Try again later."
+    : busy ? "Google's free AI is very busy right now. Wait a minute and tap Try again."
+    : last === "slow" ? "The AI took too long. Try again, or take the photo a little closer." : "The AI couldn't read that. Try again in a minute.");
 }
 const ASK = `Return JSON: {"title":"","servings":"","prep_time":"","ingredients":[{"qty":"2 cups","name":"plain flour","group":""}],"steps":["..."]}. Keep the recipe's own words and amounts; Australian names are fine. Leave out anything that isn't the recipe. If there's no recipe, return {"title":""}.`;
 const tidy = (o: any, source: string, url?: string): Recipe => ({ title: clean(o.title).slice(0, 120), servings: clean(o.servings).slice(0, 30), prep_time: clean(o.prep_time).slice(0, 30), url, source,

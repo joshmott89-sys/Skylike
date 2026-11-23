@@ -122,24 +122,45 @@ Object.assign(F, {
     if (!DEMO) { const {error} = await sb.from('grocery_spend').insert(row); if (error) toast("Couldn't save the shop. Try again.", 5000); }
   },
 });
-async function readReceipt(fileList) {
+// Keep the photos until they're read, so a busy AI only costs a "Try again" tap, not another photo.
+function receiptFailed(msg, imgs, mode) {
+  S._rcptRetry = {imgs, mode};
+  sheet(`<h2>Couldn't read the receipt yet</h2><p class="help">${esc(msg)}</p><p class="help">Your photo is kept, so you don't need to take it again.</p>
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="rcpt-retry">${icon('refresh')}Try again</button><span class="grow"></span><button class="btn ghost" data-act="spend-type">Type the total instead</button></div>`, {focus: false});
+}
+async function sendReceipt(imgs, mode) {
+  const ticks = setInterval(() => toast('Still reading… long receipts can take up to a minute', 20000), 15000);
+  try { return await callRecipe({receipt: imgs}); } finally { clearInterval(ticks); }
+}
+A['rcpt-retry'] = async () => {
+  const R = S._rcptRetry; if (!R) return closeSheet(); closeSheet(); toast('Reading the receipt…', 20000);
+  const r = await sendReceipt(R.imgs, R.mode); if (r.error) return receiptFailed(r.error, R.imgs, R.mode);
+  S._rcptRetry = null; return applyReceipt(r, R.mode);
+};
+function applyReceipt(r, mode) {
+  if (mode === 'new') { toast('Got it', 1200); return spendDraftSheet(r.receipt); }
+  const saved = mode === 'saved', base = saved ? (S.spend || []).find(x => x.id === S._spendOpen) : S._spendDraft; if (!base) return;
+  const m = mergeReceipt(base, r.receipt || {}), note = m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part';
+  if (!saved) { spendDraftSheet(m); return toast(note, 2500); }
+  const items = m.items.slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)}));
+  Object.assign(base, {items, total: m.total || base.total, store: m.store, source: 'receipt'}); spendSheet(base); render();
+  if (!DEMO) db(sb.from('grocery_spend').update({items, total: base.total, store: base.store, source: 'receipt'}).eq('id', base.id));
+  toast(note, 2500);
+}
+async function readReceipt(fileList, mode) {
   const files = [...fileList].slice(0, 3);
   if (DEMO) { await new Promise(r => setTimeout(r, 400)); return {receipt: {store: '', day: '', total: 0, items: [{name: 'Bananas 1kg', price: 4.20, place: 'pantry'}, {name: 'Greek yoghurt 1kg', price: 7.50, place: 'fridge'}, {name: 'Pasta 500g', price: 2.30, place: 'pantry'}]}}; }
   const imgs = await Promise.all(files.map(f => photoToBase64(f, 2000)));
-  return callRecipe({receipt: imgs});
+  const r = await sendReceipt(imgs, mode); if (r.error) { receiptFailed(r.error, imgs, mode); return {failed: true}; }
+  return r;
 }
 document.addEventListener('change', async e => {
   const el = e.target; if (!['spend-more', 'spend-more-saved'].includes(el.dataset.change) || !el.files || !el.files.length) return;
   const saved = el.dataset.change === 'spend-more-saved', base = saved ? (S.spend || []).find(x => x.id === S._spendOpen) : S._spendDraft;
   if (!base) return; toast('Reading the next part…', 20000);
   try {
-    const r = await readReceipt(el.files); if (r.error) return toast(r.error, 6000);
-    const m = mergeReceipt(base, r.receipt || {});
-    if (!saved) { spendDraftSheet(m); return toast(m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part', 2500); }
-    const items = m.items.slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)}));
-    Object.assign(base, {items, total: m.total || base.total, store: m.store, source: 'receipt'}); spendSheet(base); render();
-    if (!DEMO) db(sb.from('grocery_spend').update({items, total: base.total, store: base.store, source: 'receipt'}).eq('id', base.id));
-    toast(m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part', 2500);
+    const mode = saved ? 'saved' : 'draft', r = await readReceipt(el.files, mode); if (r.failed) return;
+    applyReceipt(r, mode);
   } catch { toast("Couldn't read that photo. Try again.", 5000); }
 });
 document.addEventListener('change', async e => {
@@ -147,9 +168,7 @@ document.addEventListener('change', async e => {
   const files = [...el.files].slice(0, 3); toast('Reading the receipt…', 20000);
   if (DEMO) { await new Promise(r => setTimeout(r, 400)); return spendDraftSheet({store: 'Woolworths', day: dayKey(new Date()), total: 86.40, items: [{name: 'Milk 2L', price: 3.10, place: 'fridge'}, {name: 'Bread', price: 4.50, place: 'pantry'}, {name: 'Chicken thigh 1kg', price: 13.00, place: 'fridge'}, {name: 'Bananas', price: 4.20, place: 'pantry'}, {name: 'Dishwashing liquid', price: 5.50}]}); }
   try {
-    const imgs = await Promise.all(files.map(f => photoToBase64(f, 2000)));
-    const r = await callRecipe({receipt: imgs});
-    if (r.error) return toast(r.error, 6000);
-    toast('Got it', 1200); spendDraftSheet(r.receipt);
+    const r = await readReceipt(files, 'new'); if (r.failed) return;
+    applyReceipt(r, 'new');
   } catch { toast("Couldn't read that photo. Try again, or type the total.", 5000); }
 });
