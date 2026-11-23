@@ -994,3 +994,4 @@ body.night .kgoal .kgs b{color:#f2c45a}
 body.night .drow.done .dbox{background:#3987e5;border-color:#3987e5}
 .splan{display:grid;gap:6px}.splan .ptags{margin-bottom:4px}.snext{margin-top:10px;padding:10px 12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 4%,transparent)}.snext summary{font-weight:700;cursor:pointer;color:var(--ink-2)}.snext[open] summary{margin-bottom:8px}
 .rdays[hidden],.rwhenhelp[hidden]{display:none!important}
+.evlast[hidden]{display:none!important}

@@ -29,6 +29,7 @@ function eventForm(e, k) {
       ${e ? `<p class="help">${e.local ? 'Only in Skylike (not in Google Calendar)' : 'In ' + esc((calOf(e) || {}).name || 'Google Calendar')}</p>` : `<label class="lbl">Calendar <select class="input" name="calendar" data-change="ev-cal">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>${!cals.length ? `<p class="help">Want events in Google Calendar too? <button type="button" class="linkbtn" data-act="ev-setup">Connect two-way editing</button></p>` : ''}`}
       ${whoSel}
       <div class="row evrow"><label class="lbl">Day <input class="input" type="date" name="day" value="${day}" required data-change="rep-refresh"></label><label class="lbl evad"><input type="checkbox" name="allday" ${(e ? e.all_day : pre0.all_day) ? 'checked' : ''} data-change="ev-allday"> All day</label></div>
+      <div class="row evrow evlast" ${(e ? e.all_day : pre0.all_day) ? '' : 'hidden'}><label class="lbl">Last day <span class="hint">for holidays or trips over several days</span><input class="input" type="date" name="lastday" value="${e && e.all_day ? addDaysKey(e.ends_at.slice(0, 10), -1) : (pre0.lastday || day)}"></label></div>
       <div class="row evrow evtimes" ${(e ? e.all_day : pre0.all_day) ? 'hidden' : ''}><label class="lbl">Starts <input class="input" type="time" name="start" value="${st}" data-change="ev-start" data-prev="${st}"></label><label class="lbl">Ends <input class="input" type="time" name="end" value="${en}"></label></div>
       ${e ? '' : `<div class="evtake" ${pre0.all_day ? 'hidden' : ''}><div class="lbl">Who's driving <span class="hint">optional · they get the leave reminder</span></div><input type="hidden" name="taker" value="">
         <div class="chips2">${S.members.filter(m => m.kind !== 'kid').map(m => `<button type="button" class="chip2" data-act="take-tog" data-m="${m.id}" aria-pressed="false">${avatar(m)}${esc(m.name)}</button>`).join('')}</div></div>`}
@@ -299,7 +300,7 @@ const F = {
     smartFill(f);
     const id = f.dataset.id, title = f.title.value.trim(), day = f.day.value, allDay = f.allday.checked; if (!title || !day) return;
     let start, end;
-    if (allDay) { start = day; end = addDaysKey(day, 1); }
+    if (allDay) { start = day; const last = f.lastday && f.lastday.value > day ? f.lastday.value : day; end = addDaysKey(last, 1); }
     else { start = zonedISO(day, f.start.value || '09:00'); end = zonedISO(day, f.end.value || f.start.value || '10:00'); if (new Date(end) <= new Date(start)) end = new Date(new Date(start).getTime() + 3600e3).toISOString(); }
     const taker = f.taker && f.taker.value && !allDay ? f.taker.value : null, location = f.location.value.trim(), whoIds = f.who && f.who.value ? f.who.value.split(',').filter(Boolean) : [], who = whoIds[0] || null, notes = f.notes ? f.notes.value.trim() || null : null;
     if (location && f.location_lat && f.location_lat.value) rememberGeo(location, f.location_lat.value, f.location_lon.value);
@@ -553,7 +554,7 @@ document.addEventListener('change', async e => {
   if (el.dataset.change === 'scan-count') { scanCount(); return; }
   if (el.dataset.change === 'routine-when') { const fm = el.closest('form'), tick = el.value === 'days'; fm.querySelector('.rdays').hidden = !tick; fm.querySelector('.rwhenhelp').hidden = tick; return; }
   if (el.dataset.change === 'chore-guess') { const f = el.closest('form'); if (f.dataset.picked) return; const g = guessEmoji(el.value); f.emoji.value = g; f.querySelectorAll('.kpb').forEach(x => { const y = !!g && x.dataset.e === g; x.classList.toggle('on', y); x.setAttribute('aria-pressed', y); }); }
-  if (el.dataset.change === 'ev-allday') { const fm = el.closest('form'), t = fm.querySelector('.evtimes'), tk = fm.querySelector('.evtake'); if (t) t.hidden = el.checked; if (tk) tk.hidden = el.checked; }
+  if (el.dataset.change === 'ev-allday') { const fm = el.closest('form'), t = fm.querySelector('.evtimes'), tk = fm.querySelector('.evtake'), lst = fm.querySelector('.evlast'); if (lst) { lst.hidden = !el.checked; if (fm.lastday.value < fm.day.value) fm.lastday.value = fm.day.value; } if (t) t.hidden = el.checked; if (tk) tk.hidden = el.checked; }
   if (el.dataset.act === 'album-pick') {
     if (el.value === '__new') { const n = (prompt('Name the new album (e.g. Holidays, Christmas)') || '').trim().slice(0, 40); if (n) S.uploadAlbum = n; }
     else S.uploadAlbum = el.value;
