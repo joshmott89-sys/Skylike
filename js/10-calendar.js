@@ -185,9 +185,14 @@ async function pantryAdd(items) {
 // Shrink a camera photo before sending it (fast on mobile data, under the AI's size limit).
 // Tries the browser's image decoder first (handles phone rotation), then an <img>, then the original file;
 // never quietly sends an empty picture.
-async function photoToBase64(file, max = 1400) {
-  const draw = (src, w, h) => { if (!w || !h) return ''; const sc = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc)); c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+// opt.portrait: a receipt or letter is taller than wide. Some phone cameras hand over a portrait shot lying on its side
+// (no rotation flag), so a wide photo is turned upright: by default a quarter anticlockwise (how Josh's phone hands
+// them over); if someone has to turn one by hand, that phone remembers which way works (LS rcptTurn = quarters clockwise).
+async function photoToBase64(file, max = 1400, opt = {}) {
+  const draw = (src, w, h) => { if (!w || !h) return ''; const sc = Math.min(1, max / Math.max(w, h)), c = document.createElement('canvas'), dw = Math.max(1, Math.round(w * sc)), dh = Math.max(1, Math.round(h * sc)), turn = opt.portrait && w > h * 1.15, q = turn ? (LS.get('rcptTurn', 3) % 4) : 0;
+    c.width = q % 2 ? dh : dw; c.height = q % 2 ? dw : dh; const x = c.getContext('2d');
+    if (q === 1) { x.translate(dh, 0); x.rotate(Math.PI / 2); } else if (q === 2) { x.translate(dw, dh); x.rotate(Math.PI); } else if (q === 3) { x.translate(0, dw); x.rotate(-Math.PI / 2); }
+    x.drawImage(src, 0, 0, dw, dh);
     return (c.toDataURL('image/jpeg', .82).split(',')[1] || ''); };
   let out = '';
   if (window.createImageBitmap) { try { const bm = await createImageBitmap(file, {imageOrientation: 'from-image'}); out = draw(bm, bm.width, bm.height); if (bm.close) bm.close(); } catch {} }

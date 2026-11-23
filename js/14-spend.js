@@ -73,6 +73,7 @@ function spendDraftSheet(d) {
     ${d.totalFound === false ? `<p class="help rnototal">No final total on this page, so this is the items added up. Add the page with the total, or type it in.</p>` : ''}
     <label class="lbl">Total $ <input class="input num" name="total" type="number" step="0.01" min="0" max="99999" required value="${d.total != null ? (+d.total).toFixed(2) : ''}" style="width:140px"></label>
     ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p>${items.some(i => i.odd) ? `<p class="help rnototal">${items.filter(i => i.odd).length} ${items.filter(i => i.odd).length === 1 ? "line doesn't" : "lines don't"} add up (number × price ≠ amount). They're marked below: tap one to fix it.</p>` : ''}<details ${items.some(i => i.odd) ? 'open' : ''}><summary>See the items (tap one to fix it)</summary><ul class="rcpt">${items.map((i, n) => `<li class="${i.odd ? 'odd' : ''}"><button type="button" class="rline" data-act="rline-edit" data-i="${n}"><span>${esc(i.name)}${qtyNote(i)}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></button></li>`).join('')}</ul></details>
+      ${S._rcptLast && S._rcptLast.mode === 'new' ? `<button type="button" class="linkbtn rturn" data-act="rcpt-turn">Read it wrong? Turn the photo and read it again</button>` : ''}
       ${coverageHTML(d, 'spend-more')}
       ${food ? `<label class="tickrow"><input type="checkbox" name="stock" checked> Update what's in (${food} food item${food === 1 ? '' : 's'}) and tick them off groceries</label>` : ''}` : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn">Save shop</button></div></form>`);
@@ -170,12 +171,23 @@ F['rline-save'] = f => {
   if (d.totalFound === false) d.total = itemSum(d.items);
   spendDraftSheet(d);
 };
+// Turn the photo a quarter at a time until it reads upright, then read it again.
+const turnB64 = b64 => new Promise(res => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'); c.width = img.height; c.height = img.width; const x = c.getContext('2d'); x.translate(c.width, 0); x.rotate(Math.PI / 2); x.drawImage(img, 0, 0); res(c.toDataURL('image/jpeg', .85).split(',')[1]); }; img.onerror = () => res(b64); img.src = 'data:image/jpeg;base64,' + b64; });
+function turnSheet() {
+  const L = S._rcptLast; if (!L) return;
+  sheet(`<h2>Turn the photo</h2><p class="help">Tap Turn until the writing reads the right way up, then read it again.</p>
+    <div class="rturnpics">${L.imgs.map(b => `<img src="data:image/jpeg;base64,${b}" alt="Receipt photo">`).join('')}</div>
+    <div class="row" style="margin-top:12px"><button class="btn soft" data-act="rcpt-turn-go">${icon('refresh')}Turn</button><button class="btn" data-act="rcpt-reread">Read it again</button><span class="grow"></span><button class="btn ghost" data-act="rline-back">Back</button></div>`, {focus: false});
+}
+A['rcpt-turn'] = () => turnSheet();
+A['rcpt-turn-go'] = async () => { const L = S._rcptLast; L.imgs = await Promise.all(L.imgs.map(turnB64)); L.turned = ((L.turned || 0) + 1) % 4; turnSheet(); };
+A['rcpt-reread'] = async () => { const L = S._rcptLast; if (L.turned) LS.set('rcptTurn', (LS.get('rcptTurn', 3) + L.turned) % 4); L.turned = 0; closeSheet(); toast('Reading the receipt…', 20000); const r = await sendReceipt(L.imgs, 'new'); if (r.error) return receiptFailed(r.error, L.imgs, 'new'); applyReceipt(r, 'new'); };
 async function readReceipt(fileList, mode) {
   const files = [...fileList].slice(0, 3);
   if (DEMO) { await new Promise(r => setTimeout(r, 400)); return {receipt: {store: '', day: '', total: 0, items: [{name: 'Bananas 1kg', price: 4.20, place: 'pantry'}, {name: 'Greek yoghurt 1kg', price: 7.50, place: 'fridge'}, {name: 'Pasta 500g', price: 2.30, place: 'pantry'}]}}; }
-  const imgs = await Promise.all(files.map(f => photoToBase64(f, 2000)));
+  const imgs = await Promise.all(files.map(f => photoToBase64(f, 2000, {portrait: true})));
   const r = await sendReceipt(imgs, mode); if (r.error) { receiptFailed(r.error, imgs, mode); return {failed: true}; }
-  return r;
+  S._rcptLast = {imgs, mode}; return r;
 }
 document.addEventListener('change', async e => {
   const el = e.target; if (!['spend-more', 'spend-more-saved'].includes(el.dataset.change) || !el.files || !el.files.length) return;
