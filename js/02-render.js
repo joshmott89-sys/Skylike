@@ -4,7 +4,8 @@ function clockHTML(d) {
   const p = tzParts(d), h12 = ((p.h + 11) % 12) + 1;
   return `${h12}:${String(p.min).padStart(2, '0')}<span class="ampm">${p.h < 12 ? 'am' : 'pm'}</span>`;
 }
-const miniFace = m => m && m.photo ? `<span class="mini ph" style="--c:${esc(m.color)}"><img src="${esc(m.photo)}" alt=""></span>` : m && m.emoji ? `<span class="mini" style="--c:${esc(m.color)}">${esc(m.emoji)}</span>` : '<i></i>';
+// Small round faces for event rows: the same face as everywhere else (photo, drawing, letter + emoji), just small.
+const miniFace = m => m ? avatar(m, 'mf') : '<i></i>';
 // Drawn pictures for family avatars (same sticker style as the kids' tiles). Keyed by name; FACE_OF maps the emoji people pick.
 const FACE = {
   koala: '<circle cx="11" cy="16" r="8" fill="#C9D2D9"/><circle cx="11" cy="16" r="4.2" fill="#F4C6D2" stroke-width="1.8"/><circle cx="37" cy="16" r="8" fill="#C9D2D9"/><circle cx="37" cy="16" r="4.2" fill="#F4C6D2" stroke-width="1.8"/><ellipse cx="24" cy="27" rx="14" ry="13" fill="#C9D2D9"/><circle cx="18" cy="24" r="1.9" fill="#1F3442" stroke="none"/><circle cx="30" cy="24" r="1.9" fill="#1F3442" stroke="none"/><ellipse cx="24" cy="30.5" rx="4.2" ry="5.6" fill="#3A4A57"/>',

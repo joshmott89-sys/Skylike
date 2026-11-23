@@ -477,7 +477,6 @@ button.chip{border:0;font:inherit;color:inherit;cursor:pointer}
 .ev.next .when .til{color:inherit;opacity:.75}
 .ev .what{font-size:21px;font-weight:650;line-height:1.2}
 .ev .who{display:flex;align-items:center;gap:6px;font-size:15px;color:var(--ink-2);margin-top:3px;font-weight:600}
-.ev .who .mini{width:30px;height:30px;border-radius:50%;background:color-mix(in srgb,var(--c) 22%,var(--raise));display:grid;place-items:center;font-size:18px}
 .ev .who i{width:12px;height:12px;border-radius:50%;background:var(--c)}
 .ev.next .what{font-size:26px}
 .ev.next .when{color:var(--apricot-ink);background:color-mix(in srgb,var(--apricot) 28%,transparent);padding:6px 10px;border-radius:12px;text-align:center}
@@ -1000,3 +999,17 @@ body.night .drow.done .dbox{background:#3987e5;border-color:#3987e5}
 .rcptbtns .rtype{flex-basis:100%;text-align:center;padding:6px}
 .rgap{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,#F7BC2A 16%,var(--surface));border:1px solid color-mix(in srgb,#E0A21B 45%,transparent)}.rgap .grow{flex:1 1 220px;display:flex;flex-direction:column}.rgap small{color:var(--ink-2);font-size:14px;line-height:1.35}.rgapbtns{display:flex;align-items:center;gap:10px}
 .rmore{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:12px 0}.rmore small{flex-basis:100%;color:var(--ink-2);font-size:13.5px}
+
+/* small faces on events: never squashed, overlap a little when there are several */
+.face.mf{width:30px;height:30px;border:2px solid var(--surface);font-size:14px;flex:none}.face.mf.two{font-size:11px;letter-spacing:-.5px}.face.mf.hasart .fl{font-size:10px}
+.mfs{display:inline-flex;flex:none;align-items:center}.mfs .face+.face{margin-left:-8px}
+.ev .who i{flex:none}
+/* night: the picked chip must stand out */
+body.night .ptag.on{background:#3987e5;border-color:#3987e5;color:#fff}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@supports (-webkit-touch-callout:none){input,textarea,select{font-size:max(16px,1em)}}
+.rnototal{margin:0 0 6px;color:#9a6c0d}
+/* phone home: room between the brief and the quick-add box below it */
+.brief+.qa-in,.brief+.famqa{margin-top:16px}
+.mnwrap{margin:14px var(--pad) 0}.mnwrap .mailnote{margin:0}
+.ev .who{display:block;line-height:1.5}.ev .who .mfs{vertical-align:middle;margin-right:8px}.ev .who i{display:inline-block;vertical-align:middle;margin-right:6px}.ev .who .mfs+span{vertical-align:middle}

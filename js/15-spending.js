@@ -40,7 +40,7 @@ function spendMonthData(mk) {
 // prices that moved: the same thing on two receipts, oldest vs newest price (last 120 days)
 function priceMoves() {
   const seen = {};
-  spendRows().slice().reverse().filter(r => r.source === 'receipt').forEach(r => (r.items || []).forEach(i => { if (!(+i.price > 0)) return; const n = normFood(i.name); (seen[n] = seen[n] || {name: i.name, list: []}).list.push({p: +i.price, day: r.day}); }));
+  spendRows().slice().reverse().filter(r => r.source === 'receipt').forEach(r => (r.items || []).forEach(i => { if (!(+i.price > 0)) return; const n = normFood(i.name); (seen[n] = seen[n] || {name: i.name, list: []}).list.push({p: +i.unit || Math.round(+i.price / (parseFloat(i.qty) || 1) * 100) / 100, day: r.day}); }));
   return Object.values(seen).filter(x => x.list.length > 1).map(x => { const a = x.list[0], b = x.list[x.list.length - 1]; return {name: x.name, from: a.p, to: b.p, pct: (b.p - a.p) / a.p * 100, day: b.day}; })
     .filter(x => Math.abs(x.pct) >= 3).sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 6);
 }

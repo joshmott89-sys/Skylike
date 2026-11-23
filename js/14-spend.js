@@ -15,7 +15,7 @@ function paidBook() {
   const seen = new Map();
   spendRows().filter(r => r.source === 'receipt').forEach(r => (r.items || []).forEach(i => {
     const n = normFood(i.name || ''); if (!n || !(+i.price > 0) || seen.has(n)) return;
-    seen.set(n, {name: String(i.name).slice(0, 40), price: +i.price, qty: i.qty || '', day: r.day});
+    const q = parseFloat(i.qty) || 1; seen.set(n, {name: String(i.name).slice(0, 40), price: +i.unit || Math.round(+i.price / q * 100) / 100, qty: '', day: r.day}); // the price for one
   }));
   return [...seen.values()];
 }
@@ -40,13 +40,17 @@ function spendHTML() {
     <div class="row" style="margin-top:10px"><button class="btn soft" data-act="spend-review">${icon('chart')}See spending</button>${(S.spend || []).length > 3 ? `<button class="linkbtn" data-act="spend-all">All shops</button>` : ''}</div></div>`;
 }
 
+const qtyNote = i => { const q = parseFloat(i.qty); return q > 1 && +i.unit ? ` <small>${q} × $${(+i.unit).toFixed(2)}</small>` : i.qty && i.qty !== '1' ? ` <small>${esc(i.qty)}</small>` : ''; };
+const itemSum = items => Math.round((items || []).reduce((s, i) => s + (+i.price || 0), 0) * 100) / 100;
 // Long receipts come in parts: merge another photo's lines into what we already have.
 const rKey = i => String(i.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + (+i.price || 0).toFixed(2);
 function mergeReceipt(a, b) {
   const have = new Set((a.items || []).map(rKey)), extra = (b.items || []).filter(i => !have.has(rKey(i)));
-  return Object.assign({}, a, {store: a.store || b.store, day: a.day || b.day, total: Math.max(+a.total || 0, +b.total || 0) || null, items: [...(a.items || []), ...extra], _added: extra.length});
+  const items = [...(a.items || []), ...extra], aReal = a.totalFound !== false && +a.total > 0;
+  // a printed total wins; otherwise keep adding up the lines until a page with the total turns up
+  const total = aReal ? +a.total : b.totalFound ? +b.total : itemSum(items);
+  return Object.assign({}, a, {store: a.store || b.store, day: a.day || b.day, total, totalFound: aReal || !!b.totalFound, items, _added: extra.length});
 }
-const itemSum = items => Math.round((items || []).reduce((s, i) => s + (+i.price || 0), 0) * 100) / 100;
 function coverageHTML(d, act) {
   const sum = itemSum(d.items), t = +d.total || 0, gap = t - sum;
   const more = `<label class="btn soft sm">${icon('camera')}Add the next part<input type="file" accept="image/*" capture="environment" data-change="${act}" hidden></label><label class="linkbtn">from gallery<input type="file" accept="image/*" multiple data-change="${act}" hidden></label>`;
@@ -56,7 +60,7 @@ function coverageHTML(d, act) {
 function spendSheet(r) {
   const items = r.items || [];
   sheet(`<h2>${esc(r.store || 'Shop')} <span class="num" style="margin-left:auto">${money(r.total)}</span></h2><p class="help">${esc(fmtDay(r.day, {weekday: 'long', day: 'numeric', month: 'long'}))}${r.source === 'receipt' ? ' · from a receipt' : ''}</p>
-    ${items.length ? `<ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${i.qty ? ` <small>${esc(i.qty)}</small>` : ''}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul>` : ''}
+    ${items.length ? `<ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${qtyNote(i)}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul>` : ''}
     ${r.source === 'receipt' || items.length ? coverageHTML(r, 'spend-more-saved') : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="spend-del" data-id="${r.id}">${icon('trash')}Remove</button></div>`);
   S._spendOpen = r.id;
@@ -66,8 +70,9 @@ function spendDraftSheet(d) {
   const items = d.items || [], sum = items.reduce((a, i) => a + (+i.price || 0), 0), food = items.filter(i => i.place).length;
   sheet(`<h2>Check the receipt</h2><form data-form="spend-save">
     <div class="row"><label class="lbl grow">Shop <input class="input" name="store" value="${esc(d.store || '')}" maxlength="60" placeholder="e.g. Woolworths"></label><label class="lbl">Date <input class="input" type="date" name="day" value="${esc(d.day || dayKey(new Date()))}"></label></div>
+    ${d.totalFound === false ? `<p class="help rnototal">No final total on this page, so this is the items added up. Add the page with the total, or type it in.</p>` : ''}
     <label class="lbl">Total $ <input class="input num" name="total" type="number" step="0.01" min="0" max="99999" required value="${d.total != null ? (+d.total).toFixed(2) : ''}" style="width:140px"></label>
-    ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p><details><summary>See the items</summary><ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${i.qty ? ` <small>${esc(i.qty)}</small>` : ''}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul></details>
+    ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p><details><summary>See the items</summary><ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${qtyNote(i)}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul></details>
       ${coverageHTML(d, 'spend-more')}
       ${food ? `<label class="tickrow"><input type="checkbox" name="stock" checked> Update what's in (${food} food item${food === 1 ? '' : 's'}) and tick them off groceries</label>` : ''}` : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn">Save shop</button></div></form>`);
@@ -107,7 +112,7 @@ Object.assign(F, {
   async 'spend-save'(f) {
     const d = S._spendDraft || {}, total = Math.round((+f.total.value || 0) * 100) / 100; if (!(total > 0)) return toast('Add the total');
     const row = {id: uid(), household_id: S.hid, day: f.day.value || dayKey(new Date()), store: f.store.value.trim().slice(0, 60) || null, total, source: (d.items || []).length ? 'receipt' : 'typed',
-      items: (d.items || []).slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)})), created_at: new Date().toISOString()};
+      items: (d.items || []).slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20), ...(+i.unit ? {unit: +i.unit} : {})})), created_at: new Date().toISOString()};
     S.spend = [row, ...(S.spend || [])]; S._spendDraft = null; closeSheet(); render();
     let msg = `${money(total)} saved`;
     if (f.stock && f.stock.checked) {
@@ -142,7 +147,7 @@ function applyReceipt(r, mode) {
   const saved = mode === 'saved', base = saved ? (S.spend || []).find(x => x.id === S._spendOpen) : S._spendDraft; if (!base) return;
   const m = mergeReceipt(base, r.receipt || {}), note = m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part';
   if (!saved) { spendDraftSheet(m); return toast(note, 2500); }
-  const items = m.items.slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)}));
+  const items = m.items.slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20), ...(+i.unit ? {unit: +i.unit} : {})}));
   Object.assign(base, {items, total: m.total || base.total, store: m.store, source: 'receipt'}); spendSheet(base); render();
   if (!DEMO) db(sb.from('grocery_spend').update({items, total: base.total, store: base.store, source: 'receipt'}).eq('id', base.id));
   toast(note, 2500);

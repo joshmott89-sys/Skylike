@@ -491,6 +491,16 @@ function playSpeech(text, pid, onStart, onEnd, opts = {}) {
 }
 const andList = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
 const sayTime = d => fmtTime(d).replace(':00', '');
+// One home tip from today's weather: open up on a mild dry day, shut up before rain or on a scorcher.
+function houseTip(k, now, wx) {
+  const h = S.weather && S.weather.hourly; if (!wx || !h || !h.time) return '';
+  let wet = null, peak = 0;
+  h.time.forEach((t, i) => { if (t.slice(0, 10) !== k || new Date(t + ':00') < now) return; const pp = +(h.precipitation_probability || [])[i] || 0; peak = Math.max(peak, pp); if (pp >= 50 && wet === null) wet = t; });
+  if (wet) { const at = sayTime(new Date(wet + ':00')); return `Rain likely from about ${at}: close the windows before you head out, and bring in the washing or anything outside`; }
+  if (wx.hi >= 34) return `Hot one: keep the windows and blinds shut early to hold the cool in`;
+  if (wx.hi >= 17 && wx.hi <= 29 && peak < 20) return `A nice dry day: open the windows for a bit to freshen the house`;
+  return '';
+}
 function briefFacts(now = new Date()) {
   const k = dayKey(now), me = briefWho(), wx = dayWx(k);
   const events = eventsOnKey(k).filter(e => e.all_day || new Date(e.ends_at) > now).slice(0, 6).map(e => {
@@ -506,6 +516,7 @@ function briefFacts(now = new Date()) {
     if (c.icon === 'bin') return `${t.replace(/\s*\+\s*/g, ' and ')} ${c.sub === 'out tonight' ? 'go out tonight' : 'are collected today'}`;
     return t.replace(/\s*\+\s*/g, ' and ') + (c.sub && !/^(today|bring today)$/.test(c.sub) ? ` (${c.sub})` : '');
   });
+  const tip = houseTip(k, now, wx); if (tip) reminders.push(tip);
   const dinner = mealOn(k), defrost = dinner && !dinner.cooked ? [...new Set((dinner.ingredients || []).map(x => S.pantry.find(p => p.place === 'freezer' && !p.leftover && needsThaw(p.name) && sameFood(p.name, x.name))).filter(Boolean).map(p => p.name))] : [];
   const todos = me ? S.items.filter(i => !i.done && i.assignee === me.id).slice(0, 3).map(i => i.text) : [];
   const cd = S.countdowns.map(c => [c, daysBetween(k, c.date)]).filter(([, d]) => d > 0 && d <= 45).sort((a, b) => a[1] - b[1])[0];
@@ -583,7 +594,7 @@ function speak(text, tone, onEnd, g = '', uk = false) {
   ss.speak(u); return true;
 }
 try { window.speechSynthesis && speechSynthesis.getVoices(); if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch {}
-V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${doorCardHTML()}${(qc => qc || setupCardHTML())(questCardHTML())}${briefCardHTML()}${isPhone() ? `<div class="qa-in famqa">${quickAddHTML()}</div>` : ''}${mailNoteHTML()}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
+V.family = () => `${skyHTML(isPhone())}${joinNoticeHTML()}${doorCardHTML()}${(qc => qc || setupCardHTML())(questCardHTML())}${briefCardHTML()}${isPhone() ? `<div class="qa-in famqa">${quickAddHTML()}</div>` : ''}${(m => m ? `<div class="mnwrap">${m}</div>` : '')(mailNoteHTML())}${chipsHTML()}${kitchenHTML()}${kidsStripHTML()}<div class="board">${upNextHTML()}${listsZoneHTML()}${notesZoneHTML()}</div>`;
 
 /* Focus (ADHD-friendly, like FocusFive): what matters now, the rest of today in five lines, your top five, and one box to add anything. */
 // "Josh: book car service", "ask Josh to…", "tell Violet to…", "remind Josh to…", "…for Josh", "@Josh …"

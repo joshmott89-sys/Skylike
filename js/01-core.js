@@ -515,7 +515,7 @@ function eventMembers(ev) {
   const o = (settings().people || {})[ev.event_id]; if (o && o.for !== undefined) return [].concat(o.for || []).map(memberById).filter(Boolean);
   const m = eventMemberCal(ev); return m ? [m] : [];
 }
-const whoMeta = (e, calName) => { const ms = eventMembers(e); return ms.length ? ms.slice(0, 3).map(miniFace).join('') + esc(andList(ms.map(x => x.name))) : '<i></i>' + esc(calName); };
+const whoMeta = (e, calName) => { const ms = eventMembers(e); return ms.length ? `<span class="mfs">${ms.slice(0, 4).map(miniFace).join('')}</span><span>${esc(andList(ms.map(x => x.name)))}</span>` : '<i></i>' + esc(calName); };
 function eventMember(ev) { return eventMembers(ev)[0] || null; }
 function eventMemberCal(ev) { const cal = S.calendars.find(c => c.google_id === ev.calendar_id); return cal && cal.member_id ? memberById(cal.member_id) : null; }
 function visibleEvents() {
@@ -621,8 +621,23 @@ function inWindow(startStr, endStr, h) {
   const s = toH(startStr), e = toH(endStr);
   return s < e ? h >= s && h < e : h >= s || h < e;
 }
+/* ----- no zooming: little fingers pinch the wall screen and it stays zoomed in. iPad Safari ignores the viewport
+   setting, so block pinch and double-tap there too (photo cropping keeps its own gestures). ----- */
+(() => {
+  const free = e => e.target && e.target.closest && e.target.closest('.cropbox');
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => { if (!free(e)) e.preventDefault(); }, {passive: false}));
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !free(e)) e.preventDefault(); }, {passive: false});
+  // double-tap zoom is off through touch-action: manipulation (css), which keeps quick taps on the kids' tiles working
+})();
+// If it got zoomed anyway (an old version, or a browser that ignores all of the above), snap back to normal size.
+function unzoom() {
+  const vv = window.visualViewport; if (!vv || vv.scale <= 1.01) return;
+  const m = document.querySelector('meta[name=viewport]'), c = m.content;
+  m.content = c.replace(/maximum-scale=[\d.]+/, 'maximum-scale=1.01'); requestAnimationFrame(() => { m.content = c; window.scrollTo(0, 0); });
+}
 function touch() {
   const wasIdle = ['#saver', '#glance', '#night'].some(q => $(q).classList.contains('on'));
+  if (wasIdle) unzoom();
   S.lastTouch = Date.now();
   if ($('#saver').classList.contains('on')) stopSaver();
   $('#glance').classList.remove('on');
