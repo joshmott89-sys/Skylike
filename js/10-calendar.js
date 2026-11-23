@@ -259,16 +259,16 @@ const F = {
     const picks = [...f.querySelectorAll('input[name="pick"]:checked')].map(x => +x.value), L = S._evReview || [], cal = f.calendar.value;
     const chosen = picks.map(i => L[i]).filter(Boolean); if (!chosen.length) return toast('Tick at least one event.');
     S._evReview = null; S._evFallback = ''; closeSheet();
-    const times = d => { if (d.all_day) return {start: d.day, end: addDaysKey(d.day, 1), sa: d.day + 'T00:00:00Z', ea: addDaysKey(d.day, 1) + 'T00:00:00Z'}; const st = zonedISO(d.day, d.start); let en = d.end ? zonedISO(d.day, d.end) : new Date(new Date(st).getTime() + 3600e3).toISOString(); if (new Date(en) <= new Date(st)) en = new Date(new Date(st).getTime() + 3600e3).toISOString(); return {start: st, end: en, sa: st, ea: en}; };
+    const times = d => { if (d.all_day || d.lastday) { const e2 = addDaysKey(d.lastday || d.day, 1); return {start: d.day, end: e2, sa: d.day + 'T00:00:00Z', ea: e2 + 'T00:00:00Z'}; } const st = zonedISO(d.day, d.start); let en = d.end ? zonedISO(d.day, d.end) : new Date(new Date(st).getTime() + 3600e3).toISOString(); if (new Date(en) <= new Date(st)) en = new Date(new Date(st).getTime() + 3600e3).toISOString(); return {start: st, end: en, sa: st, ea: en}; };
     if (cal === 'skylike') {
-      const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day, location: d.location || null, notes: d.notes || null, member_id: d.who || null, member_ids: d.who ? [d.who] : []}; });
+      const rows = chosen.map(d => { const t = times(d); return {id: uid(), household_id: S.hid, title: d.title, starts_at: t.sa, ends_at: t.ea, all_day: d.all_day || !!d.lastday, location: d.location || null, notes: d.notes || null, member_id: d.who || null, member_ids: d.who ? [d.who] : []}; });
       S.localEvents.push(...rows); render(); if (DEMO) return toast('Sample data: nothing here is saved');
       const {error} = await sb.from('local_events').insert(rows); if (error) { S.localEvents = S.localEvents.filter(r => !rows.includes(r)); render(); return toast("Couldn't add them. Try again.", 4000); }
       return toast(pv('events', rows.length), 3000);
     }
     if (DEMO) return toast('Sample data: nothing is sent to Google.');
     toast(`Adding ${chosen.length} to Google Calendar…`, 3000); let ok = 0, err = '';
-    for (const d of chosen) { const t = times(d); const r = await callFn({action: 'create', calendar: cal, title: d.title, start: t.start, end: t.end, allDay: d.all_day, location: d.location || '', description: d.notes || ''}); if (r.error) err = r.error; else ok++; }
+    for (const d of chosen) { const t = times(d); const r = await callFn({action: 'create', calendar: cal, title: d.title, start: t.start, end: t.end, allDay: d.all_day || !!d.lastday, location: d.location || '', description: d.notes || ''}); if (r.error) err = r.error; else ok++; }
     reloadEvents(); toast(err ? `Added ${ok}. One didn't go in: ${err}` : `Added ${ok} event${ok === 1 ? '' : 's'} ✓`, 4500);
   },
   async 'lock-set'(f) {

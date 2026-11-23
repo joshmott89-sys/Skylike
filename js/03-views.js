@@ -183,7 +183,7 @@ function repeatBlock(e, day, pre) {
       <p class="repsum"></p>${google ? '<p class="help">Repeats work in Google calendars too once two-way editing is connected.</p>' : ''}
     </div>`;
 }
-const termEndAfter = k => { const t = WA_TERMS.find(([a, b]) => b >= k); return t ? t[1] : ''; };
+const termEndAfter = k => { const t = schoolTerms().find(([a, b]) => b >= k); return t ? t[1] : ''; };
 function repeatFrom(f) {
   if (!f.rep_on || !f.rep_on.checked) return null;
   const freq = f.rep_freq.value, R = {freq};
@@ -257,14 +257,14 @@ async function readEvents(payload, fallbackText) {
   if (r.error) { closeSheet(); return toast(r.error, 5000); }
   const evs = (r.events || []).filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || ''));
   if (!evs.length) { closeSheet(); if (fallbackText) { S._fqText = fallbackText; return sheet(`<h2>No date found</h2><p class="help">I couldn't find a date or time in “${esc(fallbackText)}”.</p><div class="row"><button class="btn" data-act="fq-as-todo">Add it as a to-do</button><button class="btn ghost" data-act="close-sheet">Cancel</button></div>`); } return toast("Couldn't find any dates in that. Try a clearer photo, or type it in.", 5000); }
-  S._evReview = evs.map(e => ({title: String(e.title).slice(0, 120), day: e.date, start: /^\d{2}:\d{2}$/.test(e.start || '') ? e.start : '', end: /^\d{2}:\d{2}$/.test(e.end || '') ? e.end : '', all_day: !!e.all_day || !/^\d{2}:\d{2}$/.test(e.start || ''), location: e.location || '', notes: e.notes || '', who: ((S.members.find(m => e.who && m.name.toLowerCase() === String(e.who).toLowerCase())) || {}).id || ''}));
+  S._evReview = evs.map(e => ({title: String(e.title).slice(0, 120), day: e.date, lastday: /^\d{4}-\d{2}-\d{2}$/.test(e.last_date || '') && e.last_date > e.date ? e.last_date : '', start: /^\d{2}:\d{2}$/.test(e.start || '') ? e.start : '', end: /^\d{2}:\d{2}$/.test(e.end || '') ? e.end : '', all_day: !!e.all_day || !/^\d{2}:\d{2}$/.test(e.start || ''), location: e.location || '', notes: e.notes || '', who: ((S.members.find(m => e.who && m.name.toLowerCase() === String(e.who).toLowerCase())) || {}).id || ''}));
   S._evFallback = fallbackText || ''; reviewSheet();
 }
 function reviewSheet() {
   const L = S._evReview || []; if (!L.length) return closeSheet();
   const cals = twoWayCals(), me = meMember(), mine = cals.find(c => me && c.member_id === me.id) || cals[0];
   sheet(`<h2>Found ${L.length} event${L.length === 1 ? '' : 's'}</h2><p class="help">Untick anything you don't want, tap Edit to fix details.</p>
-    <form data-form="ev-import-save"><ul class="evrev">${L.map((d, i) => `<li><label class="evpick"><input type="checkbox" name="pick" value="${i}" checked><span><b>${esc(d.title)}</b><small>${esc(fmtDay(d.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${d.all_day ? ' · all day' : ' · ' + esc(fmtTime(new Date(zonedISO(d.day, d.start))))}${d.location ? ' · ' + esc(d.location) : ''}</small>${d.notes ? `<small class="evn">${esc(d.notes)}</small>` : ''}</span></label><button type="button" class="btn soft sm" data-act="ev-draft-edit" data-i="${i}">Edit</button></li>`).join('')}</ul>
+    <form data-form="ev-import-save"><ul class="evrev">${L.map((d, i) => `<li><label class="evpick"><input type="checkbox" name="pick" value="${i}" checked><span><b>${esc(d.title)}</b><small>${esc(fmtDay(d.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${d.lastday ? ' to ' + esc(fmtDay(d.lastday, {weekday: 'short', day: 'numeric', month: 'short'})) : ''}${d.lastday ? '' : d.all_day ? ' · all day' : ' · ' + esc(fmtTime(new Date(zonedISO(d.day, d.start))))}${d.location ? ' · ' + esc(d.location) : ''}</small>${d.notes ? `<small class="evn">${esc(d.notes)}</small>` : ''}</span></label><button type="button" class="btn soft sm" data-act="ev-draft-edit" data-i="${i}">Edit</button></li>`).join('')}</ul>
     <label class="lbl">Add to <select class="input" name="calendar">${cals.map(c => `<option value="${c.id}" ${mine && c.id === mine.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}<option value="skylike" ${!mine ? 'selected' : ''}>Skylike only (just this family)</option></select></label>
     <div class="row" style="margin-top:12px"><button class="btn">Add to calendar</button>${S._evFallback ? '<button type="button" class="btn ghost" data-act="fq-as-todo">It\'s a to-do instead</button>' : '<button type="button" class="btn ghost" data-act="close-sheet">Cancel</button>'}</div></form>`, {focus: false});
 }
@@ -717,7 +717,7 @@ V.calendar = () => {
   if (mode === 'day') {
     const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const nowH = hoursFloat(new Date());
-    const notes = [WA_HOLIDAYS[k] && settings().holidays ? WA_HOLIDAYS[k] : '', settings().school && !WA_TERMS.some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0 ? 'School holidays' : ''].filter(Boolean);
+    const notes = [WA_HOLIDAYS[k] && settings().holidays ? WA_HOLIDAYS[k] : '', settings().school && !schoolTerms().some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0 ? 'School holidays' : ''].filter(Boolean);
     const bands = BANDS.map(([id, label, h1, h2, ic, mid]) => {
       const list = timed.filter(e => bandOf(e)[0] === id), [t, bt] = skyAt(mid), live = k === today && nowH >= h1 && nowH < h2;
       return `<section class="band ${live ? 'live' : ''}"><div class="band-sky" style="background:linear-gradient(180deg,${t},${bt})">${icon(ic)}<b>${label}</b></div>
@@ -731,7 +731,7 @@ V.calendar = () => {
     const mon = addDaysKey(today, -((weekdayOfKey(today) + 6) % 7) + S.calOffset * 7);
     const cols = [...Array(7)].map((_, i) => { const k = addDaysKey(mon, i);
       const evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-      const term = settings().school && !WA_TERMS.some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0;
+      const term = settings().school && !schoolTerms().some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0;
       let lastBand = '';
       const timedHTML = timed.map(e => { const b = bandOf(e); const head = b[0] !== lastBand ? `<div class="wband">${b[1]}</div>` : ''; lastBand = b[0];
         return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}" ${canEdit(e) ? `data-ev="${e.id}"` : ''}><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');

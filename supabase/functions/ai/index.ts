@@ -371,11 +371,11 @@ Return JSON: {"text":"..."}`);
       if (!imgs.length && !text) return json({ error: "Nothing to read. Add a photo or some text." }, 400);
       const { out } = await ask(`${imgs.length ? "These photos show a flyer, invitation, school newsletter, letter or screenshot." : "This is something a parent said or pasted (a message, email or note)."} Pull out every event a family would put on their calendar.
 Today is ${String(body.today || "").slice(0, 10)} (${String(body.weekday || "")}) in Perth, Australia. Resolve relative dates ("this Saturday", "next Tuesday", "the 14th") to real dates on or after today. If a year is missing, use the next time that date comes round.
-Use 24-hour HH:MM times. If no time is given, set all_day true. If only a start time is given, leave end empty. Keep titles short and clear (e.g. "Mia's 5th birthday party", "Swimming lesson"). Put the venue or address in location. Put anything to remember (bring a hat, RSVP by, cost, dress-up theme) in notes, briefly.
+Use 24-hour HH:MM times. If no time is given, set all_day true. If only a start time is given, leave end empty. For something that runs over several days (a camp, holiday, carnival week, pupil-free days 3-4 March), set date to the first day, last_date to the last day and all_day true; otherwise leave last_date empty. A list of term dates becomes one event per term ("Term 1"), spanning first to last day. Keep titles short and clear (e.g. "Mia's 5th birthday party", "Swimming lesson"). Put the venue or address in location. Put anything to remember (bring a hat, RSVP by, cost, dress-up theme) in notes, briefly.
 ${(body.people || []).length ? "Family members: " + JSON.stringify(body.people).slice(0, 400) + ". If an event is clearly for one of them, set who to that name." : ""}
 ${text ? 'Text: """' + text + '"""' : ""}
-Return JSON: {"events":[{"title":"","date":"YYYY-MM-DD","start":"HH:MM","end":"","all_day":false,"location":"","notes":"","who":""}]} (empty list if there are none).`, imgs.length ? imgs : undefined, { timeout: 60000 });
-      return json({ events: (out.events || []).slice(0, 20) });
+Return JSON: {"events":[{"title":"","date":"YYYY-MM-DD","last_date":"","start":"HH:MM","end":"","all_day":false,"location":"","notes":"","who":""}]} (empty list if there are none).`, imgs.length ? imgs : undefined, { timeout: 60000 });
+      return json({ events: (out.events || []).slice(0, 30) });
     }
 
     if (a === "groceries") {

@@ -17,6 +17,7 @@ function schoolPlanBlock(kid, p, i) {
 function schoolSheet() {
   const ks = kids(); if (!ks.length) return toast('Add the kids first, in Settings → Family.');
   sheet(`<h2>School days</h2><p class="help">Each kid's kindy or school days. Holidays and term breaks are skipped by themselves. Routines set to "School days", the lunchbox plan and the Out the door list all use these.</p>
+    <div class="sterm"><div class="grow"><b>Term dates: ${esc((settings().terms || {}).name || 'WA public schools')}</b><small>${esc(termSummary())}</small></div><button type="button" class="btn soft sm" data-act="terms-edit">Change</button></div>
     <form data-form="school-days">${ks.map(kd => { const ps = schoolPlans(kd.id).slice().sort((a, b) => (a.from || '').localeCompare(b.from || '')); const cur = ps.find(p => !p.from) || ps[0], next = ps.find(p => p.from) || null;
       return `<div class="pblock"><div class="kt fk">${avatar(kd)} ${esc(kd.name)}</div>${schoolPlanBlock(kd, cur, 0)}
         <details class="snext" ${next ? 'open' : ''}><summary>A change coming up (e.g. next year)</summary>${schoolPlanBlock(kd, next || {from: '', days: [], fort: [], anchor: ''}, 1)}</details></div>`; }).join('')}
@@ -34,4 +35,20 @@ F['school-days'] = async f => {
   }
   const lb = lbox(); kids().forEach(kd => { lb.kids[kd.id] = Object.assign({}, lb.kids[kd.id], {days: out[kd.id][0].days.concat(out[kd.id][0].fort)}); });
   await saveSettings({schoolDays: out, kitchen: {...kset(), lunchbox: lb}}); closeSheet();
+};
+
+const fmtShort = k => fmtDay(k, {day: 'numeric', month: 'short'});
+function termSummary() { const today = dayKey(new Date()), t = schoolTerms(), cur = t.find(([a, b]) => b >= today); return cur ? (cur[0] <= today ? `This term ends ${fmtShort(cur[1])}` : `Next term starts ${fmtShort(cur[0])}`) : 'No upcoming terms saved'; }
+A['terms-edit'] = () => {
+  const T = settings().terms || {}, list = schoolTerms();
+  sheet(`<h2>Term dates</h2><p class="help">Kindy and school days only count inside these terms. Public holidays are skipped too. One term per line: first day to last day.</p>
+    <form data-form="terms-save"><label class="lbl">School <input class="input" name="name" value="${esc(T.name || '')}" placeholder="WA public schools"></label>
+    <textarea class="input" name="list" rows="9" style="margin-top:10px;font-variant-numeric:tabular-nums">${esc(list.map(([a, b]) => `${a} to ${b}`).join('\n'))}</textarea>
+    <div class="row" style="margin-top:12px"><button class="btn">Save terms</button><span class="grow"></span>${T.list ? '<button type="button" class="btn ghost" data-act="terms-reset">Use WA public school terms</button>' : ''}</div></form>`, {focus: false});
+};
+A['terms-reset'] = async () => { await saveSettings({terms: null}); schoolSheet(); };
+F['terms-save'] = async f => {
+  const list = f.list.value.split('\n').map(l => l.match(/(\d{4}-\d{2}-\d{2})\D+(\d{4}-\d{2}-\d{2})/)).filter(Boolean).map(m => [m[1], m[2]]).filter(([a, b]) => a <= b).sort((x, y) => x[0].localeCompare(y[0]));
+  if (!list.length) return toast('Write each term as 2027-02-01 to 2027-04-08.');
+  await saveSettings({terms: {name: f.name.value.trim().slice(0, 60) || 'Our school', list}}); schoolSheet();
 };

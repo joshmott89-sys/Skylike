@@ -72,6 +72,8 @@ const WA_TERMS = [
   ['2027-02-01','2027-04-09'],['2027-04-27','2027-07-02'],['2027-07-19','2027-09-24'],['2027-10-11','2027-12-16'],
   ['2028-02-02','2028-04-07'],['2028-04-24','2028-06-30'],['2028-07-17','2028-09-22'],['2028-10-09','2028-12-14'] // education.wa.edu.au, checked Nov 2026
 ];
+// A household can swap in its own school's terms (Settings → Kids → School days), e.g. a private school.
+const schoolTerms = () => { const t = (settings().terms || {}).list; return Array.isArray(t) && t.length ? t : WA_TERMS; };
 const WA_HOLIDAYS = {
   '2026-01-01':"New Year's Day",'2026-01-26':'Australia Day','2026-03-02':'Labour Day','2026-04-03':'Good Friday',
   '2026-04-05':'Easter Sunday','2026-04-06':'Easter Monday','2026-04-25':'Anzac Day','2026-04-27':'Anzac Day holiday',
@@ -573,9 +575,9 @@ function chipsFor(k, now) {
     else for (let i = 1; i <= 6; i++) { const kk = addDaysKey(k, i); if (WA_HOLIDAYS[kk]) { out.push({icon: 'star', c: '#D9773B', text: WA_HOLIDAYS[kk], sub: i === 1 ? 'tomorrow' : fmtDay(kk, {weekday: 'long'})}); break; } }
   }
   if (st.school) {
-    const inTerm = WA_TERMS.find(([a, b]) => a <= k && k <= b);
+    const inTerm = schoolTerms().find(([a, b]) => a <= k && k <= b);
     if (!inTerm) {
-      const next = WA_TERMS.find(([a]) => a > k);
+      const next = schoolTerms().find(([a]) => a > k);
       if (next) { const d = daysBetween(k, next[0]); out.push({icon: 'school', c: '#3A9AA0', text: d <= 3 ? 'Back to school' : 'School holidays', sub: d <= 3 ? (d === 1 ? 'tomorrow' : fmtDay(next[0], {weekday: 'long'})) : `${d} sleeps to go`}); }
     } else { const d = daysBetween(k, inTerm[1]); if (d >= 0 && d <= 4) out.push({icon: 'school', c: '#3A9AA0', text: 'Holidays start', sub: d === 0 ? 'after today' : `in ${d} sleeps`}); }
   }

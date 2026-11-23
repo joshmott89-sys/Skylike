@@ -26,7 +26,7 @@ function mailCheck(id) {
       <div class="row"><button class="btn" data-act="mail-as-event" data-id="${m.id}">${icon('plus')}Add an event</button><button class="btn ghost" data-act="mail-dismiss" data-id="${m.id}">Dismiss</button></div>`);
   }
   S._mailSug = m.id;
-  S._evReview = evs.map(e => ({title: String(e.title).slice(0, 120), day: e.date, start: /^\d{2}:\d{2}$/.test(e.start || '') ? e.start : '', end: /^\d{2}:\d{2}$/.test(e.end || '') ? e.end : '',
+  S._evReview = evs.map(e => ({title: String(e.title).slice(0, 120), day: e.date, lastday: /^\d{4}-\d{2}-\d{2}$/.test(e.last_date || '') && e.last_date > e.date ? e.last_date : '', start: /^\d{2}:\d{2}$/.test(e.start || '') ? e.start : '', end: /^\d{2}:\d{2}$/.test(e.end || '') ? e.end : '',
     all_day: !/^\d{2}:\d{2}$/.test(e.start || ''), location: e.location || '', notes: e.note || '', who: ''}));
   S._evFallback = ''; reviewSheet();
   const h = document.querySelector('#sheet-root h2'); if (h) h.insertAdjacentHTML('afterend', `<p class="mfrom">${icon('mail', 'xs')} ${esc(mailFrom(m))}: ${esc(m.subject || '')}</p>`);
