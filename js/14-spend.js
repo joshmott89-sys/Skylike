@@ -40,11 +40,26 @@ function spendHTML() {
     <div class="row" style="margin-top:10px"><button class="btn soft" data-act="spend-review">${icon('chart')}See spending</button>${(S.spend || []).length > 3 ? `<button class="linkbtn" data-act="spend-all">All shops</button>` : ''}</div></div>`;
 }
 
+// Long receipts come in parts: merge another photo's lines into what we already have.
+const rKey = i => String(i.name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + (+i.price || 0).toFixed(2);
+function mergeReceipt(a, b) {
+  const have = new Set((a.items || []).map(rKey)), extra = (b.items || []).filter(i => !have.has(rKey(i)));
+  return Object.assign({}, a, {store: a.store || b.store, day: a.day || b.day, total: Math.max(+a.total || 0, +b.total || 0) || null, items: [...(a.items || []), ...extra], _added: extra.length});
+}
+const itemSum = items => Math.round((items || []).reduce((s, i) => s + (+i.price || 0), 0) * 100) / 100;
+function coverageHTML(d, act) {
+  const sum = itemSum(d.items), t = +d.total || 0, gap = t - sum;
+  const more = `<label class="btn soft sm">${icon('camera')}Add the next part<input type="file" accept="image/*" capture="environment" data-change="${act}" hidden></label><label class="linkbtn">from gallery<input type="file" accept="image/*" multiple data-change="${act}" hidden></label>`;
+  if (t && gap > Math.max(5, t * .1)) return `<div class="rgap"><div class="grow"><b>Items add to ${money(sum)} of ${money(t)}</b><small>About ${money(gap)} isn't broken down yet. Long receipt? Photograph the rest and it joins this one.</small></div><div class="rgapbtns">${more}</div></div>`;
+  return `<div class="rmore">${more}<small>Long receipt? Add another photo and it joins this one.</small></div>`;
+}
 function spendSheet(r) {
   const items = r.items || [];
   sheet(`<h2>${esc(r.store || 'Shop')} <span class="num" style="margin-left:auto">${money(r.total)}</span></h2><p class="help">${esc(fmtDay(r.day, {weekday: 'long', day: 'numeric', month: 'long'}))}${r.source === 'receipt' ? ' · from a receipt' : ''}</p>
     ${items.length ? `<ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${i.qty ? ` <small>${esc(i.qty)}</small>` : ''}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul>` : ''}
+    ${r.source === 'receipt' || items.length ? coverageHTML(r, 'spend-more-saved') : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn ghost" data-act="spend-del" data-id="${r.id}">${icon('trash')}Remove</button></div>`);
+  S._spendOpen = r.id;
 }
 function spendDraftSheet(d) {
   S._spendDraft = d;
@@ -53,6 +68,7 @@ function spendDraftSheet(d) {
     <div class="row"><label class="lbl grow">Shop <input class="input" name="store" value="${esc(d.store || '')}" maxlength="60" placeholder="e.g. Woolworths"></label><label class="lbl">Date <input class="input" type="date" name="day" value="${esc(d.day || dayKey(new Date()))}"></label></div>
     <label class="lbl">Total $ <input class="input num" name="total" type="number" step="0.01" min="0" max="99999" required value="${d.total != null ? (+d.total).toFixed(2) : ''}" style="width:140px"></label>
     ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p><details><summary>See the items</summary><ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${i.qty ? ` <small>${esc(i.qty)}</small>` : ''}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul></details>
+      ${coverageHTML(d, 'spend-more')}
       ${food ? `<label class="tickrow"><input type="checkbox" name="stock" checked> Update what's in (${food} food item${food === 1 ? '' : 's'}) and tick them off groceries</label>` : ''}` : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn">Save shop</button></div></form>`);
 }
@@ -91,7 +107,7 @@ Object.assign(F, {
   async 'spend-save'(f) {
     const d = S._spendDraft || {}, total = Math.round((+f.total.value || 0) * 100) / 100; if (!(total > 0)) return toast('Add the total');
     const row = {id: uid(), household_id: S.hid, day: f.day.value || dayKey(new Date()), store: f.store.value.trim().slice(0, 60) || null, total, source: (d.items || []).length ? 'receipt' : 'typed',
-      items: (d.items || []).slice(0, 120).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)})), created_at: new Date().toISOString()};
+      items: (d.items || []).slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)})), created_at: new Date().toISOString()};
     S.spend = [row, ...(S.spend || [])]; S._spendDraft = null; closeSheet(); render();
     let msg = `${money(total)} saved`;
     if (f.stock && f.stock.checked) {
@@ -105,6 +121,26 @@ Object.assign(F, {
     toast(msg, 4000);
     if (!DEMO) { const {error} = await sb.from('grocery_spend').insert(row); if (error) toast("Couldn't save the shop. Try again.", 5000); }
   },
+});
+async function readReceipt(fileList) {
+  const files = [...fileList].slice(0, 3);
+  if (DEMO) { await new Promise(r => setTimeout(r, 400)); return {receipt: {store: '', day: '', total: 0, items: [{name: 'Bananas 1kg', price: 4.20, place: 'pantry'}, {name: 'Greek yoghurt 1kg', price: 7.50, place: 'fridge'}, {name: 'Pasta 500g', price: 2.30, place: 'pantry'}]}}; }
+  const imgs = await Promise.all(files.map(f => photoToBase64(f, 2000)));
+  return callRecipe({receipt: imgs});
+}
+document.addEventListener('change', async e => {
+  const el = e.target; if (!['spend-more', 'spend-more-saved'].includes(el.dataset.change) || !el.files || !el.files.length) return;
+  const saved = el.dataset.change === 'spend-more-saved', base = saved ? (S.spend || []).find(x => x.id === S._spendOpen) : S._spendDraft;
+  if (!base) return; toast('Reading the next part…', 20000);
+  try {
+    const r = await readReceipt(el.files); if (r.error) return toast(r.error, 6000);
+    const m = mergeReceipt(base, r.receipt || {});
+    if (!saved) { spendDraftSheet(m); return toast(m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part', 2500); }
+    const items = m.items.slice(0, 160).map(i => ({name: String(i.name).slice(0, 60), price: Math.round((+i.price || 0) * 100) / 100, qty: String(i.qty || '').slice(0, 20)}));
+    Object.assign(base, {items, total: m.total || base.total, store: m.store, source: 'receipt'}); spendSheet(base); render();
+    if (!DEMO) db(sb.from('grocery_spend').update({items, total: base.total, store: base.store, source: 'receipt'}).eq('id', base.id));
+    toast(m._added ? `${m._added} more item${m._added === 1 ? '' : 's'} added` : 'Nothing new on that part', 2500);
+  } catch { toast("Couldn't read that photo. Try again.", 5000); }
 });
 document.addEventListener('change', async e => {
   const el = e.target; if (el.dataset.change !== 'spend-photo' || !el.files || !el.files.length) return;

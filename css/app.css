@@ -998,3 +998,5 @@ body.night .drow.done .dbox{background:#3987e5;border-color:#3987e5}
 .rcptbtns{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}.rcptbtns .btn{flex:1 1 auto;justify-content:center}.rcptbtns .btn:first-child{flex-basis:100%}
 @media (min-width:700px){.rcptbtns .btn:first-child{flex-basis:auto}}
 .rcptbtns .rtype{flex-basis:100%;text-align:center;padding:6px}
+.rgap{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,#F7BC2A 16%,var(--surface));border:1px solid color-mix(in srgb,#E0A21B 45%,transparent)}.rgap .grow{flex:1 1 220px;display:flex;flex-direction:column}.rgap small{color:var(--ink-2);font-size:14px;line-height:1.35}.rgapbtns{display:flex;align-items:center;gap:10px}
+.rmore{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:12px 0}.rmore small{flex-basis:100%;color:var(--ink-2);font-size:13.5px}
