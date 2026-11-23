@@ -5,6 +5,11 @@ const money = n => '$' + (Math.round(+n || 0)).toLocaleString('en-AU');
 const spendRows = () => (S.spend || []).slice().sort((a, b) => b.day.localeCompare(a.day) || String(b.created_at || '').localeCompare(String(a.created_at || '')));
 const spendWeek = off => { const a = weekStart(off), b = addDaysKey(a, 7); return (S.spend || []).filter(r => r.day >= a && r.day < b).reduce((t, r) => t + (+r.total || 0), 0); };
 
+// The camera opens straight from the button (a real file input inside the label, so phones always allow it).
+function receiptButtonsHTML() {
+  const ok = S.aiOn || DEMO, pick = (cap, cls, label, ic) => ok ? `<label class="${cls}">${icon(ic)}${label}<input type="file" accept="image/*" ${cap ? 'capture="environment"' : 'multiple'} data-change="spend-photo" hidden></label>` : `<button class="${cls}" data-act="spend-receipt">${icon(ic)}${label}</button>`;
+  return `<div class="rcptbtns">${pick(true, 'btn', 'Photo of receipt', 'camera')}${pick(false, 'btn soft', 'From gallery', 'photo')}<button class="linkbtn rtype" data-act="spend-type">or type the total</button></div>`;
+}
 // Latest price paid for each thing, newest receipt first (used by the planner)
 function paidBook() {
   const seen = new Map();
@@ -24,14 +29,14 @@ function spendHTML() {
   const weeks = [-5, -4, -3, -2, -1, 0].map(o => ({o, t: spendWeek(o), k: weekStart(o)})), top = Math.max(B, ...weeks.map(w => w.t)) || 1;
   const past = weeks.slice(1, 5).map(w => w.t).filter(t => t > 0), avg = past.length ? past.reduce((a, b) => a + b, 0) / past.length : 0;
   const pct = B ? Math.min(100, now / B * 100) : 0, over = B && now > B, rows = spendRows().slice(0, 3), prices = paidBook().length;
-  const tools = `<button class="scanbtn" data-act="spend-receipt">${icon('camera')}Receipt</button><button class="scanbtn" data-act="spend-type">${icon('plus')}Type it</button>`;
-  if (!(S.spend || []).length) return `<div class="panel spend-p"><h2>${icon('cart')} Grocery spend<span class="sp"></span>${tools}</h2><p class="help">Snap your receipt after a shop. Skylike adds up the week against your budget, and the prices you paid make the meal plan's cost estimates match your shops.</p></div>`;
-  return `<div class="panel spend-p"><h2>${icon('cart')} Grocery spend<span class="sp"></span>${tools}</h2>
+  const tools = receiptButtonsHTML();
+  if (!(S.spend || []).length) return `<div class="panel spend-p"><h2>${icon('cart')} Grocery spend</h2><p class="help">After a shop, take a photo of the receipt. Skylike adds up the week against your budget, and the prices you paid make the meal plan's cost estimates match your shops.</p>${tools}</div>`;
+  return `<div class="panel spend-p"><h2>${icon('cart')} Grocery spend</h2>
     <div class="snow"><b class="num">${money(now)}</b><span>this week${B ? ` of <span class="num">${money(B)}</span>` : ''}</span>${B ? `<span class="grow"></span><span class="sleft ${over ? 'over' : ''}">${over ? `${money(now - B)} over` : `${money(B - now)} left`}</span>` : ''}</div>
     ${B ? `<div class="sbar ${over ? 'over' : now > B * .85 ? 'near' : ''}" role="img" aria-label="${money(now)} of ${money(B)}"><span style="width:${pct.toFixed(0)}%"></span></div>` : ''}
     ${calm ? '' : `<div class="sweeks" aria-label="Last six weeks">${weeks.map(w => `<div class="swk ${w.o === 0 ? 'now' : ''} ${B && w.t > B ? 'over' : ''}"><span class="v num">${w.t ? money(w.t) : ''}</span><span class="b" style="height:${Math.max(w.t ? 4 : 0, w.t / top * 100).toFixed(0)}%"></span><span class="l">${w.o === 0 ? 'Now' : esc(fmtDay(w.k, {day: 'numeric', month: 'short'}))}</span></div>`).join('')}</div>`}
     <p class="help">${avg ? `Average <b class="num">${money(avg)}</b> a week over the last ${past.length === 1 ? 'week' : past.length + ' weeks'}. ` : ''}${prices >= 5 ? `${prices} prices remembered for meal planning.` : 'A few receipts teach the meal planner what you pay.'}</p>
-    <ul class="slist">${rows.map(r => `<li><button data-act="spend-open" data-id="${r.id}"><span class="grow"><b>${esc(r.store || 'Shop')}</b><small>${esc(fmtDay(r.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${(r.items || []).length ? ` · ${r.items.length} items` : ''}</small></span><b class="num">${money(r.total)}</b></button></li>`).join('')}</ul>
+    ${tools}<ul class="slist">${rows.map(r => `<li><button data-act="spend-open" data-id="${r.id}"><span class="grow"><b>${esc(r.store || 'Shop')}</b><small>${esc(fmtDay(r.day, {weekday: 'short', day: 'numeric', month: 'short'}))}${(r.items || []).length ? ` · ${r.items.length} items` : ''}</small></span><b class="num">${money(r.total)}</b></button></li>`).join('')}</ul>
     <div class="row" style="margin-top:10px"><button class="btn soft" data-act="spend-review">${icon('chart')}See spending</button>${(S.spend || []).length > 3 ? `<button class="linkbtn" data-act="spend-all">All shops</button>` : ''}</div></div>`;
 }
 

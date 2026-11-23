@@ -51,7 +51,7 @@ V.spend = () => {
   const nav = `<div class="spnav"><button class="iconbtn" data-act="spend-month" data-d="-1" aria-label="Previous month">${icon('left')}</button><b>${esc(monthName(mk))}</b><button class="iconbtn" data-act="spend-month" data-d="1" aria-label="Next month" ${off >= 0 ? 'disabled' : ''}>${icon('right')}</button></div>`;
   const head = `<h1><button class="iconbtn" data-act="go" data-view="meals" aria-label="Back to Meals">${icon('left')}</button>Grocery spending<span class="sp"></span>${nav}</h1>`;
   if (!D.rows.length) return `<div class="page spendp">${head}<div class="panel"><div class="empty">${emptyArt('plate')}<b>No shops recorded in ${esc(monthName(mk))}</b>Add a receipt or type a total on the Meals page and it shows up here.</div>
-    <div class="row" style="justify-content:center"><button class="btn" data-act="spend-receipt">${icon('camera')}Add a receipt</button><button class="btn soft" data-act="spend-type">${icon('plus')}Type a total</button></div></div></div>`;
+    <div class="row" style="justify-content:center"><label class="btn">${icon('camera')}Photo of receipt<input type="file" accept="image/*" capture="environment" data-change="spend-photo" hidden></label><button class="btn soft" data-act="spend-type">${icon('plus')}Type a total</button></div></div></div>`;
 
   // headline
   const hero = `<div class="panel sphero"><div class="spbig num">${money(D.total)}</div>

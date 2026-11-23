@@ -753,7 +753,6 @@ body.night .hero .leave{color:var(--apricot)}
 .pbadge.out{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 b.lowt{color:#8A5A00}b.outt{color:var(--bad)}
 /* grocery spend */
-.spend-p h2 .scanbtn+.scanbtn{margin-left:6px}
 .snow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .snow>b{font-size:34px;font-weight:850;letter-spacing:-.01em}
 .snow>span{color:var(--ink-2)}
@@ -996,3 +995,6 @@ body.night .drow.done .dbox{background:#3987e5;border-color:#3987e5}
 .rdays[hidden],.rwhenhelp[hidden]{display:none!important}
 .evlast[hidden]{display:none!important}
 .sterm{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--surface)}.sterm .grow{flex:1;display:flex;flex-direction:column;min-width:0}.sterm small{color:var(--ink-2);font-size:14.5px}
+.rcptbtns{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}.rcptbtns .btn{flex:1 1 auto;justify-content:center}.rcptbtns .btn:first-child{flex-basis:100%}
+@media (min-width:700px){.rcptbtns .btn:first-child{flex-basis:auto}}
+.rcptbtns .rtype{flex-basis:100%;text-align:center;padding:6px}
