@@ -38,7 +38,7 @@ const pchipBtn = (p, extra = '') => `<button data-act="pantry-low" data-id="${p.
 const pcount = items => { const o = items.filter(p => p.out).length, l = items.filter(p => p.low && !p.out).length; return `${o ? `<span class="pbadge out">${o} out</span>` : ''}${l ? `<span class="pbadge low">${l} low</span>` : ''}`; };
 function weekStart(off = 0) { const t = dayKey(new Date()); return addDaysKey(t, -((weekdayOfKey(t) + 6) % 7) + off * 7); }
 const mealOn = (k, slot = 'dinner') => S.meals.find(m => m.day === k && (m.slot || 'dinner') === slot);
-const schoolDay = k => weekdayOfKey(k) % 6 !== 0 && !WA_HOLIDAYS[k] && (!settings().school || schoolTerms().some(([a, b]) => a <= k && k <= b));
+const schoolDay = k => weekdayOfKey(k) % 6 !== 0 && !WA_HOLIDAYS[k] && (!settings().school || inTermKey(k));
 V.meals = () => {
   const off = S.mealOffset || 0, mon = weekStart(off), today = dayKey(new Date());
   const days = [...Array(7)].map((_, i) => addDaysKey(mon, i));

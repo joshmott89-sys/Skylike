@@ -74,6 +74,9 @@ const WA_TERMS = [
 ];
 // A household can swap in its own school's terms (Settings → Kids → School days), e.g. a private school.
 const schoolTerms = () => { const t = (settings().terms || {}).list; return Array.isArray(t) && t.length ? t : WA_TERMS; };
+// Before a household's own school starts (e.g. kindy from 2027) its terms don't apply yet: days count as usual, with no "school holidays".
+const beforeSchool = k => { const t = (settings().terms || {}).list; return Array.isArray(t) && t.length && k < t[0][0]; };
+const inTermKey = k => beforeSchool(k) || schoolTerms().some(([a, b]) => a <= k && k <= b);
 const WA_HOLIDAYS = {
   '2026-01-01':"New Year's Day",'2026-01-26':'Australia Day','2026-03-02':'Labour Day','2026-04-03':'Good Friday',
   '2026-04-05':'Easter Sunday','2026-04-06':'Easter Monday','2026-04-25':'Anzac Day','2026-04-27':'Anzac Day holiday',
@@ -574,7 +577,8 @@ function chipsFor(k, now) {
     if (WA_HOLIDAYS[k]) out.push({icon: 'star', c: '#D9773B', text: WA_HOLIDAYS[k], sub: 'public holiday'});
     else for (let i = 1; i <= 6; i++) { const kk = addDaysKey(k, i); if (WA_HOLIDAYS[kk]) { out.push({icon: 'star', c: '#D9773B', text: WA_HOLIDAYS[kk], sub: i === 1 ? 'tomorrow' : fmtDay(kk, {weekday: 'long'})}); break; } }
   }
-  if (st.school) {
+  if (st.school && beforeSchool(k)) { const d = daysBetween(k, schoolTerms()[0][0]); if (d <= 14) out.push({icon: 'school', c: '#3A9AA0', text: `${(st.terms || {}).name || 'School'} starts`, sub: d === 1 ? 'tomorrow' : `in ${d} sleeps`}); }
+  else if (st.school) {
     const inTerm = schoolTerms().find(([a, b]) => a <= k && k <= b);
     if (!inTerm) {
       const next = schoolTerms().find(([a]) => a > k);

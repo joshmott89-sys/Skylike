@@ -717,7 +717,7 @@ V.calendar = () => {
   if (mode === 'day') {
     const k = S.dayKey, evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
     const nowH = hoursFloat(new Date());
-    const notes = [WA_HOLIDAYS[k] && settings().holidays ? WA_HOLIDAYS[k] : '', settings().school && !schoolTerms().some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0 ? 'School holidays' : ''].filter(Boolean);
+    const notes = [WA_HOLIDAYS[k] && settings().holidays ? WA_HOLIDAYS[k] : '', settings().school && !inTermKey(k) && weekdayOfKey(k) % 6 !== 0 ? 'School holidays' : ''].filter(Boolean);
     const bands = BANDS.map(([id, label, h1, h2, ic, mid]) => {
       const list = timed.filter(e => bandOf(e)[0] === id), [t, bt] = skyAt(mid), live = k === today && nowH >= h1 && nowH < h2;
       return `<section class="band ${live ? 'live' : ''}"><div class="band-sky" style="background:linear-gradient(180deg,${t},${bt})">${icon(ic)}<b>${label}</b></div>
@@ -731,7 +731,7 @@ V.calendar = () => {
     const mon = addDaysKey(today, -((weekdayOfKey(today) + 6) % 7) + S.calOffset * 7);
     const cols = [...Array(7)].map((_, i) => { const k = addDaysKey(mon, i);
       const evs = eventsOnKey(k), allDay = evs.filter(e => e.all_day), timed = evs.filter(e => !e.all_day).sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-      const term = settings().school && !schoolTerms().some(([a, b]) => a <= k && k <= b) && weekdayOfKey(k) % 6 !== 0;
+      const term = settings().school && !inTermKey(k) && weekdayOfKey(k) % 6 !== 0;
       let lastBand = '';
       const timedHTML = timed.map(e => { const b = bandOf(e); const head = b[0] !== lastBand ? `<div class="wband">${b[1]}</div>` : ''; lastBand = b[0];
         return head + `<button class="wev" style="--c:${eventColour(e)}" data-act="open-event" data-id="${e.id}" ${canEdit(e) ? `data-ev="${e.id}"` : ''}><span class="t num">${esc(fmtTime(new Date(e.starts_at)))}</span>${esc(e.title)}</button>`; }).join('');

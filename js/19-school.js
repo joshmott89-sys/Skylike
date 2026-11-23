@@ -38,7 +38,7 @@ F['school-days'] = async f => {
 };
 
 const fmtShort = k => fmtDay(k, {day: 'numeric', month: 'short'});
-function termSummary() { const today = dayKey(new Date()), t = schoolTerms(), cur = t.find(([a, b]) => b >= today); return cur ? (cur[0] <= today ? `This term ends ${fmtShort(cur[1])}` : `Next term starts ${fmtShort(cur[0])}`) : 'No upcoming terms saved'; }
+function termSummary() { const today = dayKey(new Date()), t = schoolTerms(); if (beforeSchool(today)) return `Starts ${fmtDay(t[0][0], {day: 'numeric', month: 'short', year: 'numeric'})}; until then days aren't limited to terms`; const  cur = t.find(([a, b]) => b >= today); return cur ? (cur[0] <= today ? `This term ends ${fmtShort(cur[1])}` : `Next term starts ${fmtShort(cur[0])}`) : 'No upcoming terms saved'; }
 A['terms-edit'] = () => {
   const T = settings().terms || {}, list = schoolTerms();
   sheet(`<h2>Term dates</h2><p class="help">Kindy and school days only count inside these terms. Public holidays are skipped too. One term per line: first day to last day.</p>
