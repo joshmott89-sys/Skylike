@@ -157,6 +157,6 @@ function chipsHTML() {
   const now = new Date(), c = chipsFor(dayKey(now), now);
   if (!c.length) return '';
   c.sort((a, b) => (b.first ? 1 : 0) - (a.first ? 1 : 0));
-  return `<div class="chips">${c.slice(0, 5).map(x => `<${x.act ? `button data-act="${x.act}" data-k="${x.k}"` : 'span'} class="chip">${x.bins ? `<span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span>` : `<span class="b" style="--c:${x.c}">${icon(x.icon)}</span>`}${esc(x.text)} <em>${esc(x.sub)}</em></${x.act ? 'button' : 'span'}>`).join('')}</div>`;
+  return `<div class="chips">${c.slice(0, 5).map(x => `<${x.act ? `button data-act="${x.act}" data-k="${x.k}"` : 'span'} class="chip">${x.bins ? `<span class="bins">${x.bins.map(col => `<span class="b" style="--c:${col}">${icon('bin')}</span>`).join('')}</span>` : `<span class="b" style="--c:${x.c}">${icon(x.icon)}</span>`}<span class="ct">${esc(x.text)} <em>${esc(x.sub)}</em></span></${x.act ? 'button' : 'span'}>`).join('')}</div>`;
 }
 

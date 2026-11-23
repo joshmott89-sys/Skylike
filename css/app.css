@@ -119,7 +119,7 @@ body.night .mark{border-color:#8A9BB4}
 
 /* ---------- content ---------- */
 .board{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:18px;padding:18px var(--pad) calc(22px + env(safe-area-inset-bottom));min-height:0;flex:1 0 auto}
-.zone{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.zone{min-width:0;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .zone h2{margin:0 0 12px;font-size:21px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
 .zone h2 .h2link{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:4px 0;font:inherit;color:inherit;cursor:pointer}
 .zone h2 .h2link svg{width:18px;height:18px;color:var(--ink-3);transition:transform .15s}
@@ -457,7 +457,7 @@ body.night .brief{background:linear-gradient(135deg,rgba(242,179,61,.10),rgba(25
 .btn.sm{min-height:36px;padding:0 12px;font-size:14px}
 @media (max-width:700px){.kitchen{flex-direction:column}.klines{border-left:0;border-top:1px solid var(--line,rgba(0,0,0,.07))}}
 .chips{display:flex;gap:10px;flex-wrap:wrap;padding:16px var(--pad) 0}
-.chip{display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font-weight:650;font-size:16.5px}
+.chip{display:inline-flex;align-items:center;gap:10px;text-align:left;max-width:100%;padding:8px 16px 8px 8px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font-weight:650;font-size:16.5px}
 .chip .b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--c,var(--ocean-2))}
 button.chip{border:0;font:inherit;color:inherit;cursor:pointer}
 .chip .b svg{width:18px;height:18px;stroke-width:2.2}
@@ -692,7 +692,7 @@ body.night .hero .leave{color:var(--apricot)}
   .tabbar button.on{color:var(--ocean-2)}
   body.night .tabbar button.on{color:var(--apricot)}
   :root{--pad:16px}
-  .board,.focus,.split{grid-template-columns:1fr;overflow:visible}
+  .board,.focus,.split{grid-template-columns:minmax(0,1fr);overflow:visible}
   main{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .board{flex:none}
   .zone{overflow:visible}
@@ -981,7 +981,7 @@ body.night .kgoal .kgs b{color:#f2c45a}
 .doorcard header,.doorcard.all{display:flex;align-items:center;gap:12px}.doorcard.all{padding:12px 16px}.doorcard .grow{flex:1;display:flex;flex-direction:column;min-width:0}
 .doorcard header b,.doorcard.all b{font-size:19px;font-weight:800}.doorcard header b .num{font-weight:700;color:var(--ink-3);margin-left:6px;font-size:16px}.doorcard header small,.doorcard.all small{font-size:15px;color:var(--ink-2);font-weight:600}
 .dce{font-size:28px;line-height:1;flex:none}
-.drows{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px 14px;margin-top:8px}
+.drows{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:4px 14px;margin-top:8px}
 .drow{display:flex;align-items:center;gap:12px;min-height:58px;padding:8px 6px;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
 .drow b{font-size:16.5px;font-weight:700;line-height:1.25}.drow small{font-size:14px;color:var(--ink-2);line-height:1.3}
 .dbox{flex:none;width:30px;height:30px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;background:var(--surface)}.dbox svg{width:18px;height:18px;stroke-width:3.2;color:#fff}
@@ -1018,3 +1018,10 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .rcpt li.odd{background:color-mix(in srgb,#F7BC2A 18%,transparent);border-radius:8px;padding-left:6px;padding-right:6px}
 .rturn{display:block;margin:6px 0 2px;font-size:15px}
 .rturnpics{display:flex;gap:10px;overflow-x:auto}.rturnpics img{max-height:46vh;max-width:100%;border-radius:12px;box-shadow:var(--shadow);background:#fff}
+/* reminder chips: the round icon never squashes, words sit left and wrap under themselves */
+.chip>.b,.chip>.bins{flex:none}.chip .ct{min-width:0;line-height:1.3}
+@media (max-width:560px){.chip em{white-space:normal}}
+/* narrow phones (big "display size" settings): grid items may shrink, nothing pushes the page sideways */
+.board>*,.focus>*,.split>*{min-width:0}
+.zone h2:has(.seg){flex-wrap:wrap;row-gap:8px}
+@media (max-width:360px){.qstone{width:30px;height:30px;font-size:14px}.qgift{width:32px;height:32px;font-size:16px}.questcard{padding:12px}}
