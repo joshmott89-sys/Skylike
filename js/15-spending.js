@@ -10,6 +10,7 @@ const SPEND_CATS = [
   ['frozen', 'Frozen', /\b(frozen|ice cream|icecream|peas|chips|nuggets|ice block|gelato)/i],
   ['drinks', 'Drinks', /\b(juice|water|soft drink|cola|coke|coffee|tea|cordial|kombucha|beer|wine|soda|sparkling)/i],
   ['pantry', 'Pantry & snacks', /\b(pasta|rice|flour|sugar|oil|sauce|stock|cereal|oats|biscuit|cracker|chips|chocolate|snack|bar|tin|can|beans|lentil|noodle|spice|salt|pepper|honey|jam|spread|vegemite|peanut|nut|muesli|popcorn|lolly|lollies)/i],
+  ['fees', 'Delivery & fees', /\b(collection fee|delivery|service fee|pick ?up fee|bag fee|surcharge)/i],
   ['home', 'Home, baby & personal', /\b(nappies|nappy|wipes|toilet|tissue|paper towel|detergent|dishwash|laundry|soap|shampoo|conditioner|toothpaste|toothbrush|deodorant|sunscreen|bin bag|foil|cling|cleaner|spray|sponge|razor|pads|tampons|formula|medicine|panadol|nurofen|bandaid)/i],
 ];
 const SPEND_COL = {light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300'], dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c']};
