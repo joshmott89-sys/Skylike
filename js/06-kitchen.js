@@ -11,8 +11,19 @@ const recipeLink = t => 'https://www.recipetineats.com/?s=' + encodeURIComponent
 const lbox = () => Object.assign({staples: '', kids: {}}, kset().lunchbox || {});
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const kidDays = id => { const d = (lbox().kids[id] || {}).days; return Array.isArray(d) ? d : [1, 2, 3, 4, 5]; };
-const kidsAtSchool = k => kids().filter(c => kidDays(c.id).includes(weekdayOfKey(k)));
-const lunchKids = () => (kids().length ? kids() : [{id: 'k', name: 'Kids'}]).map(k => ({name: k.name, school_days: kidDays(k.id).map(d => WD[d]), likes: (lbox().kids[k.id] || {}).likes || '', wont_eat: (lbox().kids[k.id] || {}).nope || ''}));
+// School plans per kid (Settings → Kids → School days): weekly days, every-2nd-week days, and an optional change from a date.
+// settings().schoolDays[kidId] = [{from: '', days: [2,4], fort: [], anchor: ''}, {from: '2027-02-02', days: [1,4], fort: [3], anchor: '2027-02-03'}]
+const schoolPlans = id => { const p = (settings().schoolDays || {})[id]; return Array.isArray(p) && p.length ? p : [{from: '', days: kidDays(id), fort: [], anchor: ''}]; };
+const planOn = (id, k) => schoolPlans(id).filter(p => !p.from || p.from <= k).sort((a, b) => (a.from || '').localeCompare(b.from || '')).pop() || schoolPlans(id)[0];
+const mondayOf = k => addDaysKey(k, -((weekdayOfKey(k) + 6) % 7));
+function kidAtSchool(kid, k) {
+  if (!schoolDay(k)) return false;
+  const p = planOn(kid.id, k), wd = weekdayOfKey(k);
+  if ((p.days || []).includes(wd)) return true;
+  return (p.fort || []).includes(wd) && Math.abs(daysBetween(mondayOf(p.anchor || p.from || k), mondayOf(k)) / 7) % 2 === 0;
+}
+const kidsAtSchool = k => kids().filter(c => kidAtSchool(c, k));
+const lunchKids = () => (kids().length ? kids() : [{id: 'k', name: 'Kids'}]).map(k => ({name: k.name, school_days: (p => [...new Set([...(p.days || []), ...(p.fort || [])])])(planOn(k.id, dayKey(new Date()))).sort().map(d => WD[d]), likes: (lbox().kids[k.id] || {}).likes || '', wont_eat: (lbox().kids[k.id] || {}).nope || ''}));
 const kset = () => Object.assign({prefs: '', servings: 4, budget: 0, shopBudget: 0, staples: 'bread, milk, eggs, butter, cheese, bananas, toilet paper'}, settings().kitchen || {});
 // Everyday staples (Settings → Kitchen): when one is marked low or out it shows on Home and in the brief.
 const stapleList = () => String(kset().staples || '').split(/[,\n]/).map(x => x.trim()).filter(Boolean).slice(0, 30);

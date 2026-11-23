@@ -3,10 +3,13 @@
 const kids = () => S.members.filter(m => m.kind === 'kid');
 const hm = t => { const [a, b] = String(t || '0:0').split(':').map(Number); return a + (b || 0) / 60; };
 const forKid = (row, kid) => !row.member_id || row.member_id === kid.id;
-const onDay = (row, k) => !row.days || !row.days.length || row.days.includes(weekdayOfKey(k));
+const onDay = (row, k, kid) => {
+  if (row.when_mode === 'school' || row.when_mode === 'home') { const at = kid ? kidAtSchool(kid, k) : kidsAtSchool(k).length > 0; return row.when_mode === 'school' ? at : !at; }
+  return !row.days || !row.days.length || row.days.includes(weekdayOfKey(k));
+};
 const tickOf = (kid, kind, ref, k) => S.ticks.find(t => t.member_id === kid.id && t.kind === kind && t.ref === ref && t.day === k);
 function currentRoutine(kid, k, h) {
-  const rs = S.routines.filter(r => forKid(r, kid) && onDay(r, k));
+  const rs = S.routines.filter(r => forKid(r, kid) && onDay(r, k, kid));
   return {now: rs.find(r => h >= hm(r.starts) && h < hm(r.ends)), next: rs.filter(r => hm(r.starts) > h).sort((a, b) => hm(a.starts) - hm(b.starts))[0]};
 }
 const stepStars = r => Math.max(0, +r.step_stars || 0);

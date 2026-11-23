@@ -108,6 +108,9 @@ const dayKey = d => tzParts(d).key;
 const keyToDate = k => { const [y,m,d] = k.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
 const addDaysKey = (k, n) => { const d = keyToDate(k); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const weekdayOfKey = k => keyToDate(k).getUTCDay();
+// "💊Take meds", "💊 Take meds", "👩‍👧 Pick up" → [emoji, words]; no leading emoji → ['', line]
+const EMOJI_HEAD = /^((?:\p{Extended_Pictographic}|\p{Regional_Indicator}{2})(?:\uFE0F|\u20E3|\p{Emoji_Modifier}|\u200D\p{Extended_Pictographic}\uFE0F?)*)\s*(.*)$/u;
+const splitEmoji = line => { const s = String(line || '').trim(), m = s.match(EMOJI_HEAD); return m && m[2] ? [m[1], m[2]] : ['', s]; };
 const daysBetween = (a, b) => Math.round((keyToDate(b) - keyToDate(a)) / 864e5);
 const untilHTML = e => `<span class="til">to ${esc(fmtTime(new Date(e.ends_at)))}</span>`;
 // One event row for every "what's on" list (family screen, Focus, Planner). size: '' = roomy (wall), 'md' (Focus), 'sm' (Planner week).

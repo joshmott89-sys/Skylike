@@ -136,7 +136,7 @@ function favesSheet() {
     <form data-form="lunchbox">
     <div class="lbl">Staples for every box</div><input class="input" name="staples" value="${esc(lb.staples)}" placeholder="e.g. water bottle, apple, cheese stick">
     ${kids().map(k => { const c = lb.kids[k.id] || {}; return `<div class="pblock"><div class="kt fk">${avatar(k)} ${esc(k.name)}</div>
-      <div class="lbl">School days</div><div class="ptags">${[1, 2, 3, 4, 5].map(d => `<label class="ptag-c"><input type="checkbox" name="days_${k.id}" value="${d}" ${kidDays(k.id).includes(d) ? 'checked' : ''}><span>${WD[d]}</span></label>`).join('')}</div>
+      <div class="lbl">School days: <b>${esc(schoolSummary(k.id))}</b> <button type="button" class="linkbtn" data-act="school-days">Change</button></div>
       <div class="lbl">Always happy to eat</div><textarea class="input" rows="2" name="likes_${k.id}" placeholder="e.g. vegemite sandwich, cheese scroll, grapes, popcorn, fruit roll-up">${esc(c.likes || '')}</textarea>
       <div class="lbl">Won't eat</div><input class="input" name="nope_${k.id}" value="${esc(c.nope || '')}" placeholder="e.g. tomato, ham, anything mixed"></div>`; }).join('') || '<p class="help">Add the kids in Settings → People to set favourites for each one.</p>'}
     <button class="btn" style="margin-top:12px">Save favourites</button></form>`, {focus: false});
@@ -214,10 +214,10 @@ function cheer(el, big) {
 const daysFrom = v => v === 'wk' ? [1,2,3,4,5] : v === 'we' ? [0,6] : [0,1,2,3,4,5,6];
 const F = {
   async routine(f) {
-    const steps = f.steps.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const m = l.match(/^(\S+)\s+(.+)$/); const emoji = m && /\p{Extended_Pictographic}/u.test(m[1]) ? m[1] : '⭐'; return {id: uid().slice(0, 8), emoji, label: (m && emoji !== '⭐' ? m[2] : l).slice(0, 24)}; });
+    const steps = f.steps.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [e, w] = splitEmoji(l); return {id: uid().slice(0, 8), emoji: e || '⭐', label: w.slice(0, 24)}; });
     const old = S.routines.find(x => x.id === f.dataset.id);
     if (old) steps.forEach(st => { const same = (old.steps || []).find(o => o.label === st.label); if (same) st.id = same.id; }); // keep today's ticks
-    const row = {household_id: S.hid, name: f.name.value.trim(), emoji: f.emoji.value.trim() || null, member_id: f.who.value || null, starts: f.starts.value || '06:00', ends: f.ends.value || '09:00', days: [0,1,2,3,4,5,6].filter(i => f['d' + i].checked), steps, step_stars: Math.max(0, Math.min(5, +f.each.value || 0)), bonus: Math.max(0, Math.min(10, f.bonus.value === '' ? 1 : +f.bonus.value || 0))};
+    const row = {household_id: S.hid, name: f.name.value.trim(), emoji: f.emoji.value.trim() || null, member_id: f.who.value || null, starts: f.starts.value || '06:00', ends: f.ends.value || '09:00', days: [0,1,2,3,4,5,6].filter(i => f['d' + i].checked), when_mode: f.when.value, steps, step_stars: Math.max(0, Math.min(5, +f.each.value || 0)), bonus: Math.max(0, Math.min(10, f.bonus.value === '' ? 1 : +f.bonus.value || 0))};
     const q = old ? sb.from('routines').update(row).eq('id', old.id).select().single() : sb.from('routines').insert(Object.assign(row, {sort: S.routines.length})).select().single();
     const {data, error} = await q; if (error) return toast("Couldn't save that routine.");
     const i = S.routines.findIndex(x => x.id === data.id); if (i >= 0) S.routines[i] = data; else S.routines.push(data); closeSheet(); render();
@@ -281,7 +281,7 @@ const F = {
     S.aiBackup = true; S.aiOn = true; f.key.value = ''; toast('Saved. Testing…'); const r = await callAI({action: 'test'});
     if (r.error || r.backup === 'rejected') toast(r.error || 'OpenRouter didn\'t accept that key. Check it and paste it again.', 6000); else toast('Backup AI on ✓', 3000); render();
   },
-  async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || '', days: [...f.querySelectorAll(`input[name="days_${k.id}"]:checked`)].map(i => +i.value)}; });
+  async lunchbox(f) { const lb = {staples: f.staples.value.trim().slice(0, 300), kids: {}}; kids().forEach(k => { lb.kids[k.id] = {likes: (f['likes_' + k.id] || {}).value?.trim().slice(0, 400) || '', nope: (f['nope_' + k.id] || {}).value?.trim().slice(0, 300) || '', days: kidDays(k.id)}; });
     await saveSettings({kitchen: {...kset(), lunchbox: lb}}); closeSheet(); toast('Lunchbox favourites saved'); if (S._plan && S._planReopen) { S._planReopen = 0; planSheet(true); } },
   async feedback(f) {
     const fb = S._fb, body = f.body.value.trim(); if (!body) return;
@@ -551,6 +551,7 @@ document.addEventListener('change', async e => {
   if (el.dataset.change === 'ev-cal') { const w = el.closest('form').querySelector('.evwho'); if (w) w.hidden = el.value !== 'skylike'; return; }
   if (el.dataset.change === 'lock-here') { LS.set('lockHere', el.checked); toast(el.checked ? 'This screen will ask for the PIN' : 'This screen won\'t ask for the PIN'); return; }
   if (el.dataset.change === 'scan-count') { scanCount(); return; }
+  if (el.dataset.change === 'routine-when') { const fm = el.closest('form'), tick = el.value === 'days'; fm.querySelector('.rdays').hidden = !tick; fm.querySelector('.rwhenhelp').hidden = tick; return; }
   if (el.dataset.change === 'chore-guess') { const f = el.closest('form'); if (f.dataset.picked) return; const g = guessEmoji(el.value); f.emoji.value = g; f.querySelectorAll('.kpb').forEach(x => { const y = !!g && x.dataset.e === g; x.classList.toggle('on', y); x.setAttribute('aria-pressed', y); }); }
   if (el.dataset.change === 'ev-allday') { const fm = el.closest('form'), t = fm.querySelector('.evtimes'), tk = fm.querySelector('.evtake'); if (t) t.hidden = el.checked; if (tk) tk.hidden = el.checked; }
   if (el.dataset.act === 'album-pick') {

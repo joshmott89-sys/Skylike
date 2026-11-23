@@ -1,19 +1,19 @@
 // Skylike: out-the-door. Loads after 17-quests; all parts share one global scope and load in order (index.html).
-/* ----- a shared grown-ups' checklist for getting out the door on weekday mornings. Anyone can tick; everyone sees it. ----- */
+/* ----- a shared grown-ups' checklist for getting out the door on weekday mornings. Anyone can tick; everyone sees it. Editing changes the list for every day; today's ticks stay. ----- */
 const DOOR_DEFAULT = {on: true, starts: '06:00', ends: '09:15', days: [1, 2, 3, 4, 5], items: [
   {id: 'dogs', emoji: '🐶', label: 'Dogs fed'},
   {id: 'brekkie', emoji: '🥣', label: "Everyone's had breakfast"},
   {id: 'coffee', emoji: '☕', label: 'Finished your coffee? Or is it going cold on the bench…'},
   {id: 'robot', emoji: '🤖', label: 'Floors clear, robot tank filled'}]};
-const doorSet = () => Object.assign({}, DOOR_DEFAULT, settings().door || {});
+const doorSet = () => { const d = Object.assign({}, DOOR_DEFAULT, settings().door || {}); d.items = (d.items || []).map(it => { if (!it.emoji || !/\p{L}/u.test(it.emoji)) return it; const [e, w] = splitEmoji(it.emoji + ' ' + it.label); return Object.assign({}, it, {emoji: e || '✔️', label: w}); }); return d; };
 const doorTick = (ref, k) => S.ticks.find(t => t.kind === 'door' && t.ref === ref && t.day === k);
 function doorRows(now = new Date()) {
   const d = doorSet(), k = dayKey(now), h = hoursFloat(now), rows = [];
-  const school = kids().length && schoolDay(k);
-  if (school) {
-    const ks = kids().map(kd => { const r = currentRoutine(kd, k, h).now || S.routines.find(x => forKid(x, kd) && onDay(x, k) && hm(x.starts) < 11); const st = r ? r.steps || [] : []; return {kd, n: r ? st.filter(s => tickOf(kd, 'step', r.id + ':' + s.id, k)).length : 0, of: st.length}; }).filter(x => x.of);
+  const atSchool = kidsAtSchool(k);
+  if (atSchool.length) {
+    const ks = atSchool.map(kd => { const r = currentRoutine(kd, k, h).now || S.routines.find(x => forKid(x, kd) && onDay(x, k) && hm(x.starts) < 11); const st = r ? r.steps || [] : []; return {kd, n: r ? st.filter(s => tickOf(kd, 'step', r.id + ':' + s.id, k)).length : 0, of: st.length}; }).filter(x => x.of);
     if (ks.length) rows.push({id: 'kids', auto: true, emoji: '🧒', label: 'Kids done their routines', done: ks.every(x => x.n >= x.of), sub: ks.map(x => `${esc(x.kd.name)} ${x.n}/${x.of}`).join(' · '), faces: ks});
-    const bring = [...new Set(bringFor(k).flatMap(b => b.items.map(i => i.title)))];
+    const bring = [...new Set(bringFor(k).filter(b => b.m.kind !== 'kid' || atSchool.includes(b.m)).flatMap(b => b.items.map(i => i.title)))];
     rows.push({id: 'bags', emoji: '🎒', label: 'Bags by the door', sub: bring.length ? esc(bring.join(', ')) : 'Lunchboxes, water bottles, hats'});
   }
   d.items.forEach(it => rows.push(Object.assign({}, it)));
@@ -44,7 +44,7 @@ Object.assign(A, {
   },
   'door-edit'() {
     const d = doorSet(), D = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    sheet(`<h2>Out the door</h2><p class="help">A shared checklist for the grown-ups on weekday mornings. On school days it adds the kids' routines and bags by itself.</p>
+    sheet(`<h2>Out the door</h2><p class="help">A shared checklist for the grown-ups. Changes apply to every day it shows, from now on; today's ticks stay. On the kids' school days it adds their routines and bags by itself (set those in Settings → Kids → School days).</p>
       <form data-form="door-save"><div class="row"><label class="lbl">From <input class="input" type="time" name="starts" value="${esc(d.starts)}"></label><label class="lbl">Until <input class="input" type="time" name="ends" value="${esc(d.ends)}"></label></div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:6px">${D.map((x, i) => `<label class="daychk"><input type="checkbox" name="d${i}" ${(d.days || []).includes(i) ? 'checked' : ''}><span>${x}</span></label>`).join('')}</div>
       <div class="lbl" style="margin-top:12px">Jobs (one per line: emoji, then the words)</div>
@@ -54,7 +54,7 @@ Object.assign(A, {
 });
 F['door-save'] = async f => {
   const old = doorSet().items;
-  const items = f.items.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const m = l.match(/^(\S+)\s+(.+)$/), em = m && /\p{Extended_Pictographic}/u.test(m[1]); const label = (em ? m[2] : l).slice(0, 80); const same = old.find(o => o.label === label); return {id: same ? same.id : uid().slice(0, 8), emoji: em ? m[1] : '✔️', label}; });
+  const items = f.items.value.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [e, w] = splitEmoji(l), label = w.slice(0, 80), same = old.find(o => o.label === label || o.label === l); return {id: same ? same.id : uid().slice(0, 8), emoji: e || '✔️', label}; });
   await saveSettings({door: {on: f.on.checked, starts: f.starts.value || '06:00', ends: f.ends.value || '09:15', days: [0, 1, 2, 3, 4, 5, 6].filter(i => f['d' + i].checked), items}});
   closeSheet();
 };

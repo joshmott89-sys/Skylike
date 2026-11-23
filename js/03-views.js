@@ -663,7 +663,7 @@ V.focus = () => {
   const openT = allT.filter(i => !i.assignee || !me || i.assignee === me.id).sort((a, b) => mineFirst(a) - mineFirst(b)), top = openT.slice(0, 5);
   const gave = me ? allT.filter(i => i.assignee && i.assignee !== me.id && i.added_by === me.id) : [];
   const last = S._fqLast;
-  return `<div class="fwrap">${focusBgHTML(now)}<div class="page focus2">
+  return `<div class="fwrap">${focusBgHTML(now)}${doorCardHTML()}${questCardHTML()}<div class="page focus2">
     <div class="fhead"><span>${esc(hr < 12 ? 'Morning' : hr < 17 ? 'Afternoon' : 'Evening')}${me ? ', ' + esc(me.name) : ''}</span><span class="fhr">${briefShow() ? `<button class="fbrief sm" data-act="brief-open" aria-label="Hear today's brief">${icon('sun')}<span>Brief</span></button>` : ''}<span class="num">${esc(fmtTime(now))}</span></span></div>
     ${hero}
     ${quickAddHTML()}
@@ -682,7 +682,7 @@ V.planner = () => {
       ${evs.length ? evs.map(e => agendaRow(e, {size: 'sm'})).join('') : '<div class="empty" style="padding:4px 0;font-size:16px">Free</div>'}</div>`;
   }).join('');
   const g = listByKind('grocery'), gc = g ? listItems(g.id, false).length : 0;
-  return `${skyHTML(true)}${chipsHTML()}<div class="focus plan2">
+  return `${skyHTML(true)}${doorCardHTML()}${questCardHTML()}${chipsHTML()}<div class="focus plan2">
     <div class="zone"><h2>Today's checklist${me ? ' · ' + esc(me.name) : ''}<span class="more num" style="color:var(--ink-2)">${done.length}/${items.length}</span></h2>
       <div class="qa-in">${quickAddHTML()}</div>
       <ul class="items scroll">${open.map(i => itemRow(i, true)).join('') || `<li class="empty">${emptyArt('clear')}All done for today.</li>`}${done.length ? `<li class="pdone"><button class="fold ${isOpen('pdone') ? 'open' : ''}" data-act="fold" data-k="pdone">${icon('right')}${done.length} done</button></li>${isOpen('pdone') ? done.map(i => itemRow(i, true)).join('') : ''}` : ''}</ul></div>
