@@ -13,7 +13,9 @@ const SPEND_CATS = [
   ['home', 'Home, baby & personal', /\b(nappies|nappy|wipes|toilet|tissue|paper towel|detergent|dishwash|laundry|soap|shampoo|conditioner|toothpaste|toothbrush|deodorant|sunscreen|bin bag|foil|cling|cleaner|spray|sponge|razor|pads|tampons|formula|medicine|panadol|nurofen|bandaid)/i],
 ];
 const SPEND_COL = {light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300'], dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#0ca30c']};
-const spendCat = name => (SPEND_CATS.find(([, , re]) => re.test(name || '')) || ['other', 'Other'])[0];
+// Snack words win first, so "milk chocolate" isn't dairy and "chicken crackers" isn't meat.
+const SNACKS = /\b(chocolate|biscuits?|crackers?|chips|crisps|pretzels?|lavosh|shapes|grain ?waves|popcorn|lolly|lollies|muesli bars?|tim ?tams?|maltesers|rice cakes?)/i;
+const spendCat = name => SNACKS.test(name || '') ? 'pantry' : (SPEND_CATS.find(([, , re]) => re.test(name || '')) || ['other', 'Other'])[0];
 const catLabel = k => (SPEND_CATS.find(c => c[0] === k) || [k, k === 'none' ? 'Not itemised' : 'Other'])[1];
 const monthKey = (off = 0) => { const p = tzParts(new Date()); let y = p.y, m = p.m - 1 + off; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return `${y}-${String(m + 1).padStart(2, '0')}`; };
 const monthName = mk => fmtDay(mk + '-01', {month: 'long', year: 'numeric'});
@@ -27,8 +29,10 @@ function spendMonthData(mk) {
     const shop = (r.store || 'Other shops').trim(); shops[shop] = (shops[shop] || 0) + (+r.total || 0);
     const its = (r.items || []).filter(i => +i.price > 0), itemSum = its.reduce((a, i) => a + +i.price, 0);
     if (!its.length) { cats.none = (cats.none || 0) + (+r.total || 0); return; }
-    // scale item prices to the receipt total, so discounts and bags don't leave a gap
-    const k = itemSum > 0 ? (+r.total || itemSum) / itemSum : 1;
+    // Items close to the total (within 15%): scale them up so discounts and bags don't leave a gap.
+    // Items well short of it (only part of the receipt read): the rest counts as "Not itemised", never guessed.
+    const tot = +r.total || itemSum, close = itemSum >= tot * .85, k = close && itemSum > 0 ? tot / itemSum : 1;
+    if (!close) cats.none = (cats.none || 0) + (tot - itemSum);
     its.forEach(i => { const c = spendCat(i.name); cats[c] = (cats[c] || 0) + i.price * k; const n = normFood(i.name); if (!items[n]) items[n] = {name: i.name, sum: 0, n: 0}; items[n].sum += +i.price; items[n].n++; });
   });
   return {rows, total, cats, shops, items};
@@ -79,7 +83,7 @@ V.spend = () => {
     ${itemised.length ? `<div class="spseg" role="img" aria-label="${esc(segs.map(s => `${segName(s)} ${pct(s.v)}%`).join(', '))}">${segs.map(s => `<span class="sg ${s.k === 'none' ? 'none' : ''}" style="flex:${s.v.toFixed(2)};${s.c !== 'none' ? `background:${s.c}` : ''}" title="${esc(segName(s))}: ${money(s.v)}">${pct(s.v) >= 9 ? `<b>${pct(s.v)}%</b>` : ''}</span>`).join('')}</div>
       <ul class="splegend">${segs.map(s => `<li><i class="${s.k === 'none' ? 'none' : ''}" style="${s.c !== 'none' ? `background:${s.c}` : ''}"></i>${esc(segName(s))}</li>`).join('')}</ul>
       <ul class="sprank">${all.map(([k, v]) => `<li><span class="n">${esc(catLabel(k))}</span><span class="bar"><span style="width:${(v / all[0][1] * 100).toFixed(1)}%" class="${k === 'none' ? 'none' : ''}"></span></span><span class="a num">${money(v)}</span><span class="p num">${pct(v)}%</span></li>`).join('')}</ul>
-      ${none > .5 ? `<p class="help">“Not itemised” is shops added as a total only. Snap the receipt next time to see what it was spent on.</p>` : ''}`
+      ${none > .5 ? `<p class="help">“Not itemised” is money with no item lines yet: a shop typed as a total, or a receipt only partly read. Open the shop and tap Add the next part to fill it in.</p>` : ''}`
       : `<p class="help">The split by type comes from receipt photos. These shops were typed in as totals, so there's nothing to break down yet.</p>`}</div>`;
 
   // shops
