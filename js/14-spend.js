@@ -72,7 +72,7 @@ function spendDraftSheet(d) {
     <div class="row"><label class="lbl grow">Shop <input class="input" name="store" value="${esc(d.store || '')}" maxlength="60" placeholder="e.g. Woolworths"></label><label class="lbl">Date <input class="input" type="date" name="day" value="${esc(d.day || dayKey(new Date()))}"></label></div>
     ${d.totalFound === false ? `<p class="help rnototal">No final total on this page, so this is the items added up. Add the page with the total, or type it in.</p>` : ''}
     <label class="lbl">Total $ <input class="input num" name="total" type="number" step="0.01" min="0" max="99999" required value="${d.total != null ? (+d.total).toFixed(2) : ''}" style="width:140px"></label>
-    ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p><details><summary>See the items</summary><ul class="rcpt">${items.map(i => `<li><span>${esc(i.name)}${qtyNote(i)}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></li>`).join('')}</ul></details>
+    ${items.length ? `<p class="help">${items.length} items read${Math.abs(sum - (+d.total || 0)) > 1 && d.total ? ` (they add to $${sum.toFixed(2)}; discounts and bags make up the difference)` : ''}.</p>${items.some(i => i.odd) ? `<p class="help rnototal">${items.filter(i => i.odd).length} ${items.filter(i => i.odd).length === 1 ? "line doesn't" : "lines don't"} add up (number × price ≠ amount). They're marked below: tap one to fix it.</p>` : ''}<details ${items.some(i => i.odd) ? 'open' : ''}><summary>See the items (tap one to fix it)</summary><ul class="rcpt">${items.map((i, n) => `<li class="${i.odd ? 'odd' : ''}"><button type="button" class="rline" data-act="rline-edit" data-i="${n}"><span>${esc(i.name)}${qtyNote(i)}</span><b class="num">$${(+i.price || 0).toFixed(2)}</b></button></li>`).join('')}</ul></details>
       ${coverageHTML(d, 'spend-more')}
       ${food ? `<label class="tickrow"><input type="checkbox" name="stock" checked> Update what's in (${food} food item${food === 1 ? '' : 's'}) and tick them off groceries</label>` : ''}` : ''}
     <div class="row" style="margin-top:14px"><span class="grow"></span><button class="btn">Save shop</button></div></form>`);
@@ -152,6 +152,24 @@ function applyReceipt(r, mode) {
   if (!DEMO) db(sb.from('grocery_spend').update({items, total: base.total, store: base.store, source: 'receipt'}).eq('id', base.id));
   toast(note, 2500);
 }
+A['rline-edit'] = el => {
+  const d = S._spendDraft, it = d && (d.items || [])[+el.dataset.i]; if (!it) return;
+  S._rline = +el.dataset.i;
+  const fm = document.querySelector('form[data-form="spend-save"]'); if (fm) { d.store = fm.store.value; d.day = fm.day.value; if (+fm.total.value) d.total = +fm.total.value; }
+  sheet(`<h2>Fix this line</h2><form data-form="rline-save"><label class="lbl">Item <input class="input" name="name" value="${esc(it.name)}" maxlength="60"></label>
+    <div class="row" style="margin-top:10px"><label class="lbl">How many <input class="input num" name="qty" type="number" min="0" step="any" value="${esc(parseFloat(it.qty) || 1)}" style="width:100px"></label><label class="lbl">Price each $ <input class="input num" name="unit" type="number" min="0" step="0.01" value="${(+it.unit || (+it.price / (parseFloat(it.qty) || 1))).toFixed(2)}" style="width:120px"></label></div>
+    <label class="lbl" style="margin-top:10px">Line total $ <input class="input num" name="amt" type="number" min="0" step="0.01" value="${(+it.price || 0).toFixed(2)}" style="width:120px"></label>
+    <div class="row" style="margin-top:14px"><button class="btn">Done</button><span class="grow"></span><button type="button" class="btn ghost" data-act="rline-del">Remove line</button><button type="button" class="btn ghost" data-act="rline-back">Back</button></div></form>`, {focus: false});
+};
+A['rline-back'] = () => spendDraftSheet(S._spendDraft);
+A['rline-del'] = () => { const d = S._spendDraft; d.items.splice(S._rline, 1); spendDraftSheet(d); };
+F['rline-save'] = f => {
+  const d = S._spendDraft, it = d.items[S._rline], q = +f.qty.value || 1, u = Math.round((+f.unit.value || 0) * 100) / 100;
+  let amt = Math.round((+f.amt.value || 0) * 100) / 100; if (Math.abs(amt - (+it.price || 0)) < 0.005 && u) amt = Math.round(u * q * 100) / 100; // changed the count or price: total follows
+  Object.assign(it, {name: f.name.value.trim().slice(0, 60) || it.name, qty: String(q), unit: u || undefined, price: amt, odd: false});
+  if (d.totalFound === false) d.total = itemSum(d.items);
+  spendDraftSheet(d);
+};
 async function readReceipt(fileList, mode) {
   const files = [...fileList].slice(0, 3);
   if (DEMO) { await new Promise(r => setTimeout(r, 400)); return {receipt: {store: '', day: '', total: 0, items: [{name: 'Bananas 1kg', price: 4.20, place: 'pantry'}, {name: 'Greek yoghurt 1kg', price: 7.50, place: 'fridge'}, {name: 'Pasta 500g', price: 2.30, place: 'pantry'}]}}; }

@@ -33,7 +33,7 @@ function spendMonthData(mk) {
     // Items well short of it (only part of the receipt read): the rest counts as "Not itemised", never guessed.
     const tot = +r.total || itemSum, close = itemSum >= tot * .85, k = close && itemSum > 0 ? tot / itemSum : 1;
     if (!close) cats.none = (cats.none || 0) + (tot - itemSum);
-    its.forEach(i => { const c = spendCat(i.name); cats[c] = (cats[c] || 0) + i.price * k; const n = normFood(i.name); if (!items[n]) items[n] = {name: i.name, sum: 0, n: 0}; items[n].sum += +i.price; items[n].n++; });
+    its.forEach(i => { const c = spendCat(i.name); cats[c] = (cats[c] || 0) + i.price * k; const n = normFood(i.name); if (!items[n]) items[n] = {name: i.name, sum: 0, n: 0, q: 0, unit: 0}; const q = parseFloat(i.qty) || 1; items[n].sum += +i.price; items[n].n++; items[n].q += q; items[n].unit = +i.unit || Math.round(+i.price / q * 100) / 100; });
   });
   return {rows, total, cats, shops, items};
 }
@@ -92,7 +92,7 @@ V.spend = () => {
 
   // biggest items + prices that moved
   const big = Object.values(D.items).sort((a, b) => b.sum - a.sum).slice(0, 8), moves = priceMoves();
-  const itemsP = big.length ? `<div class="panel"><h2>Biggest items</h2><ul class="spitems">${big.map(i => `<li><span>${esc(i.name)}${i.n > 1 ? ` <small>×${i.n}</small>` : ''}</span><b class="num">${cents(i.sum)}</b></li>`).join('')}</ul></div>` : '';
+  const itemsP = big.length ? `<div class="panel"><h2>Biggest items</h2><p class="help">What each line cost in total this month.</p><ul class="spitems">${big.map(i => `<li><span>${esc(i.name)}${i.q > 1 ? `<small class="spq num">${i.q} × ${cents(i.unit)}</small>` : ''}</span><b class="num">${cents(i.sum)}</b></li>`).join('')}</ul></div>` : '';
   const movesP = moves.length ? `<div class="panel"><h2>Prices that moved</h2><ul class="spitems">${moves.map(m => `<li><span>${esc(m.name)} <small>${cents(m.from)} → ${cents(m.to)}</small></span><b class="num ${m.pct > 0 ? 'up' : 'down'}">${m.pct > 0 ? '▲' : '▼'} ${Math.abs(Math.round(m.pct))}%</b></li>`).join('')}</ul></div>` : '';
 
   return `<div class="page spendp">${head}${hero}<div class="spgrid">${wk}${split}${shopsP}${itemsP}${movesP}</div></div>`;

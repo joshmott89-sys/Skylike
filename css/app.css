@@ -1013,3 +1013,6 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .brief+.qa-in,.brief+.famqa{margin-top:16px}
 .mnwrap{margin:14px var(--pad) 0}.mnwrap .mailnote{margin:0}
 .ev .who{display:block;line-height:1.5}.ev .who .mfs{vertical-align:middle;margin-right:8px}.ev .who i{display:inline-block;vertical-align:middle;margin-right:6px}.ev .who .mfs+span{vertical-align:middle}
+.spitems .spq{display:block;color:var(--ink-2);font-size:14px;margin-top:2px}
+.rcpt .rline{display:flex;justify-content:space-between;gap:12px;width:100%;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.rcpt li.odd{background:color-mix(in srgb,#F7BC2A 18%,transparent);border-radius:8px;padding-left:6px;padding-right:6px}
