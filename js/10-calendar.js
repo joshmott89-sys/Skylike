@@ -202,7 +202,13 @@ async function photoToBase64(file, max = 1400, opt = {}) {
   return out;
 }
 async function toggleTick(kid, kind, ref, k, stars, existing) {
-  if (existing) { S.ticks = S.ticks.filter(t => t.id !== existing.id); S.balances[kid.id] = starsOf(kid) - (existing.stars || 0); render(); await db(sb.from('ticks').delete().eq('id', existing.id)); }
+  if (existing) {
+    // Unticking takes back only stars the kid still has: if they were already spent on a reward, the jar stops at 0 instead of going negative.
+    const short = Math.max(0, (existing.stars || 0) - Math.max(0, starsOf(kid)));
+    S.ticks = S.ticks.filter(t => t.id !== existing.id); S.balances[kid.id] = Math.max(0, starsOf(kid) - (existing.stars || 0)); render();
+    await db(sb.from('ticks').delete().eq('id', existing.id));
+    if (short) await db(sb.from('star_ledger').insert({household_id: S.hid, member_id: kid.id, delta: short, reason: 'Untick after spending (kept at 0)'}));
+  }
   else { const row = {id: uid(), household_id: S.hid, member_id: kid.id, kind, ref, day: k, stars}; S.ticks.push(row); S.balances[kid.id] = starsOf(kid) + stars; render(); await db(sb.from('ticks').insert(row)); }
   loadBalances();
 }

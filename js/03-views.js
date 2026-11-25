@@ -312,7 +312,7 @@ function setEventPeople(id, patch) {
 const lockCfg = () => settings().lock || null;
 const lockHere = () => !!(lockCfg() && lockCfg().hash) && LS.get('lockHere', !isPhone());
 const unlocked = () => !lockHere() || Date.now() < (S.unlockUntil || 0);
-const LOCKED_ACTS = new Set(['ev-add', 'ev-edit', 'ev-del', 'ev-del-go', 'ev-setup', 'del-list', 'star-adj', 'redeem', 'ev-for', 'ev-taker']);
+const LOCKED_ACTS = new Set(['ev-add', 'ev-edit', 'ev-del', 'ev-del-go', 'ev-setup', 'del-list', 'star-adj', 'redeem-go', 'ev-for', 'ev-taker']);
 const needsPin = (act, el) => !unlocked() && (LOCKED_ACTS.has(act) || (act === 'go' && el && el.dataset.view === 'settings'));
 async function pinHash(pin, salt) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 function askPin(then) {

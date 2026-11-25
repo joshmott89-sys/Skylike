@@ -31,7 +31,13 @@ const A = {
       ${S.rewards.length ? S.rewards.map(w => `<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)"><span style="font-size:34px;line-height:0">${kart(w.emoji || '🎁', w.title, 'sx')}</span><div class="grow"><b>${esc(w.title)}</b><div class="lbl num">${w.cost} stars</div></div><button class="btn ${stars >= w.cost ? '' : 'soft'}" data-act="redeem" data-kid="${kid.id}" data-id="${w.id}" ${stars >= w.cost ? '' : 'disabled'}>${stars >= w.cost ? 'Spend' : `${w.cost - stars} to go`}</button></div>`).join('') : '<p class="help">No rewards yet. Add some in Settings → Kids.</p>'}
       <button class="btn ghost" style="margin-top:14px" data-act="close-sheet">Close</button>`);
   },
-  async redeem(el) {
+  // Spending is a grown-up job: a kid can open their stars and tap Spend, so it asks first (and the PIN, if one is set).
+  redeem(el) {
+    const kid = memberById(el.dataset.kid), w = S.rewards.find(x => x.id === el.dataset.id); if (!kid || !w || starsOf(kid) < w.cost) return;
+    sheet(`<h2>Spend ${w.cost} stars?</h2><p class="help">Grown-ups only. Is ${esc(kid.name)} getting <b>${esc(w.title)}</b> now? This takes ${w.cost} of ${esc(kid.name)}'s ${starsOf(kid)} stars.</p>
+      <div class="row" style="margin-top:16px;justify-content:space-between"><button class="btn" data-act="redeem-go" data-kid="${kid.id}" data-id="${w.id}">Yes, spend ${w.cost} stars</button><button class="btn ghost" data-act="kid-rewards" data-id="${kid.id}">Not yet</button></div>`);
+  },
+  async 'redeem-go'(el) {
     const kid = memberById(el.dataset.kid), w = S.rewards.find(x => x.id === el.dataset.id); if (!kid || !w || starsOf(kid) < w.cost) return;
     S.balances[kid.id] = starsOf(kid) - w.cost; closeSheet(); render(); toast(`${w.emoji || '🎁'} ${kid.name} spent ${w.cost} stars on ${w.title}`, 3500);
     await db(sb.from('star_ledger').insert({household_id: S.hid, member_id: kid.id, delta: -w.cost, reason: 'Reward: ' + w.title})); loadBalances();
